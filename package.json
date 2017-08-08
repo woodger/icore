@@ -1,0 +1,32 @@
+{
+  "name": "icore",
+  "version": "0.0.37",
+  "description": "Simple ECMAScript 6 (ES6) Framework",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "main": "ICore.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/woodger/icore"
+  },
+  "keywords": [
+    "ES6",
+    "MongoDB",
+    "Cookie",
+    "Template strings",
+    "Routing"
+  ],
+  "author": {
+    "name": "Stanislav Woodger",
+    "email": "woodger@ya.ru"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">= 7.6.0"
+  },
+  "dependencies": {
+    "cookies": "^0.7.0",
+    "mongodb": "^2.2.30"
+  }
+}
