@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "0.0.38",
+  "version": "0.1.38",
   "description": "High-level framework for creating fast web applications",
   "repository": {
     "type": "git",
