@@ -1,12 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const TypeEnforcement = require('type-enforcement');
-const nebbia = require('nebbia');
 const minimatch = require('minimatch');
-const Inquiry = require('./inquiry');
+const nebbia = require('nebbia');
+const TypeEnforcement = require('type-enforcement');
 
 const te = new TypeEnforcement({
-  'constructor: new View()': {
+  '#constructor()': {
     handler: Function,
     pwd: String
   },
@@ -14,10 +13,9 @@ const te = new TypeEnforcement({
     content: String
   },
   '#render()': {
-    inquiry: Inquiry,
-    options: Object
+    props: Object
   },
-  bundle: {
+  '.viewrc': {
     copy: Array,
     templates: Object
   },
@@ -26,7 +24,6 @@ const te = new TypeEnforcement({
   }
 });
 
-const config = 'bundle.json';
 const {sep} = path;
 const cwd = process.cwd();
 const re = {
@@ -68,14 +65,11 @@ const fsSync = {
   }
 };
 
-const invoke = Symbol('handler');
-const decor = Symbol('decor');
-
 // Экземпляр нужно заморозить
 
 class View {
   constructor(handler, pwd) {
-    let err = te.validate('constructor: new View()', {
+    let err = te.validate('#constructor()', {
       handler,
       pwd
     });
@@ -84,12 +78,11 @@ class View {
       throw err;
     }
 
-    this[invoke] = handler;
+    this.handler = handler;
+    this.pwd = path.resolve(cwd, pwd);
     this.templates = {};
 
-    pwd = path.resolve(cwd, pwd);
-
-    const bundle = `${pwd}${sep}${config}`;
+    const bundle = `${this.pwd}${sep}.viewrc`;
     const access = fs.accessSync(bundle, fs.constants.R_OK);
 
     if (access === false) {
@@ -99,7 +92,7 @@ class View {
     const content = fs.readFileSync(bundle, 'utf8');
     const {copy = [], templates = {}} = JSON.parse(content);
 
-    err = te.validate('bundle', {
+    err = te.validate('.viewrc', {
       copy,
       templates
     });
@@ -111,46 +104,30 @@ class View {
     for (let i of copy) {
       let [src, dir] = i.split(re.arrow);
 
-      src = `${pwd}/${src}`;
       dir = `${cwd}/${dir}`;
 
       fsSync.mkdir(dir);
-      fsSync.copy(src, dir);
+      fsSync.copy(`${this.pwd}/${src}`, dir);
     }
 
-    for (let i in templates) {
-      const base = templates[i];
-      let template = fs.readFileSync(`${pwd}/${base}`, 'utf8');
-      let beautify;
+    for (let i of templates) {
+      const content = fs.readFileSync(`${pwd}/${i}`, 'utf8');
+      const template = nebbia(content);
 
-      for (let i in this.constructor[decor]) {
-        if (minimatch(base, i)) {
-          let decoration = this.constructor[decor];
-          beautify = decoration[i];
-
-          break;
-        }
-      }
-
-      if (beautify !== undefined) {
-        template = beautify(template);
-      }
-
-      this.templates[i] = new Function('_', 'return ' + nebbia(template));
+      this[i] = new Function('_', 'return ' + template);
     }
   }
 
-  render(inquiry, options = {}) {
+  render(props = {}) {
     const err = te.validate('#render()', {
-      inquiry,
-      options
+      props
     });
 
     if (err) {
       throw err;
     }
 
-    if (options.templates !== undefined) {
+    if (props.templates !== undefined) {
       throw new Error(`It is not allowed to use the 'templates' property`);
     }
 
@@ -163,31 +140,11 @@ class View {
         item = item.slice();
       }
 
-      options[i] = item;
+      props[i] = item;
     }
 
-    return this[invoke](inquiry, options);
+    return this.handler(props);
   }
 }
-
-Object.defineProperty(View, 'decoration', {
-  set: function(decoration) {
-    const err = te.validate('decoration', {
-      decoration
-    });
-
-    if (err) {
-      throw err;
-    }
-
-    for (let i in decoration) {
-      if (Object.getPrototypeOf(decoration[i]) !== Function.prototype) {
-        throw new Error(`Decoration should be a function type`);
-      }
-    }
-
-    this[decor] = decoration;
-  }
-});
 
 module.exports = View;

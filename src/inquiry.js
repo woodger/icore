@@ -48,6 +48,7 @@ class Inquiry extends EventEmitter {
     this.queries = querystring.parse(this.url.query);
     this.method = req.method.toLowerCase();
     this.headers = req.headers;
+    this.context = {};
   }
 
   pipe(dest, {maxSize = Infinity} = {}) {
@@ -68,7 +69,11 @@ class Inquiry extends EventEmitter {
         if (dest.bytesWritten + chunk.byteLength > maxSize) {
           const err = new Error('Exceeding maximum body size');
 
-          // this[symbolIncoming].on('aborted') -> this[symbolIncoming].on('close')
+          /**
+           * this[symbolIncoming].on('aborted') -> this[symbolIncoming].on('close')
+           *
+           */
+
           dest.destroy(err);
         }
         else if (dest.write(chunk) === false) {
