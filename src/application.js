@@ -6,7 +6,6 @@ const TypeEnforcement = require('type-enforcement');
 const AsyncFunction = require('./async-function');
 const Inquiry = require('./inquiry');
 const Route = require('./route');
-const View = require('./view');
 
 const te = new TypeEnforcement({
   '#constructor()': {

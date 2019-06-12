@@ -10,8 +10,7 @@ describe('Interface module', () => {
     assert.deepStrictEqual(Object.keys(icore), [
       'Application',
       'Inquiry',
-      'Route',
-      'View'
+      'Route'
     ]);
   });
 

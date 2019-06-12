@@ -13,13 +13,11 @@ const te = new TypeEnforcement({
   }
 });
 
-const symbolIncoming = Symbol('incoming');
-
 class Inquiry extends EventEmitter {
   constructor(req, cookie) {
     super();
 
-    this[symbolIncoming] = req;
+    this.request = req;
 
     req.on('aborted', (err) => {
       this.emit('aborted', err);
@@ -51,6 +49,42 @@ class Inquiry extends EventEmitter {
     this.context = {};
   }
 
+  async read({maxSize = Infinity} = {}) {
+    const err = te.validate('#read()', {
+      maxSize
+    });
+
+    if (err) {
+      throw err;
+    }
+
+    return new Promise((resolve, reject) => {
+      let data = '';
+
+      this.request.on('data', (chunk) => {
+        if (data.length + chunk.length > maxSize) {
+          const err = new Error(`Exceeding maximum body size`);
+
+          this.request.destroy(err);
+        }
+        else {
+          data += chunk;
+        }
+      });
+
+      this.request.on('end', () => {
+        resolve(data);
+      });
+
+      this.request.on('aborted', () => {
+        const err = new Error(`Socket aborted`);
+        reject(err);
+      });
+
+      this.request.on('error', reject);
+    });
+  }
+
   pipe(dest, {maxSize = Infinity} = {}) {
     const err = te.validate('#pipe()', {
       maxSize
@@ -65,22 +99,22 @@ class Inquiry extends EventEmitter {
     }
 
     const pipe = () => {
-      this[symbolIncoming].on('data', (chunk) => {
+      this.request.on('data', (chunk) => {
         if (dest.bytesWritten + chunk.byteLength > maxSize) {
           const err = new Error('Exceeding maximum body size');
 
           /**
-           * this[symbolIncoming].on('aborted') -> this[symbolIncoming].on('close')
+           * this.request.on('aborted') -> this.request.on('close')
            *
            */
 
           dest.destroy(err);
         }
         else if (dest.write(chunk) === false) {
-          this[symbolIncoming].pause();
+          this.request.pause();
 
           dest.once('drain', () => {
-            this[symbolIncoming].resume();
+            this.request.resume();
           });
         }
       });
@@ -89,54 +123,18 @@ class Inquiry extends EventEmitter {
     dest.on('ready', pipe);
 
     dest.on('error', (err) => {
-      this[symbolIncoming].destroy();
+      this.request.destroy();
     });
 
-    this[symbolIncoming].on('end', () => {
+    this.request.on('end', () => {
       dest.end(); // -> dest.on('close')
     });
 
-    this[symbolIncoming].on('aborted', () => {
+    this.request.on('aborted', () => {
       dest.end();
     });
 
     return dest;
-  }
-
-  async read({maxSize = Infinity} = {}) {
-    const err = te.validate('#read()', {
-      maxSize
-    });
-
-    if (err) {
-      throw err;
-    }
-
-    return new Promise((resolve, reject) => {
-      let data = '';
-
-      this[symbolIncoming].on('data', (chunk) => {
-        if (data.length + chunk.length > maxSize) {
-          const err = new Error(`Exceeding maximum body size`);
-
-          this[symbolIncoming].destroy(err);
-        }
-        else {
-          data += chunk;
-        }
-      });
-
-      this[symbolIncoming].on('end', () => {
-        resolve(data);
-      });
-
-      this[symbolIncoming].on('aborted', () => {
-        const err = new Error(`Socket aborted`);
-        reject(err);
-      });
-
-      this[symbolIncoming].on('error', reject);
-    });
   }
 }
 

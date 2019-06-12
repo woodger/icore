@@ -1,5 +1,5 @@
 /**
- * Icore is a framework a high-level to build fast web application
+ * Icore is a framework a high-level to build strict web application
  *
  * This module for Node.js® implemented by following the ECMAScript® 2018
  * Language Specification Standard
@@ -10,11 +10,9 @@
 const Application = require('./src/application');
 const Inquiry = require('./src/inquiry');
 const Route = require('./src/route');
-const View = require('./src/view');
 
 module.exports = {
   Application,
   Inquiry,
-  Route,
-  View
+  Route
 };
