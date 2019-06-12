@@ -155,13 +155,13 @@ describe('class Route', () => {
     });
   });
 
-  describe('#add()', () => {
+  describe('#route()', () => {
     it('The router must put the route', () => {
       const root = new Route({
         async handler() {}
       });
 
-      root.add({
+      root.route({
         path: 'example',
         async handler() {}
       });
@@ -175,7 +175,7 @@ describe('class Route', () => {
           async handler() {}
         });
 
-        root.add(null);
+        root.route(null);
       }
       catch (e) {
         assert(
@@ -191,12 +191,12 @@ describe('class Route', () => {
       async handler() {}
     });
 
-    const foo = root.add({
+    const foo = root.route({
       path: /foo\d/,
       async handler() {}
     });
 
-    const bar = foo.add({
+    const bar = foo.route({
       path: 'bar',
       async handler() {}
     });

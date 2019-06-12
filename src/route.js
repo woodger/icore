@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const TypeEnforcement = require('type-enforcement');
 const AsyncFunction = require('./async-function');
 
@@ -19,8 +20,10 @@ const re = {
   rfc398622: /[^\x21\x22\x24-\x2E\x30-\x39\x3B-\x3E\x41-\x5A\x5C\x5E-\x7E]/
 };
 
-class Route {
+class Route extends EventEmitter {
   constructor({path = '', method = 'get', handler, finish = false}) {
+    super();
+
     const err = te.validate('constructor: new Route()', {
       method,
       handler,
@@ -69,7 +72,7 @@ class Route {
     this.childs = [];
   }
 
-  add(options) {
+  route(options) {
     const route = new Route(options);
     this.childs.push(route);
 
