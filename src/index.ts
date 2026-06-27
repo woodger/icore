@@ -1,13 +1,20 @@
 export {
   defineCommand,
+  defineCommandRegistry,
+  isCommandName,
   mergeOptionsSchema,
   parseArgv,
   parseOptions,
   parseOptionsDetailed,
+  resolveCommand,
+  resolveCommandFromArgs,
   runCommand,
+  runCommandFromRegistry,
   type BooleanOption,
   type CommandDefinition,
   type CommandInput,
+  type CommandName,
+  type CommandRegistry,
   type InferOptions,
   type InferProvidedOptions,
   type MergeOptionsSchemas,
@@ -17,5 +24,6 @@ export {
   type ParseOptionsResult,
   type ParsedArgv,
   type RawOptionValue,
+  type ResolvedCommand,
   type StringOption
 } from './cli';

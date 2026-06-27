@@ -2,11 +2,17 @@ import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   defineCommand,
+  defineCommandRegistry,
+  isCommandName,
   mergeOptionsSchema,
   parseArgv,
   parseOptions,
   parseOptionsDetailed,
+  resolveCommand,
+  resolveCommandFromArgs,
   runCommand,
+  runCommandFromRegistry,
+  type CommandName,
   type InferOptions,
   type InferProvidedOptions
 } from './cli';
@@ -287,6 +293,134 @@ describe('parseOptionsDetailed', () => {
       format: false,
       insecure: true
     });
+  });
+});
+
+describe('command registry', () => {
+  type RegistryContext = {
+    accountId: string;
+  };
+
+  const usersCommand = defineCommand({
+    path: ['users'],
+    options: {},
+    allowExtraPositionals: true,
+    handle({ context }: { context: RegistryContext }) {
+      return `users:${context.accountId}`;
+    }
+  });
+
+  const accountsCommand = defineCommand({
+    path: ['users', 'get-accounts'],
+    options: {
+      format: {
+        type: 'string',
+        choices: ['json', 'table'],
+        default: 'table'
+      },
+      verbose: {
+        type: 'boolean'
+      }
+    },
+    allowExtraPositionals: true,
+    handle({ options, positionals, context }: {
+      options: {
+        format: 'json' | 'table';
+        verbose: boolean | undefined;
+      };
+      positionals: string[];
+      context: RegistryContext;
+    }) {
+      return [
+        context.accountId,
+        options.format,
+        String(options.verbose),
+        positionals.join(',')
+      ].join(':');
+    }
+  });
+
+  const registry = defineCommandRegistry([
+    usersCommand,
+    accountsCommand
+  ] as const);
+
+  test('defines command names and checks registered names', () => {
+    const commandName: CommandName<typeof accountsCommand> = 'users get-accounts';
+
+    assert.deepStrictEqual(registry.commandNames, [
+      'users',
+      'users get-accounts'
+    ]);
+    assert.strictEqual(commandName, 'users get-accounts');
+    assert.strictEqual(isCommandName(registry, 'users get-accounts'), true);
+    assert.strictEqual(isCommandName(registry, 'unknown'), false);
+  });
+
+  test('rejects duplicate command paths', () => {
+    assert.throws(
+      () => defineCommandRegistry([
+        accountsCommand,
+        accountsCommand
+      ] as const),
+      /Unexpected duplicate command 'users get-accounts'/
+    );
+  });
+
+  test('resolves the most specific matching command from positionals', () => {
+    const resolved = resolveCommand(registry, [
+      'users',
+      'get-accounts',
+      'extra'
+    ]);
+
+    assert.strictEqual(resolved.name, 'users get-accounts');
+    assert.strictEqual(resolved.command, accountsCommand);
+    assert.deepStrictEqual(resolved.path, ['users', 'get-accounts']);
+    assert.deepStrictEqual(resolved.positionals, ['extra']);
+  });
+
+  test('resolves commands from raw args using command option schemas', () => {
+    const resolved = resolveCommandFromArgs(registry, [
+      '--verbose',
+      'users',
+      'get-accounts',
+      'extra'
+    ]);
+
+    assert.strictEqual(resolved.name, 'users get-accounts');
+    assert.strictEqual(resolved.command, accountsCommand);
+    assert.deepStrictEqual(resolved.positionals, ['extra']);
+  });
+
+  test('runs resolved command from registry', async () => {
+    assert.strictEqual(
+      await runCommandFromRegistry(registry, [
+        '--verbose',
+        'users',
+        'get-accounts',
+        '--format',
+        'json',
+        'extra'
+      ], {
+        accountId: 'account-id'
+      }),
+      'account-id:json:true:extra'
+    );
+  });
+
+  test('rejects unknown commands', async () => {
+    assert.throws(
+      () => resolveCommand(registry, ['unknown']),
+      /Unknown command: unknown/
+    );
+
+    await assert.rejects(
+      () => runCommandFromRegistry(registry, ['unknown'], {
+        accountId: 'account-id'
+      }),
+      /Unknown command: unknown/
+    );
   });
 });
 
