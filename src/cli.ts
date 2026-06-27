@@ -85,6 +85,34 @@ export type OptionDefinition =
  */
 export type OptionsSchema = Record<string, OptionDefinition>;
 
+type Simplify<TValue> = {
+  [TName in keyof TValue]: TValue[TName];
+} & {};
+
+type MergeOptionsSchemaPair<
+  TLeft extends OptionsSchema,
+  TRight extends OptionsSchema
+> = Simplify<Omit<TLeft, keyof TRight> & TRight>;
+
+type MergeOptionsSchemasWithResult<
+  TSchemas extends readonly OptionsSchema[],
+  TResult extends OptionsSchema
+> = TSchemas extends readonly [
+  infer THead extends OptionsSchema,
+  ...infer TRest extends readonly OptionsSchema[]
+]
+  ? MergeOptionsSchemasWithResult<
+    TRest,
+    MergeOptionsSchemaPair<TResult, THead>
+  >
+  : TResult;
+
+/**
+ * Infers the schema produced by `mergeOptionsSchema`.
+ */
+export type MergeOptionsSchemas<TSchemas extends readonly OptionsSchema[]> =
+  MergeOptionsSchemasWithResult<TSchemas, Record<never, never>>;
+
 type StringOptionValue<TOption> = TOption extends { choices: readonly (infer TChoice extends string)[] }
   ? TChoice
   : string;
@@ -180,6 +208,25 @@ export function defineCommand<
   command: CommandDefinition<TSchema, TContext, TResult>
 ): CommandDefinition<TSchema, TContext, TResult> {
   return command;
+}
+
+/**
+ * Merges option schemas while preserving literal option definition types.
+ *
+ * Later schemas override earlier schemas with the same option name.
+ */
+export function mergeOptionsSchema<
+  const TSchema extends OptionsSchema,
+  const TSchemas extends readonly OptionsSchema[]
+>(
+  schema: TSchema,
+  ...schemas: TSchemas
+): MergeOptionsSchemas<readonly [TSchema, ...TSchemas]> {
+  return Object.assign(
+    {},
+    schema,
+    ...schemas
+  ) as MergeOptionsSchemas<readonly [TSchema, ...TSchemas]>;
 }
 
 /**

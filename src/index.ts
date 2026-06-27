@@ -1,5 +1,6 @@
 export {
   defineCommand,
+  mergeOptionsSchema,
   parseArgv,
   parseOptions,
   parseOptionsDetailed,
@@ -9,6 +10,7 @@ export {
   type CommandInput,
   type InferOptions,
   type InferProvidedOptions,
+  type MergeOptionsSchemas,
   type NumberOption,
   type OptionDefinition,
   type OptionsSchema,

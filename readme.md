@@ -80,6 +80,7 @@ remaining positionals, and caller provided context.
 - applying and validating defaults;
 - validating string choices;
 - validating boolean flag form;
+- composing option schemas;
 - preserving user-provided option metadata;
 - parsing numbers;
 - validating integer, minimum, and maximum numeric constraints;
@@ -332,6 +333,32 @@ const command = defineCommand({
 });
 ```
 
+### `mergeOptionsSchema(...schemas)`
+
+Merges multiple option schemas while preserving literal option definition types.
+Later schemas override earlier schemas with the same option name.
+
+```ts
+import { mergeOptionsSchema } from 'icore';
+
+const sdkOptions = {
+  token: {
+    type: 'string',
+    required: true
+  }
+} as const;
+
+const formatOptions = {
+  format: {
+    type: 'string',
+    choices: ['json', 'table'],
+    default: 'table'
+  }
+} as const;
+
+const options = mergeOptionsSchema(sdkOptions, formatOptions);
+```
+
 ### `runCommand(command, args, context)`
 
 Parses arguments, validates options, checks command positionals, and runs the
@@ -398,6 +425,14 @@ type Provided = InferProvidedOptions<typeof schema>;
 
 `Provided` maps every schema option to `boolean`. `true` means the user
 specified that option explicitly; defaults keep the flag `false`.
+
+Use `MergeOptionsSchemas` when you need the merged schema type explicitly.
+
+```ts
+import type { MergeOptionsSchemas } from 'icore';
+
+type Schema = MergeOptionsSchemas<[typeof sdkOptions, typeof formatOptions]>;
+```
 
 ## Error Messages
 
