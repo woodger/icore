@@ -121,6 +121,24 @@ export type InferOptions<TSchema extends OptionsSchema> = {
 };
 
 /**
+ * Infers an option presence map from an option schema.
+ *
+ * `true` means the user provided the option explicitly. Defaults do not make an
+ * option provided.
+ */
+export type InferProvidedOptions<TSchema extends OptionsSchema> = {
+  [TName in keyof TSchema]: boolean;
+};
+
+/**
+ * Detailed option parsing result with values and user-provided metadata.
+ */
+export type ParseOptionsResult<TSchema extends OptionsSchema> = {
+  options: InferOptions<TSchema>;
+  provided: InferProvidedOptions<TSchema>;
+};
+
+/**
  * Input passed to a command handler after command path and option validation.
  */
 export type CommandInput<
@@ -128,6 +146,7 @@ export type CommandInput<
   TContext
 > = {
   options: InferOptions<TSchema>;
+  provided: InferProvidedOptions<TSchema>;
   positionals: string[];
   context: TContext;
 };
@@ -166,7 +185,10 @@ export function defineCommand<
 /**
  * Parses raw CLI arguments into positionals and raw long-option values.
  */
-export function parseArgv(args: readonly string[]): ParsedArgv {
+export function parseArgv(
+  args: readonly string[],
+  schema?: OptionsSchema
+): ParsedArgv {
   const positionals: string[] = [];
   const options: Record<string, RawOptionValue> = {};
   let parseOptions = true;
@@ -207,6 +229,13 @@ export function parseArgv(args: readonly string[]): ParsedArgv {
       continue;
     }
 
+    const definition = schema?.[name];
+
+    if (definition?.type === 'boolean') {
+      options[name] = true;
+      continue;
+    }
+
     const nextArg = args[index + 1];
 
     if (nextArg !== undefined && !nextArg.startsWith('-')) {
@@ -231,7 +260,19 @@ export function parseOptions<const TSchema extends OptionsSchema>(
   schema: TSchema,
   values: Record<string, RawOptionValue>
 ): InferOptions<TSchema> {
+  return parseOptionsDetailed(schema, values).options;
+}
+
+/**
+ * Validates raw option values and returns parsed values with user-provided
+ * metadata.
+ */
+export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
+  schema: TSchema,
+  values: Record<string, RawOptionValue>
+): ParseOptionsResult<TSchema> {
   const parsed: Partial<Record<keyof TSchema, unknown>> = {};
+  const provided: Partial<Record<keyof TSchema, boolean>> = {};
 
   for (const name of Object.keys(values)) {
     if (!Object.hasOwn(schema, name)) {
@@ -246,6 +287,8 @@ export function parseOptions<const TSchema extends OptionsSchema>(
     if (definition === undefined) {
       continue;
     }
+
+    provided[name] = value !== undefined;
 
     if (value === undefined) {
       if ('default' in definition) {
@@ -264,7 +307,10 @@ export function parseOptions<const TSchema extends OptionsSchema>(
     parsed[name] = parseOptionValue(String(name), definition, value);
   }
 
-  return parsed as InferOptions<TSchema>;
+  return {
+    options: parsed as InferOptions<TSchema>,
+    provided: provided as InferProvidedOptions<TSchema>
+  };
 }
 
 /**
@@ -280,7 +326,7 @@ export async function runCommand<
   args: readonly string[],
   context: TContext
 ): Promise<TResult> {
-  const argv = parseArgv(args);
+  const argv = parseArgv(args, command.options);
   const extraPositionals = resolveCommandPositionals(command.path, argv.positionals);
 
   if (extraPositionals.length > 0 && command.allowExtraPositionals !== true) {
@@ -289,8 +335,11 @@ export async function runCommand<
     );
   }
 
+  const parsed = parseOptionsDetailed(command.options, argv.options);
+
   return command.handle({
-    options: parseOptions(command.options, argv.options),
+    options: parsed.options,
+    provided: parsed.provided,
     positionals: extraPositionals,
     context
   });

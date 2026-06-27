@@ -18,7 +18,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "fwa",
+    "test": "node --test dist/**/*.test.js",
     "lint": "eslint src eslint.config.mjs"
   },
   "engines": {
@@ -29,7 +29,6 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.1",
     "eslint": "^10.5.0",
-    "fwa": "2.0.0-alpha",
     "globals": "^17.7.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0"

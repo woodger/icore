@@ -5,7 +5,8 @@ Declarative command line interface mechanics for Node.js.
 `icore` helps describe CLI commands with small option schemas and keeps command
 handlers focused on application work. It standardizes argument parsing,
 primitive option validation, defaults, choices, numeric ranges, and positional
-argument checks.
+argument checks. It can also report whether each option was provided explicitly
+by the user or filled from a default.
 
 It does not try to model your business domain. API calls, request building,
 response mapping, and output formatting should stay in the application that uses
@@ -56,8 +57,8 @@ const output = await runCommand(
 );
 ```
 
-The command handler receives parsed options, remaining positionals, and caller
-provided context.
+The command handler receives parsed options, user-provided option metadata,
+remaining positionals, and caller provided context.
 
 ## Design Goals
 
@@ -79,6 +80,7 @@ provided context.
 - applying and validating defaults;
 - validating string choices;
 - validating boolean flag form;
+- preserving user-provided option metadata;
 - parsing numbers;
 - validating integer, minimum, and maximum numeric constraints;
 - checking command path and extra positional arguments.
@@ -165,7 +167,7 @@ constraints. Defaults are validated with the same rules as user-provided values.
 
 ## API
 
-### `parseArgv(args)`
+### `parseArgv(args, schema?)`
 
 Parses raw CLI arguments into positionals and raw option values.
 
@@ -187,6 +189,33 @@ Result:
   positionals: ['users', 'get-accounts'],
   options: {
     format: 'json',
+    insecure: true
+  }
+}
+```
+
+When an option schema is provided, boolean options are parsed as flag-only
+options without consuming the following positional argument:
+
+```ts
+const argv = parseArgv([
+  'users',
+  'get-accounts',
+  '--insecure',
+  'extra'
+], {
+  insecure: {
+    type: 'boolean'
+  }
+});
+```
+
+Result:
+
+```ts
+{
+  positionals: ['users', 'get-accounts', 'extra'],
+  options: {
     insecure: true
   }
 }
@@ -224,6 +253,47 @@ Result:
   depth: 10
 }
 ```
+
+### `parseOptionsDetailed(schema, values)`
+
+Validates raw option values and returns parsed options together with
+user-provided metadata.
+
+```ts
+import { parseOptionsDetailed } from 'icore';
+
+const result = parseOptionsDetailed({
+  token: {
+    type: 'string',
+    required: true
+  },
+  format: {
+    type: 'string',
+    choices: ['json', 'table'],
+    default: 'table'
+  }
+} as const, {
+  token: 'secret'
+});
+```
+
+Result:
+
+```ts
+{
+  options: {
+    token: 'secret',
+    format: 'table'
+  },
+  provided: {
+    token: true,
+    format: false
+  }
+}
+```
+
+`provided` is useful when a default value and an omitted option have different
+application-level meaning.
 
 ### `defineCommand(command)`
 
@@ -317,6 +387,17 @@ type Options = {
 
 Required options and options with defaults are always present. Optional options
 without defaults are returned as `T | undefined`.
+
+Use `InferProvidedOptions` when you need the option presence type explicitly.
+
+```ts
+import type { InferProvidedOptions } from 'icore';
+
+type Provided = InferProvidedOptions<typeof schema>;
+```
+
+`Provided` maps every schema option to `boolean`. `true` means the user
+specified that option explicitly; defaults keep the flag `false`.
 
 ## Error Messages
 

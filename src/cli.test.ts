@@ -4,8 +4,10 @@ import {
   defineCommand,
   parseArgv,
   parseOptions,
+  parseOptionsDetailed,
   runCommand,
-  type InferOptions
+  type InferOptions,
+  type InferProvidedOptions
 } from './cli';
 
 describe('parseArgv', () => {
@@ -34,6 +36,48 @@ describe('parseArgv', () => {
     assert.throws(
       () => parseArgv(['--format', 'json', '--format', 'table']),
       /Unexpected duplicate argument '--format'/
+    );
+  });
+
+  test('uses schema to keep boolean flags from consuming following positionals', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'users',
+        'get-accounts',
+        '--insecure',
+        'extra'
+      ], {
+        insecure: {
+          type: 'boolean'
+        }
+      }),
+      {
+        positionals: ['users', 'get-accounts', 'extra'],
+        options: {
+          insecure: true
+        }
+      }
+    );
+  });
+
+  test('keeps consuming following values for schema string options', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'users',
+        'get-accounts',
+        '--token',
+        'secret'
+      ], {
+        token: {
+          type: 'string'
+        }
+      }),
+      {
+        positionals: ['users', 'get-accounts'],
+        options: {
+          token: 'secret'
+        }
+      }
     );
   });
 });
@@ -150,6 +194,46 @@ describe('parseOptions', () => {
   });
 });
 
+describe('parseOptionsDetailed', () => {
+  test('returns parsed options and user-provided metadata', () => {
+    const schema = {
+      token: {
+        type: 'string',
+        required: true
+      },
+      format: {
+        type: 'string',
+        choices: ['json', 'table'],
+        default: 'table'
+      },
+      insecure: {
+        type: 'boolean'
+      }
+    } as const;
+
+    type Options = InferOptions<typeof schema>;
+    type Provided = InferProvidedOptions<typeof schema>;
+
+    const result = parseOptionsDetailed(schema, {
+      token: 'secret',
+      insecure: true
+    });
+    const options: Options = result.options;
+    const provided: Provided = result.provided;
+
+    assert.deepStrictEqual(options, {
+      token: 'secret',
+      format: 'table',
+      insecure: true
+    });
+    assert.deepStrictEqual(provided, {
+      token: true,
+      format: false,
+      insecure: true
+    });
+  });
+});
+
 describe('runCommand', () => {
   test('runs handler with parsed options and context', async () => {
     const command = defineCommand({
@@ -179,6 +263,51 @@ describe('runCommand', () => {
         'account-id:json'
       );
     });
+  });
+
+  test('passes user-provided option metadata to handler', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      },
+      handle({ provided }) {
+        return provided.format ? 'explicit' : 'default';
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(command, ['users', 'get-accounts'], undefined),
+      'default'
+    );
+  });
+
+  test('uses command schema when parsing boolean flags', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      allowExtraPositionals: true,
+      handle({ options, positionals }) {
+        return `${String(options.verbose)}:${positionals.join(',')}`;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--verbose', 'account-id'],
+        undefined
+      ),
+      'true:account-id'
+    );
   });
 
   test('rejects extra positionals by default', async () => {
