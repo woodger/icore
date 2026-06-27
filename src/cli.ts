@@ -426,6 +426,12 @@ export function parseArgv(
 
     const nextArg = args[index + 1];
 
+    if (definition !== undefined && nextArg !== undefined && nextArg !== '--') {
+      options[name] = nextArg;
+      index += 1;
+      continue;
+    }
+
     if (nextArg !== undefined && !nextArg.startsWith('-')) {
       options[name] = nextArg;
       index += 1;

@@ -142,6 +142,33 @@ describe('parseArgv', () => {
       }
     );
   });
+
+  test('uses schema to consume option values that start with a dash', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'users',
+        'get-accounts',
+        '--limit',
+        '-1',
+        '--label',
+        '-draft'
+      ], {
+        limit: {
+          type: 'number'
+        },
+        label: {
+          type: 'string'
+        }
+      }),
+      {
+        positionals: ['users', 'get-accounts'],
+        options: {
+          limit: '-1',
+          label: '-draft'
+        }
+      }
+    );
+  });
 });
 
 describe('parseOptions', () => {

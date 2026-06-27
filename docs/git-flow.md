@@ -4,16 +4,25 @@ This project uses a classic Git Flow branching model.
 
 ## Long-Lived Branches
 
-### `main`
+### `master`
 
-`main` is the production branch.
+`master` is the production and package provenance branch.
 
 - Contains only released code.
 - Receives completed releases from `release/*` branches.
 - Receives urgent production fixes from `hotfix/*` branches.
-- Each release commit on `main` must have a semver tag, for example `v1.1.5`.
+- Each release commit on `master` must have a semver tag, for example `v1.1.5`.
 
-Do not commit feature work directly to `main`.
+Do not commit feature work directly to `master`.
+
+### `legacy/v1`
+
+`legacy/v1` preserves the historical `icore@0.1.38` codebase.
+
+- Points to the final legacy package state.
+- Must remain available for provenance and historical reference.
+- Must not receive new development work.
+- Must be pushed before any cleanup or replacement of legacy files.
 
 ### `develop`
 
@@ -22,7 +31,7 @@ Do not commit feature work directly to `main`.
 - New feature branches start from `develop`.
 - Completed feature branches are merged back into `develop`.
 - Release branches start from `develop`.
-- Hotfix branches are merged back into `develop` after they are released from `main`.
+- Hotfix branches are merged back into `develop` after they are released from `master`.
 
 Do not release directly from `develop`.
 
@@ -95,7 +104,7 @@ git switch -c release/v1.1.5
 git add .
 git commit -m "chore: prepare release v1.1.5"
 
-git switch main
+git switch master
 git merge --no-ff release/v1.1.5
 git tag -a v1.1.5 -m "Release v1.1.5"
 
@@ -103,7 +112,7 @@ git switch develop
 git merge --no-ff release/v1.1.5
 
 git branch -d release/v1.1.5
-git push origin main develop --tags
+git push origin master develop --tags
 ```
 
 ### `hotfix/*`
@@ -125,14 +134,14 @@ hotfix/v1.1.6
 Flow:
 
 ```bash
-git switch main
+git switch master
 git switch -c hotfix/v1.1.6
 
 # make fix, run checks
 git add .
 git commit -m "fix: correct production issue"
 
-git switch main
+git switch master
 git merge --no-ff hotfix/v1.1.6
 git tag -a v1.1.6 -m "Release v1.1.6"
 
@@ -140,12 +149,12 @@ git switch develop
 git merge --no-ff hotfix/v1.1.6
 
 git branch -d hotfix/v1.1.6
-git push origin main develop --tags
+git push origin master develop --tags
 ```
 
 ## Tags
 
-Every released version must be tagged from `main`.
+Every released version must be tagged from `master`.
 
 Use annotated tags:
 
@@ -168,19 +177,12 @@ This preserves the historical branch structure and matches the existing reposito
 
 ## Current Historical Baseline
 
-The repository already contains historical release merges:
+The repository preserves the old npm package history before new development:
 
-- `v1.0.1` should point to `f18c8a1`.
-- `v1.1.2` should point to `98309da`.
-- `v1.1.3` should point to `03e2304`.
-- `v1.1.4` should point to `1896d17`.
+- `master` points to the final legacy release commit `3048f15`.
+- `legacy/v1` points to the same final legacy release commit `3048f15`.
+- npm `icore@0.1.38` was published from commit `3048f15`.
+- New alpha development starts from `develop`, not from `master`.
 
-If these tags do not exist yet, create them once:
-
-```bash
-git tag -a v1.0.1 f18c8a1 -m "Release v1.0.1"
-git tag -a v1.1.2 98309da -m "Release v1.1.2"
-git tag -a v1.1.3 03e2304 -m "Release v1.1.3"
-git tag -a v1.1.4 1896d17 -m "Release v1.1.4"
-git push origin --tags
-```
+Do not delete or rewrite `legacy/v1`. If a future `main` branch is introduced,
+decide that as a separate repository migration and keep `legacy/v1` intact.
