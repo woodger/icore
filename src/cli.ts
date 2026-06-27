@@ -1,5 +1,34 @@
+/**
+ * The CLI mechanics module describes declarative command contracts and performs
+ * generic user argument parsing.
+ *
+ * Allowed here:
+ * - parsing raw argv into positionals and long options;
+ * - validating primitive CLI options against declarative schemas;
+ * - applying and validating defaults;
+ * - checking command paths and extra positionals;
+ * - running command handlers with typed options and caller-provided context.
+ *
+ * Not allowed here:
+ * - application-specific business rules;
+ * - SDK/API request building;
+ * - external client lifecycle management;
+ * - JSON/table/CSV output formatting;
+ * - domain-specific command DSLs.
+ */
+
+/**
+ * Raw option value produced by `parseArgv` before schema validation.
+ *
+ * Long options with a value are stored as strings, and flag-only options are
+ * stored as `true`.
+ */
 export type RawOptionValue = string | boolean;
 
+/**
+ * Parsed CLI arguments split into positional command path segments and raw
+ * named options.
+ */
 export type ParsedArgv = {
   positionals: string[];
   options: Record<string, RawOptionValue>;
@@ -11,13 +40,30 @@ type OptionBase<TType extends string, TValue> = {
   default?: TValue;
 };
 
+/**
+ * Declarative string option contract.
+ *
+ * `choices` narrows the parsed value to a string literal union when the schema
+ * is declared with `as const`.
+ */
 export type StringOption<TChoices extends readonly string[] = readonly string[]> =
   OptionBase<'string', TChoices[number] | string> & {
     choices?: TChoices;
   };
 
+/**
+ * Declarative boolean flag contract.
+ *
+ * Boolean options accept flag form only, for example `--insecure`.
+ */
 export type BooleanOption = OptionBase<'boolean', boolean>;
 
+/**
+ * Declarative number option contract.
+ *
+ * Number options can require integer values and enforce inclusive `min` / `max`
+ * bounds.
+ */
 export type NumberOption<TChoices extends readonly number[] = readonly number[]> =
   OptionBase<'number', TChoices[number] | number> & {
     choices?: TChoices;
@@ -26,11 +72,17 @@ export type NumberOption<TChoices extends readonly number[] = readonly number[]>
     max?: number;
   };
 
+/**
+ * Any supported option definition.
+ */
 export type OptionDefinition =
   | StringOption
   | BooleanOption
   | NumberOption;
 
+/**
+ * Command option schema keyed by exact public CLI option names.
+ */
 export type OptionsSchema = Record<string, OptionDefinition>;
 
 type StringOptionValue<TOption> = TOption extends { choices: readonly (infer TChoice extends string)[] }
@@ -56,12 +108,21 @@ type OptionIsAlwaysPresent<TOption> = TOption extends { required: true }
     ? true
     : false;
 
+/**
+ * Infers parsed option values from an option schema.
+ *
+ * Required options and options with defaults are always present. Optional
+ * options without defaults are returned as `T | undefined`.
+ */
 export type InferOptions<TSchema extends OptionsSchema> = {
   [TName in keyof TSchema]: OptionIsAlwaysPresent<TSchema[TName]> extends true
     ? OptionValue<TSchema[TName]>
     : OptionValue<TSchema[TName]> | undefined;
 };
 
+/**
+ * Input passed to a command handler after command path and option validation.
+ */
 export type CommandInput<
   TSchema extends OptionsSchema,
   TContext
@@ -71,6 +132,13 @@ export type CommandInput<
   context: TContext;
 };
 
+/**
+ * Declarative command contract.
+ *
+ * `icore` owns command mechanics. The handler remains responsible for
+ * application-specific work such as API calls, request building, and output
+ * formatting.
+ */
 export type CommandDefinition<
   TSchema extends OptionsSchema,
   TContext,
@@ -82,6 +150,9 @@ export type CommandDefinition<
   handle(input: CommandInput<TSchema, TContext>): TResult | Promise<TResult>;
 };
 
+/**
+ * Defines a command while preserving literal option schema types.
+ */
 export function defineCommand<
   const TSchema extends OptionsSchema,
   TContext = undefined,
@@ -92,6 +163,9 @@ export function defineCommand<
   return command;
 }
 
+/**
+ * Parses raw CLI arguments into positionals and raw long-option values.
+ */
 export function parseArgv(args: readonly string[]): ParsedArgv {
   const positionals: string[] = [];
   const options: Record<string, RawOptionValue> = {};
@@ -150,6 +224,9 @@ export function parseArgv(args: readonly string[]): ParsedArgv {
   };
 }
 
+/**
+ * Validates raw option values against a declarative option schema.
+ */
 export function parseOptions<const TSchema extends OptionsSchema>(
   schema: TSchema,
   values: Record<string, RawOptionValue>
@@ -190,6 +267,10 @@ export function parseOptions<const TSchema extends OptionsSchema>(
   return parsed as InferOptions<TSchema>;
 }
 
+/**
+ * Parses arguments, validates command mechanics, and executes a command
+ * handler.
+ */
 export async function runCommand<
   const TSchema extends OptionsSchema,
   TContext,
