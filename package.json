@@ -1,38 +1,37 @@
 {
   "name": "icore",
-  "version": "0.1.38",
-  "description": "High-level framework for creating strict web applications",
-  "scripts": {
-    "test": "mocha"
+  "version": "1.0.0-alpha",
+  "description": "Build command line interface",
+  "keywords": [
+    "cli"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Stanislav Woodger",
+    "email": "woodger@ya.ru"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/woodger/icore"
   },
-  "keywords": [
-    "server",
-    "router",
-    "nebbia"
-  ],
-  "author": {
-    "name": "Stanislav Woodger",
-    "email": "woodger@ya.ru"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "fwa",
+    "lint": "eslint src eslint.config.mjs"
   },
-  "license": "MIT",
   "engines": {
-    "node": ">=8.12.0"
+    "node": ">=20.19.0"
   },
-  "dependencies": {
-    "cookie-httponly": "^1.0.3",
-    "mime-types": "^2.1.21",
-    "type-enforcement": "^1.0.16"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "get-port": "^5.0.0",
-    "mocha": "^6.1.4",
-    "mock-http": "^1.0.0",
-    "proxyquire": "^2.1.0",
-    "stream-mock": "^2.0.2",
-    "superagent": "^5.0.5"
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.0.1",
+    "eslint": "^10.5.0",
+    "fwa": "2.0.0-alpha",
+    "globals": "^17.7.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0"
   }
 }

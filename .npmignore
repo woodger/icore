@@ -1,9 +1,7 @@
-node_modules
-package-lock.json
-appveyor.yml
-coverage
-test
-.git
-.gitignore
-.nyc_output
-.travis.yml
+node_modules/
+yarn.lock
+eslint.config.mjs
+docs/
+src/
+tsconfig.json
+**/*.test.*
