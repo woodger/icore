@@ -1,3 +1,16 @@
+/**
+ * The command mechanics module resolves command paths and runs typed command
+ * handlers after argv and option validation.
+ *
+ * Allowed here:
+ * - defining command and registry contracts;
+ * - resolving the most specific command path match;
+ * - passing parsed options, provided metadata, positionals, and context to handlers;
+ *
+ * This file must not contain raw token parsing, option schema validation,
+ * domain behavior, SDK calls, or output formatting.
+ */
+
 import {
   parseArgv
 } from './argv';

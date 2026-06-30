@@ -1,20 +1,12 @@
 /**
- * The CLI mechanics module describes declarative command contracts and performs
- * generic user argument parsing.
+ * The CLI public barrel module exposes the supported command mechanics API.
  *
  * Allowed here:
- * - parsing raw argv into positionals and long options;
- * - validating primitive CLI options against declarative schemas;
- * - applying and validating defaults;
- * - checking command paths and extra positionals;
- * - running command handlers with typed options and caller-provided context.
+ * - re-exporting public argv parser contracts;
+ * - re-exporting public option schema contracts;
+ * - re-exporting public command registry contracts;
  *
- * Not allowed here:
- * - application-specific business rules;
- * - SDK/API request building;
- * - external client lifecycle management;
- * - JSON/table/CSV output formatting;
- * - domain-specific command DSLs.
+ * This file must not contain parser, validator, or command runtime logic.
  */
 
 export {

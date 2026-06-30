@@ -1,3 +1,16 @@
+/**
+ * The option schema module validates raw option values against declarative
+ * primitive option contracts.
+ *
+ * Allowed here:
+ * - defining string, boolean, and number option contracts;
+ * - applying and validating default values;
+ * - producing typed option values and user-provided metadata;
+ *
+ * This file must not contain argv tokenization, command resolution, or
+ * application-specific validation rules.
+ */
+
 type OptionBase<TType extends string, TValue> = {
   type: TType;
   required?: boolean;

@@ -1,3 +1,15 @@
+/**
+ * The argv parser module transforms raw CLI tokens into positional segments
+ * and unvalidated long-option values.
+ *
+ * Allowed here:
+ * - splitting argv into positionals and named options;
+ * - applying option-schema hints only when token ownership is ambiguous;
+ * - rejecting duplicate raw option names before schema validation;
+ *
+ * This file must not contain typed option validation or command resolution.
+ */
+
 import type { OptionsSchema, RawOptionValue } from './options';
 
 /**
