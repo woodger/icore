@@ -1,7 +1,4 @@
-import type {
-  OptionsSchema,
-  RawOptionValue
-} from './options';
+import type { OptionsSchema, RawOptionValue } from './options';
 
 /**
  * Parsed CLI arguments split into positional command path segments and raw
