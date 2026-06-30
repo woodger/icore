@@ -1,6 +1,15 @@
 # icore
 
-Declarative command line interface mechanics for Node.js.
+[![npm version](https://img.shields.io/npm/v/icore.svg)](https://www.npmjs.com/package/icore)
+[![node](https://img.shields.io/node/v/icore.svg)](https://www.npmjs.com/package/icore)
+[![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
+[![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
+
+Small dependency-free command line interface mechanics for [Node.js®](https://nodejs.org) applications.
+
+### How it works?
+
+![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
 
 `icore` helps describe CLI commands with small option schemas and keeps command
 handlers focused on application work. It standardizes argument parsing,
@@ -8,13 +17,24 @@ primitive option validation, defaults, choices, numeric ranges, and positional
 argument checks. It can also resolve commands from a registry and report whether
 each option was provided explicitly by the user or filled from a default.
 
-### How it works?
+## Non-goals
 
-![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+`icore` stops at CLI mechanics. It does not build API DTOs, call SDKs,
+format output, manage process lifecycle, or validate business rules.
 
-It does not try to model your business domain. API calls, request building,
-response mapping, and output formatting should stay in the application that uses
-`icore`.
+## Table of Contents
+
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Non-goals](#non-goals)
+- [Why icore?](#why-icore)
+- [Supported Syntax](#supported-syntax)
+- [Basic Usage](#basic-usage)
+- [Design Goals](#design-goals)
+- [What icore Handles](#what-icore-handles)
+- [What icore Does Not Handle](#what-icore-does-not-handle)
+- [Option Schemas](#option-schemas)
+- [API](#api)
 
 ## Installation
 
@@ -24,45 +44,80 @@ npm install icore
 
 ## Requirements
 
-- Node.js `>=20.19.0`
+- Node.js `>=16.9.0`
 - TypeScript is supported through bundled declaration files.
+
+## Why icore?
+
+Use `icore` when you need more than raw argument parsing:
+
+- typed command definitions;
+- command registry resolution;
+- required options;
+- string choices;
+- number parsing with integer, minimum, and maximum constraints;
+- option presence metadata;
+- typed command handler input.
+
+Use [`node:util.parseArgs`](https://nodejs.org/api/util.html#utilparseargsconfig)
+directly when you only need low-level argument parsing.
+
+## Supported Syntax
+
+| Syntax | Supported | Notes |
+|---|---:|---|
+| `--name value` | yes | string and number options |
+| `--name=value` | yes | string and number options |
+| `--flag` | yes | boolean options |
+| `--flag=true` | no | boolean options are flag-only |
+| `-f` | no | short aliases are not supported |
+| `--no-cache` | no | negative boolean flags are not supported |
+| repeated options | no | duplicates are rejected |
+| multiple values | no | arrays are not supported |
 
 ## Basic Usage
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
 
-const command = defineCommand({
-  path: ['users', 'get-accounts'],
+const helloCommand = defineCommand({
+  path: ['hello'],
   options: {
-    format: {
+    name: {
       type: 'string',
-      choices: ['json', 'table'],
-      default: 'table'
+      default: 'world'
     },
-    insecure: {
+    upper: {
       type: 'boolean'
     }
   },
-  async handle({ options, context }) {
-    const response = await context.sdk.users.getAccounts({});
+  async handle({ options }) {
+    const message = `Hello, ${options.name}!`;
 
-    return context.formatAccounts(response.accounts, options.format);
+    return options.upper ? message.toUpperCase() : message;
   }
 });
 
 const output = await runCommand(
-  command,
-  ['users', 'get-accounts', '--format', 'json'],
-  {
-    sdk,
-    formatAccounts
-  }
+  helloCommand,
+  ['hello', '--name', 'Stanislav', '--upper'],
+  {}
 );
+
+console.log(output);
 ```
 
 The command handler receives parsed options, user-provided option metadata,
 remaining positionals, and caller provided context.
+
+CommonJS is supported:
+
+```js
+const {
+  defineCommand,
+  runCommand
+} = require('icore');
+```
 
 ## Design Goals
 
@@ -553,7 +608,9 @@ type Name = 'users get-accounts';
 
 ## Error Messages
 
-`icore` throws regular `Error` objects with stable messages.
+`icore` throws regular `Error` objects with predictable user-facing messages.
+Applications should treat these messages as display text, not as a
+machine-readable API.
 
 Examples:
 

@@ -1,9 +1,16 @@
 {
   "name": "icore",
-  "version": "1.0.0",
-  "description": "Declarative CLI mechanics for Node.js",
+  "version": "1.0.2",
+  "description": "Declarative command line interface mechanics for Node.js",
   "keywords": [
-    "cli"
+    "command-line",
+    "argv",
+    "argument-parser",
+    "option-parser",
+    "command-registry",
+    "command-router",
+    "typed-cli",
+    "declarative-cli"
   ],
   "license": "MIT",
   "author": {
