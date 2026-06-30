@@ -8,6 +8,10 @@ primitive option validation, defaults, choices, numeric ranges, and positional
 argument checks. It can also resolve commands from a registry and report whether
 each option was provided explicitly by the user or filled from a default.
 
+### How it works?
+
+![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+
 It does not try to model your business domain. API calls, request building,
 response mapping, and output formatting should stay in the application that uses
 `icore`.
