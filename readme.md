@@ -9,7 +9,7 @@ Small dependency-free command line interface mechanics for [Node.js®](https://n
 
 [API](#api) | [Option Schemas](#option-schemas) | [Type Inference](#type-inference)
 
-### How it works?
+#### How it works?
 
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
 
@@ -57,7 +57,7 @@ npm install icore
 - provide predictable user-facing errors;
 - avoid runtime dependencies.
 
-#### Basic Usage
+### Basic Usage
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
@@ -101,7 +101,7 @@ const {
 } = require('icore');
 ```
 
-## Option Schemas
+### Option Schemas
 
 Options are described as plain objects.
 
@@ -109,7 +109,7 @@ Option names are exact. `icore` does not normalize camelCase to kebab-case or
 kebab-case to camelCase. Use quoted object keys when your public CLI option
 contains `-`.
 
-### String Options
+#### String Options
 
 ```ts
 const schema = {
@@ -128,7 +128,7 @@ const schema = {
 String options reject missing required values, blank strings, boolean flag form,
 and values outside `choices`.
 
-### Boolean Options
+#### Boolean Options
 
 ```ts
 const schema = {
@@ -151,7 +151,7 @@ Explicit values are rejected:
 --insecure=true
 ```
 
-### Number Options
+#### Number Options
 
 ```ts
 const schema = {
@@ -170,7 +170,7 @@ constraints. Defaults are validated with the same rules as user-provided values.
 
 ### API
 
-### `parseArgv(args, schema?)`
+#### `parseArgv(args, schema?)`
 
 Parses raw CLI arguments into positionals and raw option values.
 
@@ -224,7 +224,7 @@ Result:
 }
 ```
 
-### `parseOptions(schema, values)`
+#### `parseOptions(schema, values)`
 
 Validates raw option values using an option schema and returns typed options.
 
@@ -257,7 +257,7 @@ Result:
 }
 ```
 
-### `parseOptionsDetailed(schema, values)`
+#### `parseOptionsDetailed(schema, values)`
 
 Validates raw option values and returns parsed options together with
 user-provided metadata.
@@ -298,7 +298,7 @@ Result:
 `provided` is useful when a default value and an omitted option have different
 application-level meaning.
 
-### `defineCommand(command)`
+#### `defineCommand(command)`
 
 Defines a command while preserving its option schema types.
 
@@ -335,7 +335,7 @@ const command = defineCommand({
 });
 ```
 
-### `defineCommandRegistry(commands)`
+#### `defineCommandRegistry(commands)`
 
 Defines a command registry while preserving literal command path types.
 
@@ -365,7 +365,7 @@ Result:
 
 Duplicate command paths are rejected.
 
-### `isCommandName(registry, value)`
+#### `isCommandName(registry, value)`
 
 Checks whether an unknown value is a command name registered in the registry.
 
@@ -375,7 +375,7 @@ if (isCommandName(registry, value)) {
 }
 ```
 
-### `resolveCommand(registry, positionals)`
+#### `resolveCommand(registry, positionals)`
 
 Resolves a command from already parsed positional arguments.
 
@@ -403,7 +403,7 @@ Result:
 When several command paths match, the most specific command wins. For example,
 `users get-accounts` is preferred over `users`.
 
-### `resolveCommandFromArgs(registry, args)`
+#### `resolveCommandFromArgs(registry, args)`
 
 Resolves a command from raw CLI arguments. Each candidate command is parsed with
 its own option schema, so boolean flags do not accidentally consume command path
@@ -417,7 +417,7 @@ const resolved = resolveCommandFromArgs(registry, [
 ]);
 ```
 
-### `runCommandFromRegistry(registry, args, context)`
+#### `runCommandFromRegistry(registry, args, context)`
 
 Resolves a command from a registry and runs its handler.
 
@@ -432,7 +432,7 @@ const output = await runCommandFromRegistry(
 This is registry-level mechanics only. Application-specific setup, API request
 building, and output formatting still belong outside `icore`.
 
-### `mergeOptionsSchema(...schemas)`
+#### `mergeOptionsSchema(...schemas)`
 
 Merges multiple option schemas while preserving literal option definition types.
 Later schemas override earlier schemas with the same option name.
@@ -458,7 +458,7 @@ const formatOptions = {
 const options = mergeOptionsSchema(sdkOptions, formatOptions);
 ```
 
-### `runCommand(command, args, context)`
+#### `runCommand(command, args, context)`
 
 Parses arguments, validates options, checks command positionals, and runs the
 handler.
