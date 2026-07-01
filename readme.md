@@ -29,15 +29,11 @@ npm install icore
   * [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
   * [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
   * [`runCommand(command, args, context)`](#runcommandcommand-args-context)
-* [Basic Usage](#basic-usage)
+* [Example](#example)
 * [Option Schemas](#option-schemas)
-  * [String Options](#string-options)
-  * [Boolean Options](#boolean-options)
-  * [Number Options](#number-options)
 * [Type Inference](#type-inference)
 * [Facade of arguments](#facade-of-arguments)
 * [Error Messages](#error-messages)
-* [Project Boundary](#project-boundary)
 
 ### API
 
@@ -332,7 +328,7 @@ positionals with `allowExtraPositionals: true`.
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20User%20--upper]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=User;%20upper=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
 
 
-### Basic Usage
+### Example
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
@@ -381,7 +377,7 @@ Options are described as plain objects.
 Option names are exact. `icore` does not normalize **camelCase** to **kebab-case**. Use quoted object keys when your public CLI option
 contains `-`.
 
-#### String Options
+#### String
 
 ```ts
 const schema = {
@@ -400,7 +396,7 @@ const schema = {
 String options reject missing required values, blank strings, boolean flag form,
 and values outside `choices`.
 
-#### Boolean Options
+#### Boolean
 
 ```ts
 const schema = {
@@ -423,7 +419,7 @@ Explicit values are rejected:
 --upper=true
 ```
 
-#### Number Options
+#### Number
 
 ```ts
 const schema = {
