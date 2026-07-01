@@ -280,8 +280,8 @@ const output = await runCommandFromRegistry(
 );
 ```
 
-This is registry-level mechanics only. Application-specific setup, side effects,
-and output formatting still belong outside `icore`.
+This is **registry-level mechanics only**. Application-specific setup, side
+effects, and output formatting still belong outside `icore`.
 
 #### `mergeOptionsSchema(...schemas)`
 
@@ -320,7 +320,7 @@ const output = await runCommand(
 );
 ```
 
-By default, extra positionals are rejected. A command can opt in to extra
+**By default**, extra positionals are rejected. A command can opt in to extra
 positionals with `allowExtraPositionals: true`.
 
 ### How It Works
@@ -374,10 +374,11 @@ remaining positionals, and caller provided context.
 
 Options are described as plain objects.
 
-Option names are exact. `icore` does not normalize **camelCase** to **kebab-case**. Use quoted object keys when your public CLI option
-contains `-`.
+**Option names are exact.** `icore` does not normalize `camelCase` to
+`kebab-case`. Use quoted object keys when your public CLI option contains
+`-`.
 
-#### String
+#### `type: 'string'`
 
 ```ts
 const schema = {
@@ -396,7 +397,7 @@ const schema = {
 String options reject missing required values, blank strings, boolean flag form,
 and values outside `choices`.
 
-#### Boolean
+#### `type: 'boolean'`
 
 ```ts
 const schema = {
@@ -406,7 +407,7 @@ const schema = {
 } as const;
 ```
 
-Boolean options accept flag form only:
+Boolean options accept **flag form only**:
 
 ```sh
 --upper
@@ -419,7 +420,7 @@ Explicit values are rejected:
 --upper=true
 ```
 
-#### Number
+#### `type: 'number'`
 
 ```ts
 const schema = {
@@ -465,8 +466,8 @@ type Options = {
 };
 ```
 
-Required options and options with defaults are always present. Optional options
-without defaults are returned as `T | undefined`.
+**Required options and options with defaults are always present.** Optional
+options without defaults are returned as `T | undefined`.
 
 Use `InferProvidedOptions` when you need the option presence type explicitly.
 
@@ -505,22 +506,20 @@ type Name = 'hello formal';
 
 The table below provides examples of how to specify the syntax.
 
-| Syntax | Supported | Notes |
-|---|---:|---|
-| `--name value` | yes | string and number options |
-| `--name=value` | yes | string and number options |
-| `--flag` | yes | boolean options |
-| `--flag=true` | no | boolean options are flag-only |
-| `-f` | no | short aliases are not supported |
-| `--no-cache` | no | negative boolean flags are not supported |
-| repeated options | no | duplicates are rejected |
-| multiple values | no | arrays are not supported |
+| Syntax | Supported |
+|---|---:|
+| `--name value` | yes |
+| `--name=value` | yes |
+| `--flag` | yes |
+| `--flag=true` | no |
+| `-f` | no |
+| `--no-cache` | no |
 
 ### Error Messages
 
 `icore` throws regular `Error` objects with predictable user-facing messages.
-Applications should treat these messages as display text, not as a
-machine-readable API.
+Applications should treat these messages as **display text**, not as a
+**machine-readable API**.
 
 Applications can catch these errors and decide how to print them. For example,
 after printing `error.message`, terminal output can look like this:
@@ -535,8 +534,8 @@ Expected '--upper' as boolean flag
 
 ### Project Boundary
 
-`icore` is intended to be a small CLI mechanics module. It should not grow into a
-domain-specific framework for a particular SDK or API.
+`icore` is intended to be a **small CLI mechanics module**. It should **not**
+grow into a domain-specific framework for a particular SDK or API.
 
 Good responsibilities for `icore`:
 
