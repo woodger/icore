@@ -7,47 +7,11 @@
 
 Small dependency-free command line interface mechanics for [Node.js®](https://nodejs.org) applications.
 
+[API](#api) | [Option Schemas](#option-schemas) | [Type Inference](#type-inference)
+
 ### How it works?
 
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
-
-`icore` helps describe CLI commands with small option schemas and keeps command
-handlers focused on application work. It standardizes argument parsing,
-primitive option validation, defaults, choices, numeric ranges, and positional
-argument checks. It can also resolve commands from a registry and report whether
-each option was provided explicitly by the user or filled from a default.
-
-## Non-goals
-
-`icore` stops at CLI mechanics. It does not build API DTOs, call SDKs,
-format output, manage process lifecycle, or validate business rules.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Requirements](#requirements)
-- [Non-goals](#non-goals)
-- [Why icore?](#why-icore)
-- [Supported Syntax](#supported-syntax)
-- [Basic Usage](#basic-usage)
-- [Design Goals](#design-goals)
-- [What icore Handles](#what-icore-handles)
-- [What icore Does Not Handle](#what-icore-does-not-handle)
-- [Option Schemas](#option-schemas)
-- [API](#api)
-
-## Installation
-
-```sh
-npm install icore
-```
-
-## Requirements
-
-- Node.js `>=16.9.0`
-- TypeScript is supported through bundled declaration files.
-
-## Why icore?
 
 Use `icore` when you need more than raw argument parsing:
 
@@ -62,20 +26,38 @@ Use `icore` when you need more than raw argument parsing:
 Use [`node:util.parseArgs`](https://nodejs.org/api/util.html#utilparseargsconfig)
 directly when you only need low-level argument parsing.
 
-## Supported Syntax
+### Installation
 
-| Syntax | Supported | Notes |
-|---|---:|---|
-| `--name value` | yes | string and number options |
-| `--name=value` | yes | string and number options |
-| `--flag` | yes | boolean options |
-| `--flag=true` | no | boolean options are flag-only |
-| `-f` | no | short aliases are not supported |
-| `--no-cache` | no | negative boolean flags are not supported |
-| repeated options | no | duplicates are rejected |
-| multiple values | no | arrays are not supported |
+To use `icores` in your project, run:
 
-## Basic Usage
+```sh
+npm install icore
+```
+
+### Table of Contents
+
+- [`parseArgv(args, schema?)`](#parseargvargs-schema)
+- [`parseOptions(schema, values)`](#parseoptionsschema-values)
+- [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
+- [`defineCommand(command)`](#definecommandcommand)
+- [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
+- [`isCommandName(registry, value)`](#iscommandnameregistry-value)
+- [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
+- [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
+- [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
+- [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
+- [`runCommand(command, args, context)`](#runcommandcommand-args-context)
+
+### Design Goals
+
+- describe CLI mechanics declaratively;
+- use literal option types: `type: 'string' | 'boolean' | 'number'`;
+- keep handlers free from repetitive option parsing;
+- keep domain and API semantics outside the framework;
+- provide predictable user-facing errors;
+- avoid runtime dependencies.
+
+#### Basic Usage
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
@@ -118,47 +100,6 @@ const {
   runCommand
 } = require('icore');
 ```
-
-## Design Goals
-
-- describe CLI mechanics declaratively;
-- use literal option types: `type: 'string' | 'boolean' | 'number'`;
-- keep handlers free from repetitive option parsing;
-- keep domain and API semantics outside the framework;
-- provide predictable user-facing errors;
-- avoid runtime dependencies.
-
-## What icore Handles
-
-`icore` handles generic CLI mechanics:
-
-- parsing long options;
-- validating known options;
-- rejecting duplicated options;
-- checking required options;
-- applying and validating defaults;
-- validating string choices;
-- validating boolean flag form;
-- composing option schemas;
-- defining command registries;
-- resolving commands by path;
-- preserving user-provided option metadata;
-- parsing numbers;
-- validating integer, minimum, and maximum numeric constraints;
-- checking command path and extra positional arguments.
-
-## What icore Does Not Handle
-
-`icore` intentionally does not handle application-specific behavior:
-
-- building API request DTOs;
-- calling SDKs or network clients;
-- managing database, HTTP, or gRPC lifecycle;
-- checking business invariants such as `from <= to`;
-- resolving mutually exclusive command modes;
-- formatting output as JSON, tables, CSV, or other application formats.
-
-Keep those decisions near the command handler or in your application layer.
 
 ## Option Schemas
 
@@ -227,7 +168,7 @@ const schema = {
 Number options parse decimal numeric values and can validate integer and range
 constraints. Defaults are validated with the same rules as user-provided values.
 
-## API
+### API
 
 ### `parseArgv(args, schema?)`
 
@@ -540,7 +481,7 @@ const output = await runCommand(
 By default, extra positionals are rejected. A command can opt in to extra
 positionals with `allowExtraPositionals: true`.
 
-## Type Inference
+### Type Inference
 
 Use `InferOptions` when you need the parsed option type explicitly.
 
@@ -606,7 +547,22 @@ type Name = CommandName<typeof usersGetAccountsCommand>;
 type Name = 'users get-accounts';
 ```
 
-## Error Messages
+### Facade of arguments
+
+The table below provides examples of how to specify the syntax.
+
+| Syntax | Supported | Notes |
+|---|---:|---|
+| `--name value` | yes | string and number options |
+| `--name=value` | yes | string and number options |
+| `--flag` | yes | boolean options |
+| `--flag=true` | no | boolean options are flag-only |
+| `-f` | no | short aliases are not supported |
+| `--no-cache` | no | negative boolean flags are not supported |
+| repeated options | no | duplicates are rejected |
+| multiple values | no | arrays are not supported |
+
+### Error Messages
 
 `icore` throws regular `Error` objects with predictable user-facing messages.
 Applications should treat these messages as display text, not as a
@@ -627,7 +583,7 @@ Expected '--depth' to be greater than or equal to 1
 
 Applications can catch these errors and decide how to print them.
 
-## Project Boundary
+### Project Boundary
 
 `icore` is intended to be a small CLI mechanics module. It should not grow into a
 domain-specific framework for a particular SDK or API.
@@ -638,11 +594,3 @@ Good responsibilities for `icore`:
 - command path checking;
 - common argument errors;
 - typed command handler input.
-
-Responsibilities that should stay outside `icore`:
-
-- business validation;
-- SDK lifecycle management;
-- provider-specific request modes;
-- generated contract mapping;
-- presentation formatting.
