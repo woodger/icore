@@ -7,8 +7,6 @@
 
 Small dependency-free command line interface mechanics for Node.js applications.
 
-[API Reference](docs/api.md) | [Examples](docs/examples.md)
-
 `icore` describes CLI commands with typed option schemas, resolves command
 registries, validates primitive options, and passes typed input to handlers. It
 stops at CLI mechanics: your application still owns business rules, SDK calls,
@@ -17,6 +15,8 @@ process lifecycle, and output formatting.
 ## How It Works
 
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;users%20get%20--limit%2010%20--json]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=users/get;%20limit=10;%20json=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+
+[API Reference](docs/api.md) | [Examples](docs/examples.md)
 
 ## Install
 
