@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  IcoreError,
   mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,
@@ -102,6 +103,85 @@ describe('parseOptions', () => {
       () => parseOptions({}, { unknown: 'value' }),
       /Unexpected argument '--unknown'/
     );
+  });
+
+  test('throws machine-readable option validation errors', () => {
+    const scenarios = [
+      {
+        run: () => parseOptions({}, {
+          unknown: 'value'
+        }),
+        code: 'UNEXPECTED_ARGUMENT',
+        message: "Unexpected argument '--unknown'",
+        details: {
+          argument: '--unknown',
+          option: 'unknown'
+        }
+      },
+      {
+        run: () => parseOptions({
+          token: {
+            type: 'string',
+            required: true
+          }
+        }, {}),
+        code: 'EXPECTED_REQUIRED_ARGUMENT',
+        message: "Expected required argument '--token'",
+        details: {
+          argument: '--token',
+          option: 'token'
+        }
+      },
+      {
+        run: () => parseOptions({
+          limit: {
+            type: 'number'
+          }
+        }, {
+          limit: 'many'
+        }),
+        code: 'INVALID_OPTION_TYPE',
+        message: "Expected '--limit' as number",
+        details: {
+          argument: '--limit',
+          option: 'limit',
+          expected: 'number',
+          value: 'many'
+        }
+      },
+      {
+        run: () => parseOptions({
+          format: {
+            type: 'string',
+            choices: ['json']
+          }
+        } as const, {
+          format: 'xml'
+        }),
+        code: 'INVALID_OPTION_CHOICE',
+        message: "Expected '--format' as one of: json",
+        details: {
+          argument: '--format',
+          option: 'format',
+          choices: ['json'],
+          value: 'xml'
+        }
+      }
+    ];
+
+    for (const scenario of scenarios) {
+      assert.throws(
+        scenario.run,
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, scenario.code);
+          assert.strictEqual(error.message, scenario.message);
+          assert.deepStrictEqual(error.details, scenario.details);
+
+          return true;
+        }
+      );
+    }
   });
 
   test('rejects missing required options', () => {

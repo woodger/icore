@@ -3,6 +3,7 @@ import { describe, test } from 'node:test';
 import {
   defineCommand,
   defineCommandRegistry,
+  IcoreError,
   isCommandName,
   prepareCommandFromArgs,
   resolveCommand,
@@ -194,6 +195,39 @@ describe('command registry', () => {
         accountId: 'account-id'
       }),
       /Unknown command: unknown/
+    );
+  });
+
+  test('throws machine-readable unknown command errors', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'users';
+        }
+      })
+    ] as const);
+    const assertUnknownCommandError = (error: unknown): boolean => {
+      assert.ok(error instanceof IcoreError);
+      assert.strictEqual(error.code, 'UNKNOWN_COMMAND');
+      assert.strictEqual(error.message, 'Unknown command: unknown');
+      assert.deepStrictEqual(error.details, {
+        command: 'unknown',
+        positionals: ['unknown']
+      });
+
+      return true;
+    };
+
+    assert.throws(
+      () => resolveCommand(commandRegistry, ['unknown']),
+      assertUnknownCommandError
+    );
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['unknown']),
+      assertUnknownCommandError
     );
   });
 });
@@ -799,6 +833,35 @@ describe('runCommand', () => {
     await assert.rejects(
       () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
       /Unexpected positional argument for 'users get-accounts': extra/
+    );
+  });
+
+  test('throws machine-readable unexpected positional errors', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_POSITIONAL');
+        assert.strictEqual(
+          error.message,
+          "Unexpected positional argument for 'users get-accounts': extra"
+        );
+        assert.deepStrictEqual(error.details, {
+          command: 'users get-accounts',
+          positional: 'extra',
+          positionals: ['extra']
+        });
+
+        return true;
+      }
     );
   });
 });

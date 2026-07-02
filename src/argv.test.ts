@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  IcoreError,
   parseArgv
 } from './cli';
 
@@ -30,6 +31,23 @@ describe('parseArgv', () => {
     assert.throws(
       () => parseArgv(['--format', 'json', '--format', 'table']),
       /Unexpected duplicate argument '--format'/
+    );
+  });
+
+  test('throws machine-readable duplicate argument errors', () => {
+    assert.throws(
+      () => parseArgv(['--format', 'json', '--format', 'table']),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected duplicate argument '--format'");
+        assert.deepStrictEqual(error.details, {
+          argument: '--format',
+          option: 'format'
+        });
+
+        return true;
+      }
     );
   });
 

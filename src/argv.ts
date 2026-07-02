@@ -15,6 +15,7 @@ import type {
   OptionsSchema,
   RawOptionValue
 } from './options';
+import { IcoreError } from './errors';
 
 /**
  * Parsed CLI arguments split into positional command path segments and raw
@@ -68,7 +69,7 @@ export function parseArgv(
       }
 
       if (Object.hasOwn(options, alias.name)) {
-        throw new Error(`Unexpected duplicate argument '--${alias.name}'`);
+        throw createDuplicateArgumentError(alias.name);
       }
 
       if (alias.definition.type === 'boolean') {
@@ -100,7 +101,7 @@ export function parseArgv(
       : option.slice(0, separatorIndex);
 
     if (name === '') {
-      throw new Error(`Unexpected argument '${arg}'`);
+      throw createUnexpectedArgumentError(arg);
     }
 
     const definition = schema?.[name];
@@ -111,7 +112,7 @@ export function parseArgv(
 
       if (negatedDefinition?.type === 'boolean') {
         if (Object.hasOwn(options, negatedName)) {
-          throw new Error(`Unexpected duplicate argument '--${negatedName}'`);
+          throw createDuplicateArgumentError(negatedName);
         }
 
         options[negatedName] = false;
@@ -120,7 +121,7 @@ export function parseArgv(
     }
 
     if (Object.hasOwn(options, name)) {
-      throw new Error(`Unexpected duplicate argument '--${name}'`);
+      throw createDuplicateArgumentError(name);
     }
 
     if (separatorIndex !== -1) {
@@ -197,4 +198,25 @@ function assertShortAlias(name: string, alias: string): void {
 
 function isShortOptionToken(arg: string): boolean {
   return arg.length === 2 && arg.startsWith('-') && !arg.startsWith('--');
+}
+
+function createDuplicateArgumentError(name: string): IcoreError {
+  return new IcoreError(
+    'DUPLICATE_ARGUMENT',
+    `Unexpected duplicate argument '--${name}'`,
+    {
+      argument: `--${name}`,
+      option: name
+    }
+  );
+}
+
+function createUnexpectedArgumentError(argument: string): IcoreError {
+  return new IcoreError(
+    'UNEXPECTED_ARGUMENT',
+    `Unexpected argument '${argument}'`,
+    {
+      argument
+    }
+  );
 }

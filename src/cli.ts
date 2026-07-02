@@ -32,6 +32,11 @@ export {
   type ResolvedCommand
 } from './commands';
 export {
+  IcoreError,
+  type IcoreErrorCode,
+  type IcoreErrorDetails
+} from './errors';
+export {
   mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,

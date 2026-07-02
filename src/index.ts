@@ -1,6 +1,7 @@
 export {
   defineCommand,
   defineCommandRegistry,
+  IcoreError,
   isCommandName,
   mergeOptionsSchema,
   parseArgv,
@@ -19,6 +20,8 @@ export {
   type CommandRegistry,
   type InferOptions,
   type InferProvidedOptions,
+  type IcoreErrorCode,
+  type IcoreErrorDetails,
   type MergeOptionsSchemas,
   type NumberOption,
   type OptionDefinition,

@@ -11,6 +11,11 @@
  * application-specific validation rules.
  */
 
+import {
+  IcoreError,
+  type IcoreErrorDetails
+} from './errors';
+
 type OptionBase<TType extends string, TValue> = {
   type: TType;
   alias?: string;
@@ -197,7 +202,7 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
 
   for (const name of Object.keys(values)) {
     if (!Object.hasOwn(schema, name)) {
-      throw new Error(`Unexpected argument '--${name}'`);
+      throw createUnexpectedArgumentError(name);
     }
   }
 
@@ -218,7 +223,7 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
       }
 
       if (definition.required === true) {
-        throw new Error(`Expected required argument '--${String(name)}'`);
+        throw createExpectedRequiredArgumentError(String(name));
       }
 
       parsed[name] = undefined;
@@ -261,7 +266,7 @@ function parseDefaultOptionValue(
       throw new Error(`Expected default for '--${name}' as string`);
     }
 
-    assertChoice(name, definition.choices, value);
+    assertChoice(name, definition.choices, value, false);
 
     return value;
   }
@@ -278,7 +283,7 @@ function parseDefaultOptionValue(
     throw new Error(`Expected default for '--${name}' as number`);
   }
 
-  validateNumberConstraints(name, definition, value);
+  validateNumberConstraints(name, definition, value, false);
 
   return value;
 }
@@ -289,7 +294,7 @@ function parseStringOption(
   value: RawOptionValue
 ): string {
   if (typeof value !== 'string' || value.trim() === '') {
-    throw new Error(`Expected '--${name}' as string`);
+    throw createExpectedOptionTypeError(name, 'string', value);
   }
 
   assertChoice(name, definition.choices, value);
@@ -307,7 +312,7 @@ function parseBooleanOption(
       return true;
     }
 
-    throw new Error(`Expected '--${name}' as boolean flag`);
+    throw createExpectedOptionTypeError(name, 'boolean flag', value);
   }
 
   if (value === true || value === 'true') {
@@ -318,7 +323,7 @@ function parseBooleanOption(
     return false;
   }
 
-  throw new Error(`Expected '--${name}' as boolean flag`);
+  throw createExpectedOptionTypeError(name, 'boolean flag', value);
 }
 
 function parseNumberOption(
@@ -327,17 +332,17 @@ function parseNumberOption(
   value: RawOptionValue
 ): number {
   if (typeof value !== 'string' || value.trim() === '') {
-    throw new Error(`Expected '--${name}' as number`);
+    throw createExpectedOptionTypeError(name, 'number', value);
   }
 
   if (!/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) {
-    throw new Error(`Expected '--${name}' as number`);
+    throw createExpectedOptionTypeError(name, 'number', value);
   }
 
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed)) {
-    throw new Error(`Expected '--${name}' as number`);
+    throw createExpectedOptionTypeError(name, 'number', value);
   }
 
   validateNumberConstraints(name, definition, parsed);
@@ -348,31 +353,142 @@ function parseNumberOption(
 function validateNumberConstraints(
   name: string,
   definition: NumberOption,
-  parsed: number
+  parsed: number,
+  machineReadable = true
 ): void {
   if (definition.integer === true && !Number.isInteger(parsed)) {
-    throw new Error(`Expected '--${name}' as integer`);
+    if (!machineReadable) {
+      throw new Error(`Expected '--${name}' as integer`);
+    }
+
+    throw createExpectedOptionTypeError(name, 'integer', parsed);
   }
 
   if (definition.min !== undefined && parsed < definition.min) {
-    throw new Error(`Expected '--${name}' to be greater than or equal to ${String(definition.min)}`);
+    const message = `Expected '--${name}' to be greater than or equal to ${String(definition.min)}`;
+
+    if (!machineReadable) {
+      throw new Error(message);
+    }
+
+    throw createInvalidOptionTypeError(
+      name,
+      message,
+      {
+        expected: 'minimum',
+        min: definition.min,
+        value: parsed
+      }
+    );
   }
 
   if (definition.max !== undefined && parsed > definition.max) {
-    throw new Error(`Expected '--${name}' to be less than or equal to ${String(definition.max)}`);
+    const message = `Expected '--${name}' to be less than or equal to ${String(definition.max)}`;
+
+    if (!machineReadable) {
+      throw new Error(message);
+    }
+
+    throw createInvalidOptionTypeError(
+      name,
+      message,
+      {
+        expected: 'maximum',
+        max: definition.max,
+        value: parsed
+      }
+    );
   }
 
-  assertChoice(name, definition.choices, parsed);
+  assertChoice(name, definition.choices, parsed, machineReadable);
 }
 
 function assertChoice<TValue extends string | number>(
   name: string,
   choices: readonly TValue[] | undefined,
-  value: TValue
+  value: TValue,
+  machineReadable = true
 ): void {
   if (choices === undefined || choices.includes(value)) {
     return;
   }
 
-  throw new Error(`Expected '--${name}' as one of: ${choices.join(', ')}`);
+  const message = `Expected '--${name}' as one of: ${choices.join(', ')}`;
+
+  if (!machineReadable) {
+    throw new Error(message);
+  }
+
+  throw createInvalidOptionChoiceError(name, choices, value, message);
+}
+
+function createUnexpectedArgumentError(name: string): IcoreError {
+  return new IcoreError(
+    'UNEXPECTED_ARGUMENT',
+    `Unexpected argument '--${name}'`,
+    {
+      argument: `--${name}`,
+      option: name
+    }
+  );
+}
+
+function createExpectedRequiredArgumentError(name: string): IcoreError {
+  return new IcoreError(
+    'EXPECTED_REQUIRED_ARGUMENT',
+    `Expected required argument '--${name}'`,
+    {
+      argument: `--${name}`,
+      option: name
+    }
+  );
+}
+
+function createExpectedOptionTypeError(
+  name: string,
+  expected: string,
+  value: unknown
+): IcoreError {
+  return createInvalidOptionTypeError(
+    name,
+    `Expected '--${name}' as ${expected}`,
+    {
+      expected,
+      value
+    }
+  );
+}
+
+function createInvalidOptionTypeError(
+  name: string,
+  message: string,
+  details: IcoreErrorDetails
+): IcoreError {
+  return new IcoreError(
+    'INVALID_OPTION_TYPE',
+    message,
+    {
+      argument: `--${name}`,
+      option: name,
+      ...details
+    }
+  );
+}
+
+function createInvalidOptionChoiceError<TValue extends string | number>(
+  name: string,
+  choices: readonly TValue[],
+  value: TValue,
+  message: string
+): IcoreError {
+  return new IcoreError(
+    'INVALID_OPTION_CHOICE',
+    message,
+    {
+      argument: `--${name}`,
+      option: name,
+      choices: [...choices],
+      value
+    }
+  );
 }

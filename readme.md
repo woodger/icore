@@ -573,9 +573,41 @@ boolean options are rejected.
 
 ## Error Messages
 
-`icore` throws regular `Error` objects with predictable user-facing messages.
-Applications should treat these messages as **display text**, not as a
-**machine-readable API**.
+`icore` throws `IcoreError` objects for CLI parsing, option validation, and
+command resolution failures. `IcoreError` extends the regular `Error` class and
+adds a stable machine-readable `code` plus structured `details`.
+
+Applications should treat `error.message` as **display text**. Use `error.code`
+for machine-readable handling:
+
+```ts
+import { IcoreError } from 'icore';
+
+try {
+  await main(args);
+} catch (error) {
+  if (error instanceof IcoreError && error.code === 'UNKNOWN_COMMAND') {
+    printHelp();
+    process.exitCode = 2;
+    return;
+  }
+
+  throw error;
+}
+```
+
+Supported error codes:
+
+```ts
+type IcoreErrorCode =
+  | 'UNKNOWN_COMMAND'
+  | 'UNEXPECTED_ARGUMENT'
+  | 'DUPLICATE_ARGUMENT'
+  | 'EXPECTED_REQUIRED_ARGUMENT'
+  | 'INVALID_OPTION_TYPE'
+  | 'INVALID_OPTION_CHOICE'
+  | 'UNEXPECTED_POSITIONAL';
+```
 
 Applications can catch these errors and decide how to print them. For example,
 after printing `error.message`, terminal output can look like this:
@@ -590,6 +622,9 @@ Expected '--uppercase' as boolean flag
 $ node cli.js hello --name=
 Expected '--name' as string
 ```
+
+Errors thrown by command `prepare` and `handle` functions are application errors
+and pass through unchanged.
 
 ## Project Boundary
 

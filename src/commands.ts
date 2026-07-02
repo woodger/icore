@@ -12,6 +12,7 @@
  */
 
 import { parseArgv } from './argv';
+import { IcoreError } from './errors';
 import {
   parseOptionsDetailed,
   type InferOptions,
@@ -196,7 +197,7 @@ export function resolveCommand<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(positionals)}`);
+  throw createUnknownCommandError(positionals);
 }
 
 /**
@@ -217,7 +218,7 @@ export function resolveCommandFromArgs<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(parseArgv(args).positionals)}`);
+  throw createUnknownCommandError(parseArgv(args).positionals);
 }
 
 /**
@@ -238,7 +239,7 @@ export async function prepareCommandFromArgs<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(parseArgv(args).positionals)}`);
+  throw createUnknownCommandError(parseArgv(args).positionals);
 }
 
 /**
@@ -317,8 +318,16 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
   const { command } = resolved;
 
   if (resolved.positionals.length > 0 && command.allowExtraPositionals !== true) {
-    throw new Error(
-      `Unexpected positional argument for '${command.path.join(' ')}': ${resolved.positionals[0] ?? ''}`
+    const positional = resolved.positionals[0] ?? '';
+
+    throw new IcoreError(
+      'UNEXPECTED_POSITIONAL',
+      `Unexpected positional argument for '${command.path.join(' ')}': ${positional}`,
+      {
+        command: command.path.join(' '),
+        positional,
+        positionals: [...resolved.positionals]
+      }
     );
   }
 
@@ -347,7 +356,17 @@ function resolveCommandPositionals(
 ): string[] {
   for (let index = 0; index < path.length; index += 1) {
     if (positionals[index] !== path[index]) {
-      throw new Error(`Expected command '${path.join(' ')}'`);
+      const command = path.join(' ');
+
+      throw new IcoreError(
+        'UNKNOWN_COMMAND',
+        `Expected command '${command}'`,
+        {
+          command,
+          path: [...path],
+          positionals: [...positionals]
+        }
+      );
     }
   }
 
@@ -414,4 +433,17 @@ function resolveMatchingCommandPositionals(
 
 function formatCommandPositionals(positionals: readonly string[]): string {
   return positionals.length === 0 ? '<empty>' : positionals.join(' ');
+}
+
+function createUnknownCommandError(positionals: readonly string[]): IcoreError {
+  const command = formatCommandPositionals(positionals);
+
+  return new IcoreError(
+    'UNKNOWN_COMMAND',
+    `Unknown command: ${command}`,
+    {
+      command,
+      positionals: [...positionals]
+    }
+  );
 }
