@@ -10,7 +10,7 @@ Small dependency-free command line interface mechanics for [Node.js®](https://n
 Supports a practical GNU-style option syntax:
 
 - long options: `--name value`, `--name=value`;
-- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag`;
+- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag` by default;
 - short aliases: `-f`, `-n value`;
 - option terminator: `--`.
 
@@ -74,8 +74,8 @@ Result:
 }
 ```
 
-When an option schema is provided, boolean options are parsed as flag-only
-options without consuming the following positional argument:
+When an option schema is provided, boolean options are parsed as flags without
+consuming the following positional argument:
 
 ```ts
 const argv = parseArgv([
@@ -455,6 +455,21 @@ Invalid explicit values are rejected:
 `--uppercase false` keeps `--uppercase` as `true` and leaves `false` as a positional
 argument.
 
+Use `flagOnly: true` when a boolean option should accept only flag form:
+
+```ts
+const schema = {
+  uppercase: {
+    type: 'boolean',
+    default: false,
+    flagOnly: true
+  }
+} as const;
+```
+
+With `flagOnly: true`, `--uppercase` is accepted, while `--uppercase=true`,
+`--uppercase=false`, and `--no-uppercase` are rejected.
+
 ### `type: 'number'`
 
 ```ts
@@ -552,8 +567,9 @@ Attached short values such as `-nvalue` and grouped short booleans such as
 compatibility.
 
 Negated syntax such as `--no-cache` is interpreted as `cache: false` when
-`cache` is a known boolean option. Unknown negated options and negation for
-string or number options are rejected.
+`cache` is a known boolean option without `flagOnly: true`. Unknown negated
+options, negation for string or number options, and negation for flag-only
+boolean options are rejected.
 
 ## Error Messages
 
