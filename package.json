@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Declarative command line interface mechanics for Node.js",
   "keywords": [
     "command-line",
@@ -14,7 +14,7 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Stanislav Woodger",
+    "name": "Stanislav Potemkin",
     "email": "woodger@ya.ru"
   },
   "repository": {
