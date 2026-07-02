@@ -149,7 +149,7 @@ describe('parseOptions', () => {
       uppercase: {
         type: 'boolean',
         default: false,
-        flagOnly: true
+        syntax: 'flag'
       }
     } as const;
 

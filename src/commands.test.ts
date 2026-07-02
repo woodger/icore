@@ -707,7 +707,7 @@ describe('runCommand', () => {
         cache: {
           type: 'boolean',
           default: false,
-          flagOnly: true
+          syntax: 'flag'
         }
       },
       handle({ options }) {

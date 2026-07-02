@@ -41,10 +41,10 @@ export type StringOption<TChoices extends readonly string[] = readonly string[]>
  * Declarative boolean flag contract.
  *
  * Boolean options accept flag form and explicit `true` / `false` values unless
- * `flagOnly` is enabled.
+ * flag syntax is enforced.
  */
 export type BooleanOption = OptionBase<'boolean', boolean> & {
-  flagOnly?: boolean;
+  syntax?: 'flag';
 };
 
 /**
@@ -302,7 +302,7 @@ function parseBooleanOption(
   definition: BooleanOption,
   value: RawOptionValue
 ): boolean {
-  if (definition.flagOnly === true) {
+  if (definition.syntax === 'flag') {
     if (value === true) {
       return true;
     }

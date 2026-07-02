@@ -455,19 +455,19 @@ Invalid explicit values are rejected:
 `--uppercase false` keeps `--uppercase` as `true` and leaves `false` as a positional
 argument.
 
-Use `flagOnly: true` when a boolean option should accept only flag form:
+Use `syntax: 'flag'` when a boolean option should accept only flag form:
 
 ```ts
 const schema = {
   uppercase: {
     type: 'boolean',
     default: false,
-    flagOnly: true
+    syntax: 'flag'
   }
 } as const;
 ```
 
-With `flagOnly: true`, `--uppercase` is accepted, while `--uppercase=true`,
+With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=true`,
 `--uppercase=false`, and `--no-uppercase` are rejected.
 
 ### `type: 'number'`
@@ -567,7 +567,7 @@ Attached short values such as `-nvalue` and grouped short booleans such as
 compatibility.
 
 Negated syntax such as `--no-cache` is interpreted as `cache: false` when
-`cache` is a known boolean option without `flagOnly: true`. Unknown negated
+`cache` is a known boolean option without `syntax: 'flag'`. Unknown negated
 options, negation for string or number options, and negation for flag-only
 boolean options are rejected.
 
