@@ -7,6 +7,13 @@
 
 Small dependency-free command line interface mechanics for [Node.js®](https://nodejs.org) applications.
 
+Supports a practical GNU-style option syntax:
+
+- long options: `--name value`, `--name=value`;
+- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag`;
+- short aliases: `-f`, `-n value`;
+- option terminator: `--`.
+
 ### Installation
 
 To use `icore` in your project, run:
@@ -47,8 +54,8 @@ import { parseArgv } from 'icore';
 const argv = parseArgv([
   'hello',
   '--name',
-  'User',
-  '--upper'
+  'Alice',
+  '--uppercase'
 ]);
 ```
 
@@ -58,8 +65,8 @@ Result:
 {
   positionals: ['hello'],
   options: {
-    name: 'User',
-    upper: true
+    name: 'Alice',
+    uppercase: true
   }
 }
 ```
@@ -70,10 +77,10 @@ options without consuming the following positional argument:
 ```ts
 const argv = parseArgv([
   'hello',
-  '--upper',
-  'User'
+  '--uppercase',
+  'Alice'
 ], {
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 });
@@ -83,9 +90,9 @@ Result:
 
 ```ts
 {
-  positionals: ['hello', 'User'],
+  positionals: ['hello', 'Alice'],
   options: {
-    upper: true
+    uppercase: true
   }
 }
 ```
@@ -102,12 +109,12 @@ const options = parseOptions({
     type: 'string',
     default: 'world'
   },
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 } as const, {
-  name: 'User',
-  upper: true
+  name: 'Alice',
+  uppercase: true
 });
 ```
 
@@ -115,8 +122,8 @@ Result:
 
 ```ts
 {
-  name: 'User',
-  upper: true
+  name: 'Alice',
+  uppercase: true
 }
 ```
 
@@ -133,11 +140,11 @@ const result = parseOptionsDetailed({
     type: 'string',
     default: 'world'
   },
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 } as const, {
-  upper: true
+  uppercase: true
 });
 ```
 
@@ -147,11 +154,11 @@ Result:
 {
   options: {
     name: 'world',
-    upper: true
+    uppercase: true
   },
   provided: {
     name: false,
-    upper: true
+    uppercase: true
   }
 }
 ```
@@ -173,14 +180,14 @@ const command = defineCommand({
       type: 'string',
       default: 'world'
     },
-    upper: {
+    uppercase: {
       type: 'boolean'
     }
   },
   async handle({ options }) {
     const message = `Hello, ${options.name}!`;
 
-    return options.upper ? message.toUpperCase() : message;
+    return options.uppercase ? message.toUpperCase() : message;
   }
 });
 ```
@@ -235,7 +242,7 @@ import { resolveCommand } from 'icore';
 const resolved = resolveCommand(registry, [
   'hello',
   'formal',
-  'User'
+  'Alice'
 ]);
 ```
 
@@ -246,7 +253,7 @@ Result:
   name: 'hello formal',
   path: ['hello', 'formal'],
   command: helloFormalCommand,
-  positionals: ['User']
+  positionals: ['Alice']
 }
 ```
 
@@ -263,8 +270,8 @@ segments.
 const resolved = resolveCommandFromArgs(registry, [
   'hello',
   '--name',
-  'User',
-  '--upper'
+  'Alice',
+  '--uppercase'
 ]);
 ```
 
@@ -275,7 +282,7 @@ Resolves a command from a registry and runs its handler.
 ```ts
 const output = await runCommandFromRegistry(
   registry,
-  ['hello', '--name', 'User', '--upper'],
+  ['hello', '--name', 'Alice', '--uppercase'],
   context
 );
 ```
@@ -299,7 +306,7 @@ const nameOptions = {
 } as const;
 
 const greetingOptions = {
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 } as const;
@@ -315,7 +322,7 @@ handler.
 ```ts
 const output = await runCommand(
   command,
-  ['hello', '--name', 'User', '--upper'],
+  ['hello', '--name', 'Alice', '--uppercase'],
   context
 );
 ```
@@ -325,7 +332,7 @@ positionals with `allowExtraPositionals: true`.
 
 ### How It Works
 
-![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20User%20--upper]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=User;%20upper=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20Alice%20--uppercase]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=Alice;%20uppercase=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
 
 
 ### Example
@@ -340,20 +347,20 @@ const exampleCommand = defineCommand({
       type: 'string',
       default: 'world'
     },
-    upper: {
+    uppercase: {
       type: 'boolean'
     }
   },
   async handle({ options }) {
     const message = `Hello, ${options.name}!`;
 
-    return options.upper ? message.toUpperCase() : message;
+    return options.uppercase ? message.toUpperCase() : message;
   }
 });
 
 const output = await runCommand(
   exampleCommand,
-  ['hello', '--name', 'User', '--upper'],
+  ['hello', '--name', 'Alice', '--uppercase'],
   {}
 );
 
@@ -363,8 +370,8 @@ console.log(output);
 Terminal output:
 
 ```console
-$ node cli.js hello --name User --upper
-HELLO, USER!
+$ node cli.js hello --name Alice --uppercase
+HELLO, ALICE!
 ```
 
 The command handler receives parsed options, user-provided option metadata,
@@ -386,7 +393,7 @@ const schema = {
     type: 'string',
     alias: 'n'
   },
-  upper: {
+  uppercase: {
     type: 'boolean',
     alias: 'u'
   }
@@ -419,7 +426,7 @@ boolean flag form, and values outside `choices`.
 
 ```ts
 const schema = {
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 } as const;
@@ -429,20 +436,20 @@ Boolean options accept **flag form**, explicit `true` / `false` values, and
 schema-known negation:
 
 ```sh
---upper
---upper=true
---upper=false
---no-upper
+--uppercase
+--uppercase=true
+--uppercase=false
+--no-uppercase
 ```
 
 Invalid explicit values are rejected:
 
 ```sh
---upper=yes
---upper=
+--uppercase=yes
+--uppercase=
 ```
 
-`--upper false` keeps `--upper` as `true` and leaves `false` as a positional
+`--uppercase false` keeps `--uppercase` as `true` and leaves `false` as a positional
 argument.
 
 #### `type: 'number'`
@@ -474,7 +481,7 @@ const schema = {
     type: 'string',
     default: 'world'
   },
-  upper: {
+  uppercase: {
     type: 'boolean'
   }
 } as const;
@@ -487,7 +494,7 @@ type Options = InferOptions<typeof schema>;
 ```ts
 type Options = {
   name: string;
-  upper: boolean | undefined;
+  uppercase: boolean | undefined;
 };
 ```
 
@@ -529,13 +536,6 @@ type Name = 'hello formal';
 
 ### Facade of arguments
 
-Supports a practical GNU-style option syntax:
-
-- long options: `--name value`, `--name=value`;
-- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag`;
-- short aliases: `-f`, `-n value`;
-- option terminator: `--`.
-
 Use `--` to stop option parsing. The terminator itself is not included in
 positionals; every following token is treated as positional, even when it starts
 with `-`.
@@ -565,8 +565,8 @@ after printing `error.message`, terminal output can look like this:
 $ node cli.js hello --unknown
 Unexpected argument '--unknown'
 
-$ node cli.js hello --upper=yes
-Expected '--upper' as boolean flag
+$ node cli.js hello --uppercase=yes
+Expected '--uppercase' as boolean flag
 
 $ node cli.js hello --name=
 Expected '--name' as string
