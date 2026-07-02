@@ -116,14 +116,42 @@ describe('parseOptions', () => {
     );
   });
 
-  test('rejects explicit boolean values', () => {
+  test('parses explicit boolean values', () => {
+    assert.deepStrictEqual(
+      parseOptions({
+        insecure: {
+          type: 'boolean'
+        }
+      }, {
+        insecure: 'true'
+      }),
+      {
+        insecure: true
+      }
+    );
+
+    assert.deepStrictEqual(
+      parseOptions({
+        insecure: {
+          type: 'boolean'
+        }
+      }, {
+        insecure: 'false'
+      }),
+      {
+        insecure: false
+      }
+    );
+  });
+
+  test('rejects invalid explicit boolean values', () => {
     assert.throws(
       () => parseOptions({
         insecure: {
           type: 'boolean'
         }
       }, {
-        insecure: 'true'
+        insecure: 'yes'
       }),
       /Expected '--insecure' as boolean flag/
     );
@@ -171,6 +199,41 @@ describe('parseOptions', () => {
         }
       } as const, {}),
       /Expected '--limit' to be greater than or equal to 1/
+    );
+  });
+
+  test('rejects empty explicit option values', () => {
+    assert.throws(
+      () => parseOptions({
+        name: {
+          type: 'string'
+        }
+      }, {
+        name: ''
+      }),
+      /Expected '--name' as string/
+    );
+
+    assert.throws(
+      () => parseOptions({
+        limit: {
+          type: 'number'
+        }
+      }, {
+        limit: ''
+      }),
+      /Expected '--limit' as number/
+    );
+
+    assert.throws(
+      () => parseOptions({
+        insecure: {
+          type: 'boolean'
+        }
+      }, {
+        insecure: ''
+      }),
+      /Expected '--insecure' as boolean flag/
     );
   });
 });

@@ -59,6 +59,22 @@ export function parseArgv(
       throw new Error(`Unexpected argument '${arg}'`);
     }
 
+    const definition = schema?.[name];
+
+    if (separatorIndex === -1 && definition === undefined && name.startsWith('no-')) {
+      const negatedName = name.slice(3);
+      const negatedDefinition = schema?.[negatedName];
+
+      if (negatedDefinition?.type === 'boolean') {
+        if (Object.hasOwn(options, negatedName)) {
+          throw new Error(`Unexpected duplicate argument '--${negatedName}'`);
+        }
+
+        options[negatedName] = false;
+        continue;
+      }
+    }
+
     if (Object.hasOwn(options, name)) {
       throw new Error(`Unexpected duplicate argument '--${name}'`);
     }
@@ -67,8 +83,6 @@ export function parseArgv(
       options[name] = option.slice(separatorIndex + 1);
       continue;
     }
-
-    const definition = schema?.[name];
 
     if (definition?.type === 'boolean') {
       options[name] = true;

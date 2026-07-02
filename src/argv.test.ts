@@ -54,6 +54,47 @@ describe('parseArgv', () => {
     );
   });
 
+  test('keeps boolean flags from consuming explicit false positionals', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'users',
+        'get-accounts',
+        '--insecure',
+        'false'
+      ], {
+        insecure: {
+          type: 'boolean'
+        }
+      }),
+      {
+        positionals: ['users', 'get-accounts', 'false'],
+        options: {
+          insecure: true
+        }
+      }
+    );
+  });
+
+  test('parses negated long boolean options from schema', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'users',
+        'get-accounts',
+        '--no-cache'
+      ], {
+        cache: {
+          type: 'boolean'
+        }
+      }),
+      {
+        positionals: ['users', 'get-accounts'],
+        options: {
+          cache: false
+        }
+      }
+    );
+  });
+
   test('keeps consuming following values for schema string options', () => {
     assert.deepStrictEqual(
       parseArgv([
@@ -98,6 +139,26 @@ describe('parseArgv', () => {
           limit: '-1',
           label: '-draft'
         }
+      }
+    );
+  });
+
+  test('treats arguments after terminator as positionals', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        'cmd',
+        '--',
+        '--name',
+        'value',
+        '-x'
+      ], {
+        name: {
+          type: 'string'
+        }
+      }),
+      {
+        positionals: ['cmd', '--name', 'value', '-x'],
+        options: {}
       }
     );
   });

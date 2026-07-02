@@ -394,8 +394,8 @@ const schema = {
 } as const;
 ```
 
-String options reject missing required values, blank strings, boolean flag form,
-and values outside `choices`.
+String options reject missing required values, blank strings such as `--name=`,
+boolean flag form, and values outside `choices`.
 
 #### `type: 'boolean'`
 
@@ -407,18 +407,25 @@ const schema = {
 } as const;
 ```
 
-Boolean options accept **flag form only**:
+Boolean options accept **flag form**, explicit `true` / `false` values, and
+schema-known negation:
 
 ```sh
 --upper
+--upper=true
+--upper=false
+--no-upper
 ```
 
-Explicit values are rejected:
+Invalid explicit values are rejected:
 
 ```sh
---upper true
---upper=true
+--upper=yes
+--upper=
 ```
+
+`--upper false` keeps `--upper` as `true` and leaves `false` as a positional
+argument.
 
 #### `type: 'number'`
 
@@ -510,10 +517,22 @@ The table below provides examples of how to specify the syntax.
 |---|---:|
 | `--name value` | yes |
 | `--name=value` | yes |
+| `--name=` | no |
 | `--flag` | yes |
-| `--flag=true` | no |
+| `--flag=true` | yes |
+| `--flag=false` | yes |
+| `--flag=` | no |
+| `--no-cache` | yes |
+| `--` | yes |
 | `-f` | no |
-| `--no-cache` | no |
+
+Use `--` to stop option parsing. The terminator itself is not included in
+positionals; every following token is treated as positional, even when it starts
+with `-`.
+
+Negated syntax such as `--no-cache` is interpreted as `cache: false` when
+`cache` is a known boolean option. Unknown negated options and negation for
+string or number options are rejected.
 
 ### Error Messages
 
@@ -528,8 +547,11 @@ after printing `error.message`, terminal output can look like this:
 $ node cli.js hello --unknown
 Unexpected argument '--unknown'
 
-$ node cli.js hello --upper=true
+$ node cli.js hello --upper=yes
 Expected '--upper' as boolean flag
+
+$ node cli.js hello --name=
+Expected '--name' as string
 ```
 
 ### Project Boundary
