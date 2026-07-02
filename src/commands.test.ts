@@ -215,6 +215,79 @@ describe('runCommand', () => {
     );
   });
 
+  test('runs handler with short option aliases', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        name: {
+          type: 'string',
+          alias: 'n'
+        },
+        count: {
+          type: 'number',
+          alias: 'c'
+        },
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      },
+      handle({ options }) {
+        return [
+          options.name,
+          String(options.count),
+          String(options.verbose)
+        ].join(':');
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        [
+          'users',
+          'get-accounts',
+          '-n',
+          'User',
+          '-c',
+          '10',
+          '-v'
+        ],
+        undefined
+      ),
+      'User:10:true'
+    );
+  });
+
+  test('rejects duplicate options provided by short and long names', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(
+        command,
+        [
+          'users',
+          'get-accounts',
+          '-v',
+          '--verbose'
+        ],
+        undefined
+      ),
+      /Unexpected duplicate argument '--verbose'/
+    );
+  });
+
   test('runs handler with explicit boolean values', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],

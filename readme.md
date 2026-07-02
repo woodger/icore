@@ -378,6 +378,24 @@ Options are described as plain objects.
 `kebab-case`. Use quoted object keys when your public CLI option contains
 `-`.
 
+Each option can define an optional short alias:
+
+```ts
+const schema = {
+  name: {
+    type: 'string',
+    alias: 'n'
+  },
+  upper: {
+    type: 'boolean',
+    alias: 'u'
+  }
+} as const;
+```
+
+Aliases must be a single ASCII letter and unique within the schema. Parsed
+values are always returned by long option name.
+
 #### `type: 'string'`
 
 ```ts
@@ -524,11 +542,20 @@ The table below provides examples of how to specify the syntax.
 | `--flag=` | no |
 | `--no-cache` | yes |
 | `--` | yes |
-| `-f` | no |
+| `-f` | yes |
+| `-n value` | yes |
+| `-n10` | no |
+| `-abc` | no |
 
 Use `--` to stop option parsing. The terminator itself is not included in
 positionals; every following token is treated as positional, even when it starts
 with `-`.
+
+Short syntax is supported only for aliases declared in the option schema.
+Boolean aliases use flag form, such as `-f`; string and number aliases use a
+separate value, such as `-n value`. Attached values such as `-n10` and grouped
+boolean aliases such as `-abc` are not supported yet. Unknown short tokens remain
+positional for compatibility.
 
 Negated syntax such as `--no-cache` is interpreted as `cache: false` when
 `cache` is a known boolean option. Unknown negated options and negation for

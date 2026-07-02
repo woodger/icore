@@ -13,6 +13,7 @@
 
 type OptionBase<TType extends string, TValue> = {
   type: TType;
+  alias?: string;
   required?: boolean;
   default?: TValue;
 };
