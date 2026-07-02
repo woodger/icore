@@ -13,6 +13,7 @@
 
 type OptionBase<TType extends string, TValue> = {
   type: TType;
+  alias?: string;
   required?: boolean;
   default?: TValue;
 };
@@ -20,8 +21,8 @@ type OptionBase<TType extends string, TValue> = {
 /**
  * Raw option value produced by `parseArgv` before schema validation.
  *
- * Long options with a value are stored as strings, and flag-only options are
- * stored as `true`.
+ * Long options with a value are stored as strings, flag-only options are
+ * stored as `true`, and negated boolean options are stored as `false`.
  */
 export type RawOptionValue = string | boolean;
 
@@ -39,7 +40,7 @@ export type StringOption<TChoices extends readonly string[] = readonly string[]>
 /**
  * Declarative boolean flag contract.
  *
- * Boolean options accept flag form only, for example `--insecure`.
+ * Boolean options accept flag form and explicit `true` / `false` values.
  */
 export type BooleanOption = OptionBase<'boolean', boolean>;
 
@@ -294,11 +295,15 @@ function parseStringOption(
 }
 
 function parseBooleanOption(name: string, value: RawOptionValue): boolean {
-  if (value !== true) {
-    throw new Error(`Expected '--${name}' as boolean flag`);
+  if (value === true || value === 'true') {
+    return true;
   }
 
-  return true;
+  if (value === false || value === 'false') {
+    return false;
+  }
+
+  throw new Error(`Expected '--${name}' as boolean flag`);
 }
 
 function parseNumberOption(

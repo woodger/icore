@@ -378,6 +378,24 @@ Options are described as plain objects.
 `kebab-case`. Use quoted object keys when your public CLI option contains
 `-`.
 
+Each option can define an optional short alias:
+
+```ts
+const schema = {
+  name: {
+    type: 'string',
+    alias: 'n'
+  },
+  upper: {
+    type: 'boolean',
+    alias: 'u'
+  }
+} as const;
+```
+
+Aliases must be a single ASCII letter and unique within the schema. Parsed
+values are always returned by long option name.
+
 #### `type: 'string'`
 
 ```ts
@@ -394,8 +412,8 @@ const schema = {
 } as const;
 ```
 
-String options reject missing required values, blank strings, boolean flag form,
-and values outside `choices`.
+String options reject missing required values, blank strings such as `--name=`,
+boolean flag form, and values outside `choices`.
 
 #### `type: 'boolean'`
 
@@ -407,18 +425,25 @@ const schema = {
 } as const;
 ```
 
-Boolean options accept **flag form only**:
+Boolean options accept **flag form**, explicit `true` / `false` values, and
+schema-known negation:
 
 ```sh
 --upper
+--upper=true
+--upper=false
+--no-upper
 ```
 
-Explicit values are rejected:
+Invalid explicit values are rejected:
 
 ```sh
---upper true
---upper=true
+--upper=yes
+--upper=
 ```
+
+`--upper false` keeps `--upper` as `true` and leaves `false` as a positional
+argument.
 
 #### `type: 'number'`
 
@@ -504,16 +529,28 @@ type Name = 'hello formal';
 
 ### Facade of arguments
 
-The table below provides examples of how to specify the syntax.
+Supports a practical GNU-style option syntax:
 
-| Syntax | Supported |
-|---|---:|
-| `--name value` | yes |
-| `--name=value` | yes |
-| `--flag` | yes |
-| `--flag=true` | no |
-| `-f` | no |
-| `--no-cache` | no |
+- long options: `--name value`, `--name=value`;
+- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag`;
+- short aliases: `-f`, `-n value`;
+- option terminator: `--`.
+
+Use `--` to stop option parsing. The terminator itself is not included in
+positionals; every following token is treated as positional, even when it starts
+with `-`.
+
+Short syntax is supported only for aliases declared in the option schema.
+Boolean aliases use flag form, such as `-f`; string and number aliases use a
+separate value, such as `-n value`.
+
+Attached short values such as `-nvalue` and grouped short booleans such as
+`-abc` are not supported yet. Unknown short tokens remain positional for
+compatibility.
+
+Negated syntax such as `--no-cache` is interpreted as `cache: false` when
+`cache` is a known boolean option. Unknown negated options and negation for
+string or number options are rejected.
 
 ### Error Messages
 
@@ -528,8 +565,11 @@ after printing `error.message`, terminal output can look like this:
 $ node cli.js hello --unknown
 Unexpected argument '--unknown'
 
-$ node cli.js hello --upper=true
+$ node cli.js hello --upper=yes
 Expected '--upper' as boolean flag
+
+$ node cli.js hello --name=
+Expected '--name' as string
 ```
 
 ### Project Boundary

@@ -215,6 +215,265 @@ describe('runCommand', () => {
     );
   });
 
+  test('runs handler with short option aliases', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        name: {
+          type: 'string',
+          alias: 'n'
+        },
+        count: {
+          type: 'number',
+          alias: 'c'
+        },
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      },
+      handle({ options }) {
+        return [
+          options.name,
+          String(options.count),
+          String(options.verbose)
+        ].join(':');
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        [
+          'users',
+          'get-accounts',
+          '-n',
+          'User',
+          '-c',
+          '10',
+          '-v'
+        ],
+        undefined
+      ),
+      'User:10:true'
+    );
+  });
+
+  test('rejects duplicate options provided by short and long names', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(
+        command,
+        [
+          'users',
+          'get-accounts',
+          '-v',
+          '--verbose'
+        ],
+        undefined
+      ),
+      /Unexpected duplicate argument '--verbose'/
+    );
+  });
+
+  test('runs handler with explicit boolean values', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      handle({ options, provided }) {
+        return `${String(options.verbose)}:${String(provided.verbose)}`;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--verbose=true'],
+        undefined
+      ),
+      'true:true'
+    );
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--verbose=false'],
+        undefined
+      ),
+      'false:true'
+    );
+  });
+
+  test('runs handler with negated boolean options', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        cache: {
+          type: 'boolean',
+          default: true
+        }
+      },
+      handle({ options, provided }) {
+        return `${String(options.cache)}:${String(provided.cache)}`;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--no-cache'],
+        undefined
+      ),
+      'false:true'
+    );
+  });
+
+  test('rejects negated non-boolean and unknown options', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        name: {
+          type: 'string'
+        },
+        cache: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', '--no-name'], undefined),
+      /Unexpected argument '--no-name'/
+    );
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', '--no-unknown'], undefined),
+      /Unexpected argument '--no-unknown'/
+    );
+  });
+
+  test('rejects explicit values for negated boolean options', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        cache: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    for (const value of [
+      'true',
+      'false'
+    ]) {
+      await assert.rejects(
+        () => runCommand(
+          command,
+          ['users', 'get-accounts', `--no-cache=${value}`],
+          undefined
+        ),
+        /Unexpected argument '--no-cache'/
+      );
+    }
+  });
+
+  test('rejects empty explicit option values', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        name: {
+          type: 'string'
+        },
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', '--name='], undefined),
+      /Expected '--name' as string/
+    );
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', '--verbose='], undefined),
+      /Expected '--verbose' as boolean flag/
+    );
+  });
+
+  test('keeps explicit false after boolean flags as a positional', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      allowExtraPositionals: true,
+      handle({ options, positionals }) {
+        return `${String(options.verbose)}:${positionals.join(',')}`;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--verbose', 'false'],
+        undefined
+      ),
+      'true:false'
+    );
+  });
+
+  test('passes arguments after terminator as positionals', async () => {
+    const command = defineCommand({
+      path: ['cmd'],
+      options: {
+        name: {
+          type: 'string'
+        }
+      },
+      allowExtraPositionals: true,
+      handle({ options, positionals }) {
+        return `${String(options.name)}:${positionals.join(',')}`;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['cmd', '--', '--name', 'value', '-x'],
+        undefined
+      ),
+      'undefined:--name,value,-x'
+    );
+  });
+
   test('rejects extra positionals by default', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
