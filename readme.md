@@ -529,23 +529,12 @@ type Name = 'hello formal';
 
 ### Facade of arguments
 
-The table below provides examples of how to specify the syntax.
+Supports a practical GNU-style option syntax:
 
-| Syntax | Supported |
-|---|---:|
-| `--name value` | yes |
-| `--name=value` | yes |
-| `--name=` | no |
-| `--flag` | yes |
-| `--flag=true` | yes |
-| `--flag=false` | yes |
-| `--flag=` | no |
-| `--no-cache` | yes |
-| `--` | yes |
-| `-f` | yes |
-| `-n value` | yes |
-| `-n10` | no |
-| `-abc` | no |
+- long options: `--name value`, `--name=value`;
+- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag`;
+- short aliases: `-f`, `-n value`;
+- option terminator: `--`.
 
 Use `--` to stop option parsing. The terminator itself is not included in
 positionals; every following token is treated as positional, even when it starts
@@ -553,9 +542,11 @@ with `-`.
 
 Short syntax is supported only for aliases declared in the option schema.
 Boolean aliases use flag form, such as `-f`; string and number aliases use a
-separate value, such as `-n value`. Attached values such as `-n10` and grouped
-boolean aliases such as `-abc` are not supported yet. Unknown short tokens remain
-positional for compatibility.
+separate value, such as `-n value`.
+
+Attached short values such as `-nvalue` and grouped short booleans such as
+`-abc` are not supported yet. Unknown short tokens remain positional for
+compatibility.
 
 Negated syntax such as `--no-cache` is interpreted as `cache: false` when
 `cache` is a known boolean option. Unknown negated options and negation for
