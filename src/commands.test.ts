@@ -434,6 +434,62 @@ describe('two-phase command execution', () => {
     assert.strictEqual(handled, true);
   });
 
+  test('keeps unknown short options as positionals when extra positionals are allowed', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        allowExtraPositionals: true,
+        handle({ positionals }) {
+          return positionals.join(',');
+        }
+      })
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      'users',
+      '-x'
+    ]);
+
+    assert.deepStrictEqual(prepared.positionals, ['-x']);
+    assert.strictEqual(await runPreparedCommand(prepared, undefined), '-x');
+  });
+
+  test('runs prepared commands from registries with mixed context types', async () => {
+    const accountCommand = defineCommand({
+      path: ['accounts'],
+      options: {},
+      handle({ context }: {
+        context: { accountId: string };
+      }) {
+        return `account:${context.accountId}`;
+      }
+    });
+    const projectCommand = defineCommand({
+      path: ['projects'],
+      options: {},
+      handle({ context }: {
+        context: { projectId: string };
+      }) {
+        return `project:${context.projectId}`;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      accountCommand,
+      projectCommand
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
+
+    assert.strictEqual(prepared.command, accountCommand);
+    assert.strictEqual(
+      await runPreparedCommand(prepared, {
+        accountId: 'account-id'
+      }),
+      'account:account-id'
+    );
+  });
+
   test('runCommand calls prepare hooks before handlers', async () => {
     const calls: string[] = [];
     const command = defineCommand({
