@@ -145,16 +145,26 @@ describe('parseOptions', () => {
   });
 
   test('rejects invalid explicit boolean values', () => {
-    assert.throws(
-      () => parseOptions({
-        insecure: {
-          type: 'boolean'
-        }
-      }, {
-        insecure: 'yes'
-      }),
-      /Expected '--insecure' as boolean flag/
-    );
+    for (const value of [
+      '1',
+      '0',
+      'yes',
+      'no',
+      'on',
+      'off',
+      ''
+    ]) {
+      assert.throws(
+        () => parseOptions({
+          insecure: {
+            type: 'boolean'
+          }
+        }, {
+          insecure: value
+        }),
+        /Expected '--insecure' as boolean flag/
+      );
+    }
   });
 
   test('rejects non-integer and out-of-range numbers', () => {

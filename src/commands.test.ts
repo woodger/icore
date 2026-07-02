@@ -298,6 +298,34 @@ describe('runCommand', () => {
     );
   });
 
+  test('rejects explicit values for negated boolean options', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        cache: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+
+    for (const value of [
+      'true',
+      'false'
+    ]) {
+      await assert.rejects(
+        () => runCommand(
+          command,
+          ['users', 'get-accounts', `--no-cache=${value}`],
+          undefined
+        ),
+        /Unexpected argument '--no-cache'/
+      );
+    }
+  });
+
   test('rejects empty explicit option values', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
