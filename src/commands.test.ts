@@ -700,6 +700,38 @@ describe('runCommand', () => {
     );
   });
 
+  test('rejects explicit and negated values for flag-only boolean options', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        cache: {
+          type: 'boolean',
+          default: false,
+          flagOnly: true
+        }
+      },
+      handle({ options }) {
+        return String(options.cache);
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(command, ['users', 'get-accounts', '--cache'], undefined),
+      'true'
+    );
+
+    for (const arg of [
+      '--cache=true',
+      '--cache=false',
+      '--no-cache'
+    ]) {
+      await assert.rejects(
+        () => runCommand(command, ['users', 'get-accounts', arg], undefined),
+        /Expected '--cache' as boolean flag/
+      );
+    }
+  });
+
   test('rejects negated non-boolean and unknown options', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],

@@ -144,6 +144,39 @@ describe('parseOptions', () => {
     );
   });
 
+  test('supports flag-only boolean options', () => {
+    const schema = {
+      uppercase: {
+        type: 'boolean',
+        default: false,
+        flagOnly: true
+      }
+    } as const;
+
+    assert.deepStrictEqual(parseOptions(schema, {}), {
+      uppercase: false
+    });
+
+    assert.deepStrictEqual(parseOptions(schema, {
+      uppercase: true
+    }), {
+      uppercase: true
+    });
+
+    for (const value of [
+      'true',
+      'false',
+      false
+    ]) {
+      assert.throws(
+        () => parseOptions(schema, {
+          uppercase: value
+        }),
+        /Expected '--uppercase' as boolean flag/
+      );
+    }
+  });
+
   test('rejects invalid explicit boolean values', () => {
     for (const value of [
       '1',

@@ -40,9 +40,12 @@ export type StringOption<TChoices extends readonly string[] = readonly string[]>
 /**
  * Declarative boolean flag contract.
  *
- * Boolean options accept flag form and explicit `true` / `false` values.
+ * Boolean options accept flag form and explicit `true` / `false` values unless
+ * `flagOnly` is enabled.
  */
-export type BooleanOption = OptionBase<'boolean', boolean>;
+export type BooleanOption = OptionBase<'boolean', boolean> & {
+  flagOnly?: boolean;
+};
 
 /**
  * Declarative number option contract.
@@ -241,7 +244,7 @@ function parseOptionValue(
   }
 
   if (definition.type === 'boolean') {
-    return parseBooleanOption(name, value);
+    return parseBooleanOption(name, definition, value);
   }
 
   return parseNumberOption(name, definition, value);
@@ -294,7 +297,19 @@ function parseStringOption(
   return value;
 }
 
-function parseBooleanOption(name: string, value: RawOptionValue): boolean {
+function parseBooleanOption(
+  name: string,
+  definition: BooleanOption,
+  value: RawOptionValue
+): boolean {
+  if (definition.flagOnly === true) {
+    if (value === true) {
+      return true;
+    }
+
+    throw new Error(`Expected '--${name}' as boolean flag`);
+  }
+
   if (value === true || value === 'true') {
     return true;
   }
