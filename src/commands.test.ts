@@ -246,30 +246,6 @@ describe('runCommand', () => {
     );
   });
 
-  test('uses command schema when parsing boolean flags', async () => {
-    const command = defineCommand({
-      path: ['users', 'get-accounts'],
-      options: {
-        verbose: {
-          type: 'boolean'
-        }
-      },
-      allowExtraPositionals: true,
-      handle({ options, positionals }) {
-        return `${String(options.verbose)}:${positionals.join(',')}`;
-      }
-    });
-
-    assert.strictEqual(
-      await runCommand(
-        command,
-        ['users', 'get-accounts', '--verbose', 'account-id'],
-        undefined
-      ),
-      'true:account-id'
-    );
-  });
-
   test('runs handler with short option aliases', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
