@@ -14,7 +14,7 @@ Supports a practical GNU-style option syntax:
 - short aliases: `-f`, `-n value`;
 - option terminator: `--`.
 
-### Installation
+## Installation
 
 To use `icore` in your project, run:
 
@@ -22,29 +22,32 @@ To use `icore` in your project, run:
 npm install icore
 ```
 
-### Table of Contents
+## Table of Contents
 
-* [API](#api)
-  * [`parseArgv(args, schema?)`](#parseargvargs-schema)
-  * [`parseOptions(schema, values)`](#parseoptionsschema-values)
-  * [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
-  * [`defineCommand(command)`](#definecommandcommand)
-  * [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
-  * [`isCommandName(registry, value)`](#iscommandnameregistry-value)
-  * [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
-  * [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
-  * [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
-  * [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
-  * [`runCommand(command, args, context)`](#runcommandcommand-args-context)
-* [Example](#example)
-* [Option Schemas](#option-schemas)
-* [Type Inference](#type-inference)
-* [Facade of arguments](#facade-of-arguments)
-* [Error Messages](#error-messages)
+- [Installation](#installation)
+- [API](#api)
+  - [`parseArgv(args, schema?)`](#parseargvargs-schema)
+  - [`parseOptions(schema, values)`](#parseoptionsschema-values)
+  - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
+  - [`defineCommand(command)`](#definecommandcommand)
+  - [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
+  - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
+  - [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
+  - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
+  - [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
+  - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
+  - [`runCommand(command, args, context)`](#runcommandcommand-args-context)
+- [How It Works](#how-it-works)
+- [Example](#example)
+- [Option Schemas](#option-schemas)
+- [Type Inference](#type-inference)
+- [Facade of arguments](#facade-of-arguments)
+- [Error Messages](#error-messages)
+- [Project Boundary](#project-boundary)
 
-### API
+## API
 
-#### `parseArgv(args, schema?)`
+### `parseArgv(args, schema?)`
 
 Parses raw CLI arguments into positionals and raw option values.
 
@@ -97,7 +100,7 @@ Result:
 }
 ```
 
-#### `parseOptions(schema, values)`
+### `parseOptions(schema, values)`
 
 Validates raw option values using an option schema and returns typed options.
 
@@ -127,7 +130,7 @@ Result:
 }
 ```
 
-#### `parseOptionsDetailed(schema, values)`
+### `parseOptionsDetailed(schema, values)`
 
 Validates raw option values and returns parsed options together with
 user-provided metadata.
@@ -166,7 +169,7 @@ Result:
 `provided` is useful when a default value and an omitted option have different
 application-level meaning.
 
-#### `defineCommand(command)`
+### `defineCommand(command)`
 
 Defines a command while preserving its option schema types.
 
@@ -192,7 +195,7 @@ const command = defineCommand({
 });
 ```
 
-#### `defineCommandRegistry(commands)`
+### `defineCommandRegistry(commands)`
 
 Defines a command registry while preserving literal command path types.
 
@@ -222,7 +225,7 @@ Result:
 
 Duplicate command paths are rejected.
 
-#### `isCommandName(registry, value)`
+### `isCommandName(registry, value)`
 
 Checks whether an unknown value is a command name registered in the registry.
 
@@ -232,7 +235,7 @@ if (isCommandName(registry, value)) {
 }
 ```
 
-#### `resolveCommand(registry, positionals)`
+### `resolveCommand(registry, positionals)`
 
 Resolves a command from already parsed positional arguments.
 
@@ -260,7 +263,7 @@ Result:
 When several command paths match, the most specific command wins. For example,
 `hello formal` is preferred over `hello`.
 
-#### `resolveCommandFromArgs(registry, args)`
+### `resolveCommandFromArgs(registry, args)`
 
 Resolves a command from raw CLI arguments. Each candidate command is parsed with
 its own option schema, so boolean flags do not accidentally consume command path
@@ -275,7 +278,7 @@ const resolved = resolveCommandFromArgs(registry, [
 ]);
 ```
 
-#### `runCommandFromRegistry(registry, args, context)`
+### `runCommandFromRegistry(registry, args, context)`
 
 Resolves a command from a registry and runs its handler.
 
@@ -290,7 +293,7 @@ const output = await runCommandFromRegistry(
 This is **registry-level mechanics only**. Application-specific setup, side
 effects, and output formatting still belong outside `icore`.
 
-#### `mergeOptionsSchema(...schemas)`
+### `mergeOptionsSchema(...schemas)`
 
 Merges multiple option schemas while preserving literal option definition types.
 Later schemas override earlier schemas with the same option name.
@@ -314,7 +317,7 @@ const greetingOptions = {
 const options = mergeOptionsSchema(nameOptions, greetingOptions);
 ```
 
-#### `runCommand(command, args, context)`
+### `runCommand(command, args, context)`
 
 Parses arguments, validates options, checks command positionals, and runs the
 handler.
@@ -330,12 +333,12 @@ const output = await runCommand(
 **By default**, extra positionals are rejected. A command can opt in to extra
 positionals with `allowExtraPositionals: true`.
 
-### How It Works
+## How It Works
 
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20Alice%20--uppercase]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=Alice;%20uppercase=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
 
 
-### Example
+## Example
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
@@ -377,7 +380,7 @@ HELLO, ALICE!
 The command handler receives parsed options, user-provided option metadata,
 remaining positionals, and caller provided context.
 
-### Option Schemas
+## Option Schemas
 
 Options are described as plain objects.
 
@@ -403,7 +406,7 @@ const schema = {
 Aliases must be a single ASCII letter and unique within the schema. Parsed
 values are always returned by long option name.
 
-#### `type: 'string'`
+### `type: 'string'`
 
 ```ts
 const schema = {
@@ -422,7 +425,7 @@ const schema = {
 String options reject missing required values, blank strings such as `--name=`,
 boolean flag form, and values outside `choices`.
 
-#### `type: 'boolean'`
+### `type: 'boolean'`
 
 ```ts
 const schema = {
@@ -452,7 +455,7 @@ Invalid explicit values are rejected:
 `--uppercase false` keeps `--uppercase` as `true` and leaves `false` as a positional
 argument.
 
-#### `type: 'number'`
+### `type: 'number'`
 
 ```ts
 const schema = {
@@ -469,7 +472,7 @@ const schema = {
 Number options parse decimal numeric values and can validate integer and range
 constraints. Defaults are validated with the same rules as user-provided values.
 
-### Type Inference
+## Type Inference
 
 Use `InferOptions` when you need the parsed option type explicitly.
 
@@ -534,7 +537,7 @@ type Name = CommandName<typeof helloFormalCommand>;
 type Name = 'hello formal';
 ```
 
-### Facade of arguments
+## Facade of arguments
 
 Use `--` to stop option parsing. The terminator itself is not included in
 positionals; every following token is treated as positional, even when it starts
@@ -552,7 +555,7 @@ Negated syntax such as `--no-cache` is interpreted as `cache: false` when
 `cache` is a known boolean option. Unknown negated options and negation for
 string or number options are rejected.
 
-### Error Messages
+## Error Messages
 
 `icore` throws regular `Error` objects with predictable user-facing messages.
 Applications should treat these messages as **display text**, not as a
@@ -572,7 +575,7 @@ $ node cli.js hello --name=
 Expected '--name' as string
 ```
 
-### Project Boundary
+## Project Boundary
 
 `icore` is intended to be a **small CLI mechanics module**. It should **not**
 grow into a domain-specific framework for a particular SDK or API.
