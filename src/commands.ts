@@ -53,7 +53,7 @@ export type CommandDefinition<
   handle(input: CommandInput<TSchema, TContext>): TResult | Promise<TResult>;
 };
 
-type AnyCommandDefinition = CommandDefinition<OptionsSchema, any, any>;
+type AnyCommandDefinition = CommandDefinition<OptionsSchema, unknown, unknown>;
 
 type CommandPathName<TPath extends readonly string[]> =
   number extends TPath['length']
@@ -68,12 +68,12 @@ type CommandPathName<TPath extends readonly string[]> =
         : never;
 
 type CommandContext<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, infer TContext, any>
+  TCommand extends CommandDefinition<OptionsSchema, infer TContext, unknown>
     ? TContext
     : never;
 
 type CommandResult<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, any, infer TResult>
+  TCommand extends CommandDefinition<OptionsSchema, unknown, infer TResult>
     ? Awaited<TResult>
     : never;
 
