@@ -64,6 +64,33 @@ describe('command registry', () => {
     );
   });
 
+  test('throws machine-readable duplicate command errors', () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'accounts';
+      }
+    });
+
+    assert.throws(
+      () => defineCommandRegistry([
+        command,
+        command
+      ] as const),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_COMMAND');
+        assert.strictEqual(error.message, "Unexpected duplicate command 'users get-accounts'");
+        assert.deepStrictEqual(error.details, {
+          command: 'users get-accounts'
+        });
+
+        return true;
+      }
+    );
+  });
+
   test('resolves the most specific matching command from positionals', () => {
     const specificCommand = defineCommand({
       path: ['users', 'get-accounts'],

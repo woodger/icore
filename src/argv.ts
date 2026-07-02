@@ -176,7 +176,7 @@ function buildShortAliasMap(
     assertShortAlias(name, definition.alias);
 
     if (aliases.has(definition.alias)) {
-      throw new Error(`Unexpected duplicate alias '-${definition.alias}'`);
+      throw createDuplicateAliasError(definition.alias);
     }
 
     aliases.set(definition.alias, {
@@ -193,7 +193,7 @@ function assertShortAlias(name: string, alias: string): void {
     return;
   }
 
-  throw new Error(`Expected alias for '--${name}' as single ASCII letter`);
+  throw createInvalidOptionAliasError(name, alias);
 }
 
 function isShortOptionToken(arg: string): boolean {
@@ -217,6 +217,32 @@ function createUnexpectedArgumentError(argument: string): IcoreError {
     `Unexpected argument '${argument}'`,
     {
       argument
+    }
+  );
+}
+
+function createDuplicateAliasError(alias: string): IcoreError {
+  return new IcoreError(
+    'DUPLICATE_ALIAS',
+    `Unexpected duplicate alias '-${alias}'`,
+    {
+      alias,
+      argument: `-${alias}`
+    }
+  );
+}
+
+function createInvalidOptionAliasError(
+  name: string,
+  alias: string
+): IcoreError {
+  return new IcoreError(
+    'INVALID_OPTION_ALIAS',
+    `Expected alias for '--${name}' as single ASCII letter`,
+    {
+      argument: `--${name}`,
+      option: name,
+      alias
     }
   );
 }

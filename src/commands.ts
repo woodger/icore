@@ -382,7 +382,7 @@ function assertNoDuplicateCommandNames(commandNames: readonly string[]): void {
 
   for (const name of commandNames) {
     if (seen.has(name)) {
-      throw new Error(`Unexpected duplicate command '${name}'`);
+      throw createDuplicateCommandError(name);
     }
 
     seen.add(name);
@@ -444,6 +444,16 @@ function createUnknownCommandError(positionals: readonly string[]): IcoreError {
     {
       command,
       positionals: [...positionals]
+    }
+  );
+}
+
+function createDuplicateCommandError(command: string): IcoreError {
+  return new IcoreError(
+    'DUPLICATE_COMMAND',
+    `Unexpected duplicate command '${command}'`,
+    {
+      command
     }
   );
 }

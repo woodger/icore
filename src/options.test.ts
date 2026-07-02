@@ -325,6 +325,74 @@ describe('parseOptions', () => {
     );
   });
 
+  test('throws machine-readable invalid default errors', () => {
+    const scenarios = [
+      {
+        run: () => parseOptions({
+          name: {
+            type: 'string',
+            default: ''
+          }
+        }, {}),
+        message: "Expected default for '--name' as string",
+        details: {
+          argument: '--name',
+          option: 'name',
+          expected: 'string',
+          value: ''
+        }
+      },
+      {
+        run: () => parseOptions({
+          format: {
+            type: 'string',
+            choices: ['json', 'table'],
+            default: 'xml'
+          }
+        } as const, {}),
+        message: "Expected '--format' as one of: json, table",
+        details: {
+          argument: '--format',
+          option: 'format',
+          choices: ['json', 'table'],
+          value: 'xml'
+        }
+      },
+      {
+        run: () => parseOptions({
+          limit: {
+            type: 'number',
+            integer: true,
+            min: 1,
+            default: 0
+          }
+        } as const, {}),
+        message: "Expected '--limit' to be greater than or equal to 1",
+        details: {
+          argument: '--limit',
+          option: 'limit',
+          expected: 'minimum',
+          min: 1,
+          value: 0
+        }
+      }
+    ];
+
+    for (const scenario of scenarios) {
+      assert.throws(
+        scenario.run,
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'INVALID_OPTION_DEFAULT');
+          assert.strictEqual(error.message, scenario.message);
+          assert.deepStrictEqual(error.details, scenario.details);
+
+          return true;
+        }
+      );
+    }
+  });
+
   test('rejects empty explicit option values', () => {
     assert.throws(
       () => parseOptions({

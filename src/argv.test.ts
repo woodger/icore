@@ -258,6 +258,53 @@ describe('parseArgv', () => {
     );
   });
 
+  test('throws machine-readable alias schema errors', () => {
+    assert.throws(
+      () => parseArgv([], {
+        verbose: {
+          type: 'boolean',
+          alias: '1'
+        }
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'INVALID_OPTION_ALIAS');
+        assert.strictEqual(error.message, "Expected alias for '--verbose' as single ASCII letter");
+        assert.deepStrictEqual(error.details, {
+          argument: '--verbose',
+          option: 'verbose',
+          alias: '1'
+        });
+
+        return true;
+      }
+    );
+
+    assert.throws(
+      () => parseArgv([], {
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        },
+        version: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_ALIAS');
+        assert.strictEqual(error.message, "Unexpected duplicate alias '-v'");
+        assert.deepStrictEqual(error.details, {
+          alias: 'v',
+          argument: '-v'
+        });
+
+        return true;
+      }
+    );
+  });
+
   test('does not consume terminator as a short string alias value', () => {
     assert.deepStrictEqual(
       parseArgv([

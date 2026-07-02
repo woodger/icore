@@ -23,6 +23,8 @@ type OptionBase<TType extends string, TValue> = {
   default?: TValue;
 };
 
+type OptionValueSource = 'value' | 'default';
+
 /**
  * Raw option value produced by `parseArgv` before schema validation.
  *
@@ -263,27 +265,27 @@ function parseDefaultOptionValue(
 
   if (definition.type === 'string') {
     if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error(`Expected default for '--${name}' as string`);
+      throw createExpectedDefaultError(name, 'string', value);
     }
 
-    assertChoice(name, definition.choices, value, false);
+    assertChoice(name, definition.choices, value, 'default');
 
     return value;
   }
 
   if (definition.type === 'boolean') {
     if (typeof value !== 'boolean') {
-      throw new Error(`Expected default for '--${name}' as boolean`);
+      throw createExpectedDefaultError(name, 'boolean', value);
     }
 
     return value;
   }
 
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new Error(`Expected default for '--${name}' as number`);
+    throw createExpectedDefaultError(name, 'number', value);
   }
 
-  validateNumberConstraints(name, definition, value, false);
+  validateNumberConstraints(name, definition, value, 'default');
 
   return value;
 }
@@ -354,11 +356,18 @@ function validateNumberConstraints(
   name: string,
   definition: NumberOption,
   parsed: number,
-  machineReadable = true
+  source: OptionValueSource = 'value'
 ): void {
   if (definition.integer === true && !Number.isInteger(parsed)) {
-    if (!machineReadable) {
-      throw new Error(`Expected '--${name}' as integer`);
+    if (source === 'default') {
+      throw createInvalidOptionDefaultError(
+        name,
+        `Expected '--${name}' as integer`,
+        {
+          expected: 'integer',
+          value: parsed
+        }
+      );
     }
 
     throw createExpectedOptionTypeError(name, 'integer', parsed);
@@ -367,8 +376,16 @@ function validateNumberConstraints(
   if (definition.min !== undefined && parsed < definition.min) {
     const message = `Expected '--${name}' to be greater than or equal to ${String(definition.min)}`;
 
-    if (!machineReadable) {
-      throw new Error(message);
+    if (source === 'default') {
+      throw createInvalidOptionDefaultError(
+        name,
+        message,
+        {
+          expected: 'minimum',
+          min: definition.min,
+          value: parsed
+        }
+      );
     }
 
     throw createInvalidOptionTypeError(
@@ -385,8 +402,16 @@ function validateNumberConstraints(
   if (definition.max !== undefined && parsed > definition.max) {
     const message = `Expected '--${name}' to be less than or equal to ${String(definition.max)}`;
 
-    if (!machineReadable) {
-      throw new Error(message);
+    if (source === 'default') {
+      throw createInvalidOptionDefaultError(
+        name,
+        message,
+        {
+          expected: 'maximum',
+          max: definition.max,
+          value: parsed
+        }
+      );
     }
 
     throw createInvalidOptionTypeError(
@@ -400,14 +425,14 @@ function validateNumberConstraints(
     );
   }
 
-  assertChoice(name, definition.choices, parsed, machineReadable);
+  assertChoice(name, definition.choices, parsed, source);
 }
 
 function assertChoice<TValue extends string | number>(
   name: string,
   choices: readonly TValue[] | undefined,
   value: TValue,
-  machineReadable = true
+  source: OptionValueSource = 'value'
 ): void {
   if (choices === undefined || choices.includes(value)) {
     return;
@@ -415,8 +440,15 @@ function assertChoice<TValue extends string | number>(
 
   const message = `Expected '--${name}' as one of: ${choices.join(', ')}`;
 
-  if (!machineReadable) {
-    throw new Error(message);
+  if (source === 'default') {
+    throw createInvalidOptionDefaultError(
+      name,
+      message,
+      {
+        choices: [...choices],
+        value
+      }
+    );
   }
 
   throw createInvalidOptionChoiceError(name, choices, value, message);
@@ -459,6 +491,21 @@ function createExpectedOptionTypeError(
   );
 }
 
+function createExpectedDefaultError(
+  name: string,
+  expected: string,
+  value: unknown
+): IcoreError {
+  return createInvalidOptionDefaultError(
+    name,
+    `Expected default for '--${name}' as ${expected}`,
+    {
+      expected,
+      value
+    }
+  );
+}
+
 function createInvalidOptionTypeError(
   name: string,
   message: string,
@@ -489,6 +536,22 @@ function createInvalidOptionChoiceError<TValue extends string | number>(
       option: name,
       choices: [...choices],
       value
+    }
+  );
+}
+
+function createInvalidOptionDefaultError(
+  name: string,
+  message: string,
+  details: IcoreErrorDetails
+): IcoreError {
+  return new IcoreError(
+    'INVALID_OPTION_DEFAULT',
+    message,
+    {
+      argument: `--${name}`,
+      option: name,
+      ...details
     }
   );
 }

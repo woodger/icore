@@ -19,7 +19,11 @@ export type IcoreErrorCode =
   | 'EXPECTED_REQUIRED_ARGUMENT'
   | 'INVALID_OPTION_TYPE'
   | 'INVALID_OPTION_CHOICE'
-  | 'UNEXPECTED_POSITIONAL';
+  | 'UNEXPECTED_POSITIONAL'
+  | 'INVALID_OPTION_ALIAS'
+  | 'DUPLICATE_ALIAS'
+  | 'INVALID_OPTION_DEFAULT'
+  | 'DUPLICATE_COMMAND';
 
 /**
  * Structured context for application-level error handling.
@@ -27,8 +31,8 @@ export type IcoreErrorCode =
 export type IcoreErrorDetails = Readonly<Record<string, unknown>>;
 
 /**
- * Error thrown by `icore` for CLI parsing, option validation, and command
- * resolution failures.
+ * Error thrown by `icore` for CLI parsing, option validation, command
+ * resolution, and schema configuration failures.
  */
 export class IcoreError extends Error {
   readonly code: IcoreErrorCode;
