@@ -17,14 +17,18 @@ export {
   defineCommand,
   defineCommandRegistry,
   isCommandName,
+  prepareCommandFromArgs,
   resolveCommand,
   resolveCommandFromArgs,
   runCommand,
+  runPreparedCommand,
   runCommandFromRegistry,
   type CommandDefinition,
   type CommandInput,
   type CommandName,
   type CommandRegistry,
+  type PreparedCommand,
+  type PreparedCommandInput,
   type ResolvedCommand
 } from './commands';
 export {

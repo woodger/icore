@@ -11,15 +11,24 @@
  * domain behavior, SDK calls, or output formatting.
  */
 
-import {
-  parseArgv
-} from './argv';
+import { parseArgv } from './argv';
 import {
   parseOptionsDetailed,
   type InferOptions,
   type InferProvidedOptions,
-  type OptionsSchema
+  type OptionsSchema,
+  type RawOptionValue
 } from './options';
+
+/**
+ * Input produced after command path and option validation, before runtime
+ * context is attached.
+ */
+export type PreparedCommandInput<TSchema extends OptionsSchema> = {
+  options: InferOptions<TSchema>;
+  provided: InferProvidedOptions<TSchema>;
+  positionals: string[];
+};
 
 /**
  * Input passed to a command handler after command path and option validation.
@@ -27,10 +36,7 @@ import {
 export type CommandInput<
   TSchema extends OptionsSchema,
   TContext
-> = {
-  options: InferOptions<TSchema>;
-  provided: InferProvidedOptions<TSchema>;
-  positionals: string[];
+> = PreparedCommandInput<TSchema> & {
   context: TContext;
 };
 
@@ -45,15 +51,24 @@ export type CommandDefinition<
   TSchema extends OptionsSchema,
   TContext,
   TResult,
-  TPath extends readonly [string, ...string[]] = readonly [string, ...string[]]
+  TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
+  TMetadata = unknown
 > = {
   path: TPath;
   options: TSchema;
+  metadata?: TMetadata;
   allowExtraPositionals?: boolean;
+  prepare?(input: PreparedCommandInput<TSchema>): void | Promise<void>;
   handle(input: CommandInput<TSchema, TContext>): TResult | Promise<TResult>;
 };
 
-type AnyCommandDefinition = CommandDefinition<OptionsSchema, unknown, unknown>;
+type AnyCommandDefinition = CommandDefinition<
+  OptionsSchema,
+  unknown,
+  unknown,
+  readonly [string, ...string[]],
+  unknown
+>;
 
 type CommandPathName<TPath extends readonly string[]> =
   number extends TPath['length']
@@ -75,6 +90,11 @@ type CommandContext<TCommand extends AnyCommandDefinition> =
 type CommandResult<TCommand extends AnyCommandDefinition> =
   TCommand extends CommandDefinition<OptionsSchema, unknown, infer TResult>
     ? Awaited<TResult>
+    : never;
+
+type CommandSchema<TCommand extends AnyCommandDefinition> =
+  TCommand extends CommandDefinition<infer TSchema, unknown, unknown>
+    ? TSchema
     : never;
 
 /**
@@ -102,16 +122,29 @@ export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
 };
 
 /**
+ * Command resolved and validated without runtime context.
+ */
+export type PreparedCommand<TCommand extends AnyCommandDefinition> = {
+  name: CommandName<TCommand>;
+  path: TCommand['path'];
+  command: TCommand;
+  options: InferOptions<CommandSchema<TCommand>>;
+  provided: InferProvidedOptions<CommandSchema<TCommand>>;
+  positionals: string[];
+};
+
+/**
  * Defines a command while preserving literal option schema types.
  */
 export function defineCommand<
   const TSchema extends OptionsSchema,
   const TPath extends readonly [string, ...string[]],
   TContext = undefined,
-  TResult = unknown
+  TResult = unknown,
+  TMetadata = unknown
 >(
-  command: CommandDefinition<TSchema, TContext, TResult, TPath>
-): CommandDefinition<TSchema, TContext, TResult, TPath> {
+  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata>
+): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata> {
   return command;
 }
 
@@ -188,6 +221,44 @@ export function resolveCommandFromArgs<
 }
 
 /**
+ * Resolves and validates a command without requiring runtime context.
+ */
+export async function prepareCommandFromArgs<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): Promise<PreparedCommand<TCommands[number]>> {
+  for (const command of commandsBySpecificity(registry.commands)) {
+    const argv = parseArgv(args, command.options);
+    const resolved = resolveCommandCandidate(command, argv.positionals);
+
+    if (resolved !== undefined) {
+      return prepareResolvedCommand(resolved, argv.options);
+    }
+  }
+
+  throw new Error(`Unknown command: ${formatCommandPositionals(parseArgv(args).positionals)}`);
+}
+
+/**
+ * Runs a prepared command with caller-provided runtime context.
+ */
+export async function runPreparedCommand<TCommand extends AnyCommandDefinition>(
+  prepared: PreparedCommand<TCommand>,
+  context: CommandContext<TCommand>
+): Promise<CommandResult<TCommand>> {
+  const result = await prepared.command.handle({
+    options: prepared.options,
+    provided: prepared.provided,
+    positionals: prepared.positionals,
+    context
+  });
+
+  return result as CommandResult<TCommand>;
+}
+
+/**
  * Resolves a command from a registry and runs its handler.
  */
 export async function runCommandFromRegistry<
@@ -197,13 +268,9 @@ export async function runCommandFromRegistry<
   args: readonly string[],
   context: CommandContext<TCommands[number]>
 ): Promise<CommandResult<TCommands[number]>> {
-  const resolved = resolveCommandFromArgs(registry, args);
+  const prepared = await prepareCommandFromArgs(registry, args);
 
-  return runCommand(
-    resolved.command,
-    args,
-    context
-  ) as Promise<CommandResult<TCommands[number]>>;
+  return runPreparedCommand(prepared, context);
 }
 
 /**
@@ -219,23 +286,59 @@ export async function runCommand<
   args: readonly string[],
   context: TContext
 ): Promise<TResult> {
+  const prepared = await prepareCommand(command, args);
+
+  return runPreparedCommand(
+    prepared,
+    context as CommandContext<typeof command>
+  ) as Promise<TResult>;
+}
+
+async function prepareCommand<TCommand extends AnyCommandDefinition>(
+  command: TCommand,
+  args: readonly string[]
+): Promise<PreparedCommand<TCommand>> {
   const argv = parseArgv(args, command.options);
   const extraPositionals = resolveCommandPositionals(command.path, argv.positionals);
+  const resolved = {
+    name: commandPathToName(command.path) as CommandName<TCommand>,
+    path: command.path,
+    command,
+    positionals: extraPositionals
+  };
 
-  if (extraPositionals.length > 0 && command.allowExtraPositionals !== true) {
+  return prepareResolvedCommand(resolved, argv.options);
+}
+
+async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
+  resolved: ResolvedCommand<TCommand>,
+  rawOptions: Record<string, RawOptionValue>
+): Promise<PreparedCommand<TCommand>> {
+  const { command } = resolved;
+
+  if (resolved.positionals.length > 0 && command.allowExtraPositionals !== true) {
     throw new Error(
-      `Unexpected positional argument for '${command.path.join(' ')}': ${extraPositionals[0] ?? ''}`
+      `Unexpected positional argument for '${command.path.join(' ')}': ${resolved.positionals[0] ?? ''}`
     );
   }
 
-  const parsed = parseOptionsDetailed(command.options, argv.options);
-
-  return command.handle({
+  const parsed = parseOptionsDetailed(command.options, rawOptions);
+  const input = {
     options: parsed.options,
     provided: parsed.provided,
-    positionals: extraPositionals,
-    context
-  });
+    positionals: resolved.positionals
+  };
+
+  await command.prepare?.(input);
+
+  return {
+    name: resolved.name,
+    path: resolved.path,
+    command,
+    options: parsed.options,
+    provided: parsed.provided,
+    positionals: resolved.positionals
+  } as PreparedCommand<TCommand>;
 }
 
 function resolveCommandPositionals(
