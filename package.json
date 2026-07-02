@@ -1,12 +1,7 @@
 {
   "name": "icore",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Declarative command line interface mechanics for Node.js",
-  "author": {
-    "name": "Stanislav Potemkin",
-    "email": "woodger@ya.ru"
-  },
-  "license": "MIT",
   "keywords": [
     "command-line",
     "argv",
@@ -17,9 +12,14 @@
     "typed-cli",
     "declarative-cli"
   ],
+  "author": {
+    "name": "Stanislav Potemkin",
+    "email": "woodger@ya.ru"
+  },
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/woodger/icore.git"
+    "url": "git+https://github.com/woodger/icore.git"
   },
   "engines": {
     "node": ">=16.9.0"
@@ -29,9 +29,8 @@
   "scripts": {
     "build": "tsc",
     "test": "node --test dist/*.test.js",
-    "lint": "eslint src eslint.config.mjs"
+    "lint": "eslint src"
   },
-  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^26.0.1",

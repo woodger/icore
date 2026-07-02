@@ -4,11 +4,15 @@ import {
   defineCommand,
   defineCommandRegistry,
   isCommandName,
+  prepareCommandFromArgs,
   resolveCommand,
   resolveCommandFromArgs,
   runCommand,
+  runPreparedCommand,
   runCommandFromRegistry,
-  type CommandName
+  type CommandName,
+  type PreparedCommand,
+  type PreparedCommandInput
 } from './cli';
 
 describe('command registry', () => {
@@ -191,6 +195,303 @@ describe('command registry', () => {
       }),
       /Unknown command: unknown/
     );
+  });
+});
+
+describe('two-phase command execution', () => {
+  test('rejects unknown commands during prepare without calling handlers', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['unknown']),
+      /Unknown command: unknown/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects unknown options after command path during prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users', '--unknown']),
+      /Unexpected argument '--unknown'/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects missing required options during prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          token: {
+            type: 'string',
+            required: true
+          }
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users']),
+      /Expected required argument '--token'/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects invalid choices during prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          format: {
+            type: 'string',
+            choices: ['json']
+          }
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users', '--format', 'xml']),
+      /Expected '--format' as one of: json/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects invalid numbers during prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          count: {
+            type: 'number',
+            integer: true
+          }
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users', '--count', 'many']),
+      /Expected '--count' as number/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects unexpected positionals during prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users', 'extra']),
+      /Unexpected positional argument for 'users': extra/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects prepare hook errors before calling handlers', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        prepare() {
+          throw new Error('prepare failed');
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['users']),
+      /prepare failed/
+    );
+    assert.strictEqual(handled, false);
+  });
+
+  test('returns command metadata before runtime context is created', async () => {
+    const command = defineCommand({
+      path: ['users'],
+      metadata: {
+        resource: 'database'
+      } as const,
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    const prepared: PreparedCommand<typeof command> = await prepareCommandFromArgs(
+      commandRegistry,
+      ['users']
+    );
+
+    assert.strictEqual(prepared.command.metadata?.resource, 'database');
+  });
+
+  test('runs prepared commands with parsed input and runtime context', async () => {
+    const options = {
+      name: {
+        type: 'string',
+        required: true
+      }
+    } as const;
+    let handled = false;
+    const command = defineCommand({
+      path: ['users'],
+      options,
+      allowExtraPositionals: true,
+      prepare(input: PreparedCommandInput<typeof options>) {
+        assert.strictEqual(input.options.name, 'Alice');
+        assert.strictEqual(input.provided.name, true);
+        assert.deepStrictEqual(input.positionals, ['extra']);
+      },
+      handle({ options: parsedOptions, provided, positionals, context }: {
+        options: { name: string };
+        provided: { name: boolean };
+        positionals: string[];
+        context: { accountId: string };
+      }) {
+        handled = true;
+
+        return [
+          context.accountId,
+          parsedOptions.name,
+          String(provided.name),
+          positionals.join(',')
+        ].join(':');
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      'users',
+      '--name',
+      'Alice',
+      'extra'
+    ]);
+
+    assert.strictEqual(handled, false);
+    assert.strictEqual(
+      await runPreparedCommand(prepared, {
+        accountId: 'account-id'
+      }),
+      'account-id:Alice:true:extra'
+    );
+    assert.strictEqual(handled, true);
+  });
+
+  test('runCommand calls prepare hooks before handlers', async () => {
+    const calls: string[] = [];
+    const command = defineCommand({
+      path: ['users'],
+      options: {},
+      prepare() {
+        calls.push('prepare');
+      },
+      handle({ context }: {
+        context: { accountId: string };
+      }) {
+        calls.push('handle');
+
+        return context.accountId;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(command, ['users'], {
+        accountId: 'account-id'
+      }),
+      'account-id'
+    );
+    assert.deepStrictEqual(calls, [
+      'prepare',
+      'handle'
+    ]);
+  });
+
+  test('runCommandFromRegistry calls prepare hooks before handlers', async () => {
+    const calls: string[] = [];
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        prepare() {
+          calls.push('prepare');
+        },
+        handle({ context }: {
+          context: { accountId: string };
+        }) {
+          calls.push('handle');
+
+          return context.accountId;
+        }
+      })
+    ] as const);
+
+    assert.strictEqual(
+      await runCommandFromRegistry(commandRegistry, ['users'], {
+        accountId: 'account-id'
+      }),
+      'account-id'
+    );
+    assert.deepStrictEqual(calls, [
+      'prepare',
+      'handle'
+    ]);
   });
 });
 
