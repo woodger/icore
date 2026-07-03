@@ -163,6 +163,15 @@ export type ParseOptionsResult<TSchema extends OptionsSchema> = {
 };
 
 /**
+ * Detailed option subset parsing result with untouched options for later
+ * command-layer validation.
+ */
+export type ParseOptionsSubsetResult<TSchema extends OptionsSchema> =
+  ParseOptionsResult<TSchema> & {
+    rest: Record<string, RawOptionValue>;
+  };
+
+/**
  * Merges option schemas while preserving literal option definition types.
  *
  * Later schemas override earlier schemas with the same option name.
@@ -238,6 +247,32 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
   return {
     options: parsed as InferOptions<TSchema>,
     provided: provided as InferProvidedOptions<TSchema>
+  };
+}
+
+/**
+ * Validates only raw option values known by the given schema and leaves the
+ * remaining raw options untouched.
+ */
+export function parseOptionsSubsetDetailed<const TSchema extends OptionsSchema>(
+  schema: TSchema,
+  values: Record<string, RawOptionValue>
+): ParseOptionsSubsetResult<TSchema> {
+  const subsetValues: Record<string, RawOptionValue> = {};
+  const rest: Record<string, RawOptionValue> = {};
+
+  for (const [name, value] of Object.entries(values)) {
+    if (Object.hasOwn(schema, name)) {
+      subsetValues[name] = value;
+      continue;
+    }
+
+    rest[name] = value;
+  }
+
+  return {
+    ...parseOptionsDetailed(schema, subsetValues),
+    rest
   };
 }
 

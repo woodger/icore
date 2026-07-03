@@ -29,6 +29,7 @@ npm install icore
   - [`parseArgv(args, schema?)`](#parseargvargs-schema)
   - [`parseOptions(schema, values)`](#parseoptionsschema-values)
   - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
+  - [`parseOptionsSubsetDetailed(schema, values)`](#parseoptionssubsetdetailedschema-values)
   - [`defineCommand(command)`](#definecommandcommand)
   - [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
   - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
@@ -173,6 +174,46 @@ Result:
 
 `provided` is useful when a default value and an omitted option have different
 application-level meaning.
+
+### `parseOptionsSubsetDetailed(schema, values)`
+
+Validates only raw option values known by the given schema and returns the
+remaining raw options untouched.
+
+```ts
+const global = parseOptionsSubsetDetailed({
+  help: {
+    type: 'boolean'
+  },
+  version: {
+    type: 'boolean'
+  }
+} as const, {
+  help: true,
+  format: 'json'
+});
+```
+
+Result:
+
+```ts
+{
+  options: {
+    help: true,
+    version: undefined
+  },
+  provided: {
+    help: true,
+    version: false
+  },
+  rest: {
+    format: 'json'
+  }
+}
+```
+
+This is useful for bootstrap options such as `--help` and `--version`, where
+command-specific options should be left for the command layer.
 
 ### `defineCommand(command)`
 

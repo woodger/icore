@@ -22,6 +22,7 @@ conservative.
 - Added reusable stdout/stderr text writers with backpressure handling.
 - Added shared `presentationFormatOptions` for common `--format` command options.
 - Added machine-readable `IcoreError` codes and details.
+- Added `parseOptionsSubsetDetailed` for validating known option subsets while preserving unknown raw options.
 - Added opt-in `strict: true` command resolution for rejecting options before command paths.
 - Added `strict: true` support to direct `runCommand` execution.
 - Added typed prepared command `payload` returned from `prepare` and passed to `handle`.

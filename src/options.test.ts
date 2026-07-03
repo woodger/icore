@@ -5,8 +5,10 @@ import {
   mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,
+  parseOptionsSubsetDetailed,
   type InferOptions,
-  type InferProvidedOptions
+  type InferProvidedOptions,
+  type ParseOptionsSubsetResult
 } from './cli';
 
 describe('mergeOptionsSchema', () => {
@@ -440,5 +442,75 @@ describe('parseOptionsDetailed', () => {
       format: false,
       insecure: true
     });
+  });
+});
+
+describe('parseOptionsSubsetDetailed', () => {
+  test('validates known options and returns untouched rest options', () => {
+    const schema = {
+      help: {
+        type: 'boolean'
+      },
+      version: {
+        type: 'boolean',
+        default: false
+      }
+    } as const;
+
+    const result: ParseOptionsSubsetResult<typeof schema> = parseOptionsSubsetDetailed(schema, {
+      help: true,
+      format: 'json',
+      limit: '10'
+    });
+    const help: boolean | undefined = result.options.help;
+    const version: boolean = result.options.version;
+
+    assert.strictEqual(help, true);
+    assert.strictEqual(version, false);
+    assert.deepStrictEqual(result, {
+      options: {
+        help: true,
+        version: false
+      },
+      provided: {
+        help: true,
+        version: false
+      },
+      rest: {
+        format: 'json',
+        limit: '10'
+      }
+    });
+  });
+
+  test('does not reject unknown options outside the subset schema', () => {
+    assert.deepStrictEqual(
+      parseOptionsSubsetDetailed({}, {
+        format: 'json',
+        verbose: true
+      }),
+      {
+        options: {},
+        provided: {},
+        rest: {
+          format: 'json',
+          verbose: true
+        }
+      }
+    );
+  });
+
+  test('rejects invalid known subset options', () => {
+    assert.throws(
+      () => parseOptionsSubsetDetailed({
+        help: {
+          type: 'boolean'
+        }
+      }, {
+        help: 'yes',
+        format: 'json'
+      }),
+      /Expected '--help' as boolean flag/
+    );
   });
 });

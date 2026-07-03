@@ -49,6 +49,7 @@ export {
   mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,
+  parseOptionsSubsetDetailed,
   type BooleanOption,
   type InferOptions,
   type InferProvidedOptions,
@@ -57,6 +58,7 @@ export {
   type OptionDefinition,
   type OptionsSchema,
   type ParseOptionsResult,
+  type ParseOptionsSubsetResult,
   type RawOptionValue,
   type StringOption
 } from './options';
