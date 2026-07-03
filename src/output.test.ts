@@ -8,7 +8,7 @@ import {
 } from './cli';
 
 describe('createOutput', () => {
-  test('creates stdout and stderr writer channels', async () => {
+  test('creates semantic output methods and writer channels', async () => {
     const stdout: string[] = [];
     const stderr: string[] = [];
     const output = createOutput({
@@ -28,11 +28,13 @@ describe('createOutput', () => {
       }
     });
 
-    await output.stdout.write('ok\n');
-    await output.stderr.write('warning\n');
+    await output.write('ok\n');
+    await output.error('warning\n');
+    await output.stdout.write('raw stdout\n');
+    await output.stderr.write('raw stderr\n');
 
-    assert.deepStrictEqual(stdout, ['ok\n']);
-    assert.deepStrictEqual(stderr, ['warning\n']);
+    assert.deepStrictEqual(stdout, ['ok\n', 'raw stdout\n']);
+    assert.deepStrictEqual(stderr, ['warning\n', 'raw stderr\n']);
   });
 });
 
@@ -51,6 +53,34 @@ describe('output writers', () => {
       await writer.write('hello');
 
       assert.deepStrictEqual(chunks, ['hello']);
+    });
+
+    test('waits for promise-returning sinks', async () => {
+      let finishWrite: (() => void) | undefined;
+      let completed = false;
+      const writer = createBackpressureTextWriter({
+        write() {
+          return new Promise<void>((resolve) => {
+            finishWrite = resolve;
+          });
+        }
+      });
+
+      const write = Promise.resolve(writer.write('hello')).then(() => {
+        completed = true;
+      });
+
+      await Promise.resolve();
+
+      assert.equal(completed, false);
+
+      if (finishWrite === undefined) {
+        throw new Error('Expected write to start');
+      }
+
+      finishWrite();
+      await write;
+      assert.equal(completed, true);
     });
 
     test('waits for drain when the sink reports backpressure', async () => {

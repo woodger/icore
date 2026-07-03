@@ -475,8 +475,8 @@ const prepared = await commands.prepare(args);
 const result = await commands.run(prepared, context);
 const text = presentation.render(result, prepared.options.format);
 
-await output.stdout.write(text);
-await output.stderr.write('warning\n');
+await output.write(text);
+await output.error('warning\n');
 ```
 
 Commands may return `string`, `AsyncIterable<string>`, `PresentationResult`, or
@@ -559,15 +559,19 @@ const output = createOutput();
 const stdout = createStdoutWriter();
 const stderr = createStderrWriter();
 
+await output.write('ok\n');
+await output.error('warning\n');
 await output.stdout.write('ok\n');
 await output.stderr.write('warning\n');
 await stdout.write('ok\n');
 await stderr.write('warning\n');
 ```
 
-Writers wait for `drain` when a Node writable stream reports backpressure. This
-keeps long-running stream commands from buffering output faster than the
-consumer reads it.
+`output.write()` delegates to stdout, and `output.error()` delegates to stderr.
+Direct writer channels remain available when a caller needs to pass a specific
+sink around. Writers await promise-returning custom sinks and wait for `drain`
+when a Node writable stream reports backpressure. This keeps long-running
+stream commands from buffering output faster than the consumer reads it.
 
 ## How It Works
 

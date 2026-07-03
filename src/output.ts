@@ -5,6 +5,7 @@
  * - the minimal text writer contract;
  * - backpressure-aware writes for Node-style writable streams;
  * - stdout and stderr writer factories;
+ * - semantic output methods that delegate to stdout and stderr writers;
  *
  * This file must not contain command semantics, rendering rules, or
  * application-specific diagnostics.
@@ -20,6 +21,8 @@ export type BackpressureTextSink = {
 };
 
 export type Output = {
+  write(chunk: string): unknown | Promise<unknown>;
+  error(chunk: string): unknown | Promise<unknown>;
   stdout: TextWriter;
   stderr: TextWriter;
 };
@@ -34,7 +37,15 @@ export function createBackpressureTextWriter(
 ): TextWriter {
   return {
     async write(chunk: string): Promise<void> {
-      if (sink.write(chunk) !== false) {
+      const writeResult = sink.write(chunk);
+
+      if (isPromiseLike(writeResult)) {
+        await writeResult;
+
+        return;
+      }
+
+      if (writeResult !== false) {
         return;
       }
 
@@ -60,10 +71,28 @@ export function createStderrWriter(
 }
 
 export function createOutput(options: OutputOptions = {}): Output {
+  const stdout = createStdoutWriter(options.stdout);
+  const stderr = createStderrWriter(options.stderr);
+
   return {
-    stdout: createStdoutWriter(options.stdout),
-    stderr: createStderrWriter(options.stderr)
+    write(chunk) {
+      return stdout.write(chunk);
+    },
+    error(chunk) {
+      return stderr.write(chunk);
+    },
+    stdout,
+    stderr
   };
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === 'object'
+    && value !== null
+    && 'then' in value
+    && typeof value.then === 'function'
+  );
 }
 
 function waitForDrain(

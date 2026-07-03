@@ -4,7 +4,7 @@
  * Allowed here:
  * - preparing and running command facades;
  * - rendering presentation results;
- * - writing command output to stdout and command errors to stderr;
+ * - writing command output through the output facade;
  *
  * This file must not contain argv tokenization, option validation internals,
  * domain behavior, or application-specific report mapping.
@@ -103,7 +103,7 @@ export function createTerminalApp<
         return 0;
       }
       catch (error) {
-        await output.stderr.write(renderTerminalError(error));
+        await output.error(renderTerminalError(error));
 
         return 1;
       }
@@ -122,21 +122,21 @@ async function writeTerminalOutput(
   }
 
   if (typeof result === 'string') {
-    await output.stdout.write(result);
+    await output.write(result);
 
     return;
   }
 
   if (isAsyncIterable(result)) {
     for await (const chunk of result) {
-      await output.stdout.write(chunk);
+      await output.write(chunk);
     }
 
     return;
   }
 
   if (isPresentationResult(result)) {
-    await output.stdout.write(presentation.render(result, format));
+    await output.write(presentation.render(result, format));
 
     return;
   }

@@ -16,6 +16,7 @@ conservative.
 - Added `createCommands` as a high-level command mechanics facade.
 - Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
 - Added `createOutput` as a stdout/stderr output boundary facade.
+- Added semantic `Output.write()` and `Output.error()` methods.
 - Added `createTerminalApp` to compose command, presentation, and output mechanics.
 - Added generic terminal presentation renderers for JSON, CSV, and text tables.
 - Added reusable stdout/stderr text writers with backpressure handling.
@@ -31,6 +32,7 @@ conservative.
 ### Changed
 
 - Changed `PreparedCommand` typing to preserve payload correlation when narrowing registry unions by command name.
+- Changed output writers to await promise-returning custom sinks.
 
 ### Removed
 
