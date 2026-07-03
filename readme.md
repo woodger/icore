@@ -10,7 +10,7 @@ Small dependency-free command line interface mechanics for [Node.js®](https://n
 Supports a practical GNU-style option syntax:
 
 - long options: `--name value`, `--name=value`;
-- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag` by default;
+- boolean flags: `--flag`, `--no-flag`;
 - short aliases: `-f`, `-n value`;
 - option terminator: `--`.
 
@@ -474,19 +474,18 @@ const schema = {
 } as const;
 ```
 
-Boolean options accept **flag form**, explicit `true` / `false` values, and
-schema-known negation:
+Boolean options accept **flag form** and schema-known negation:
 
 ```sh
 --uppercase
---uppercase=true
---uppercase=false
 --no-uppercase
 ```
 
-Invalid explicit values are rejected:
+Explicit values are rejected:
 
 ```sh
+--uppercase=true
+--uppercase=false
 --uppercase=yes
 --uppercase=
 ```
@@ -506,8 +505,8 @@ const schema = {
 } as const;
 ```
 
-With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=true`,
-`--uppercase=false`, and `--no-uppercase` are rejected.
+With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=value`
+and `--no-uppercase` are rejected.
 
 ### `type: 'number'`
 

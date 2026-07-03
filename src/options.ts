@@ -47,8 +47,8 @@ export type StringOption<TChoices extends readonly string[] = readonly string[]>
 /**
  * Declarative boolean flag contract.
  *
- * Boolean options accept flag form and explicit `true` / `false` values unless
- * flag syntax is enforced.
+ * Boolean options accept flag form and schema-known negation unless flag
+ * syntax is enforced.
  */
 export type BooleanOption = OptionBase<'boolean', boolean> & {
   syntax?: 'flag';
@@ -317,11 +317,11 @@ function parseBooleanOption(
     throw createExpectedOptionTypeError(name, 'boolean flag', value);
   }
 
-  if (value === true || value === 'true') {
+  if (value === true) {
     return true;
   }
 
-  if (value === false || value === 'false') {
+  if (value === false) {
     return false;
   }
 

@@ -196,34 +196,6 @@ describe('parseOptions', () => {
     );
   });
 
-  test('parses explicit boolean values', () => {
-    assert.deepStrictEqual(
-      parseOptions({
-        insecure: {
-          type: 'boolean'
-        }
-      }, {
-        insecure: 'true'
-      }),
-      {
-        insecure: true
-      }
-    );
-
-    assert.deepStrictEqual(
-      parseOptions({
-        insecure: {
-          type: 'boolean'
-        }
-      }, {
-        insecure: 'false'
-      }),
-      {
-        insecure: false
-      }
-    );
-  });
-
   test('supports flag-only boolean options', () => {
     const schema = {
       uppercase: {
@@ -259,6 +231,8 @@ describe('parseOptions', () => {
 
   test('rejects invalid explicit boolean values', () => {
     for (const value of [
+      'true',
+      'false',
       '1',
       '0',
       'yes',
