@@ -24,10 +24,13 @@ export {
   runPreparedCommand,
   runCommandFromRegistry,
   type CommandDefinition,
+  type CommandContext,
   type CommandInput,
   type CommandName,
+  type CommandPayload,
   type CommandRegistry,
   type CommandResolutionOptions,
+  type CommandResult,
   type PreparedCommand,
   type PreparedCommandInput,
   type ResolvedCommand
