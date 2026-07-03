@@ -5,6 +5,7 @@
  * - re-exporting public argv parser contracts;
  * - re-exporting public option schema contracts;
  * - re-exporting public command registry contracts;
+ * - re-exporting public presentation and output contracts;
  *
  * This file must not contain parser, validator, or command runtime logic.
  */
@@ -56,3 +57,22 @@ export {
   type RawOptionValue,
   type StringOption
 } from './options';
+export {
+  presentationFormatOptions,
+  presentationFormats,
+  renderCsv,
+  renderCsvRow,
+  renderJson,
+  renderTextTable,
+  type CsvCell,
+  type CsvRow,
+  type PresentationFormat,
+  type TextTableRow
+} from './presentation';
+export {
+  createBackpressureTextWriter,
+  createStderrWriter,
+  createStdoutWriter,
+  type BackpressureTextSink,
+  type TextWriter
+} from './output';

@@ -1,7 +1,7 @@
 {
   "name": "icore",
-  "version": "1.0.15",
-  "description": "Declarative command line interface mechanics for Node.js",
+  "version": "1.0.16",
+  "description": "Declarative command line interface and terminal presentation mechanics for Node.js",
   "keywords": [
     "command-line",
     "argv",
@@ -9,6 +9,10 @@
     "option-parser",
     "command-registry",
     "command-router",
+    "terminal-output",
+    "presentation",
+    "table-renderer",
+    "csv-renderer",
     "typed-cli",
     "declarative-cli"
   ],

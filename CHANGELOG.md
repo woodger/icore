@@ -13,6 +13,9 @@ conservative.
 
 ### Added
 
+- Added generic terminal presentation renderers for JSON, CSV, and text tables.
+- Added reusable stdout/stderr text writers with backpressure handling.
+- Added shared `presentationFormatOptions` for common `--format` command options.
 - Added machine-readable `IcoreError` codes and details.
 - Added opt-in `strict: true` command resolution for rejecting options before command paths.
 - Added `strict: true` support to direct `runCommand` execution.

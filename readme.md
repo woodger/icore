@@ -5,7 +5,7 @@
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
 
-Small dependency-free command line interface mechanics for [Node.js®](https://nodejs.org) applications.
+Small dependency-free command line interface and terminal presentation mechanics for [Node.js®](https://nodejs.org) applications.
 
 Supports a practical GNU-style option syntax:
 
@@ -39,6 +39,8 @@ npm install icore
   - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
   - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
+  - [Presentation Renderers](#presentation-renderers)
+  - [Output Writers](#output-writers)
 - [How It Works](#how-it-works)
 - [Example](#example)
 - [Option Schemas](#option-schemas)
@@ -371,7 +373,7 @@ const output = await runCommandFromRegistry(
 ```
 
 This is **registry-level mechanics only**. Application-specific setup, side
-effects, and output formatting still belong outside `icore`.
+effects, and application report mapping still belong outside `icore`.
 
 ### `mergeOptionsSchema(...schemas)`
 
@@ -418,6 +420,78 @@ positionals with `allowExtraPositionals: true`.
 
 With `strict: true`, direct command execution also requires the command path to
 appear before options.
+
+### Presentation Renderers
+
+`icore` provides generic terminal presentation helpers for common CLI output
+formats. They do not know application DTOs, report contracts, or command names.
+
+```ts
+import {
+  presentationFormatOptions,
+  renderCsv,
+  renderJson,
+  renderTextTable
+} from 'icore';
+
+renderJson({
+  id: 'account-id'
+});
+
+renderTextTable([
+  ['id', 'name'],
+  ['account-id', 'Main account']
+]);
+
+renderCsv([
+  ['id', 'name'],
+  ['account-id', 'Main account']
+]);
+```
+
+`presentationFormatOptions` can be merged with command-specific options:
+
+```ts
+import {
+  mergeOptionsSchema,
+  presentationFormatOptions
+} from 'icore';
+
+const options = mergeOptionsSchema(
+  presentationFormatOptions,
+  {
+    token: {
+      type: 'string',
+      required: true
+    }
+  } as const
+);
+```
+
+Applications remain responsible for mapping domain objects to stable output
+values before passing rows or JSON values to renderers.
+
+### Output Writers
+
+`icore` exposes a small text writer contract and Node-compatible stdout/stderr
+adapters.
+
+```ts
+import {
+  createStderrWriter,
+  createStdoutWriter
+} from 'icore';
+
+const stdout = createStdoutWriter();
+const stderr = createStderrWriter();
+
+await stdout.write('ok\n');
+await stderr.write('warning\n');
+```
+
+Writers wait for `drain` when a Node writable stream reports backpressure. This
+keeps long-running stream commands from buffering output faster than the
+consumer reads it.
 
 ## How It Works
 
@@ -725,4 +799,9 @@ Good responsibilities for `icore`:
 - option schema evaluation;
 - command path checking;
 - common argument errors;
-- typed command handler input.
+- typed command handler input;
+- generic JSON, CSV, and text table rendering;
+- stdout/stderr text writer mechanics.
+
+Application-specific report mapping, scalar formatting, API calls, config
+loading, and domain behavior stay outside `icore`.
