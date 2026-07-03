@@ -37,7 +37,7 @@ npm install icore
   - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargsregistry-args-options)
   - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
-  - [`runCommand(command, args, context)`](#runcommandcommand-args-context)
+  - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
 - [How It Works](#how-it-works)
 - [Example](#example)
 - [Option Schemas](#option-schemas)
@@ -350,7 +350,7 @@ const greetingOptions = {
 const options = mergeOptionsSchema(nameOptions, greetingOptions);
 ```
 
-### `runCommand(command, args, context)`
+### `runCommand(command, args, context, options?)`
 
 Parses arguments, validates options, checks command positionals, and runs the
 handler.
@@ -359,12 +359,18 @@ handler.
 const output = await runCommand(
   command,
   ['hello', '--name', 'Alice', '--uppercase'],
-  context
+  context,
+  {
+    strict: true
+  }
 );
 ```
 
 **By default**, extra positionals are rejected. A command can opt in to extra
 positionals with `allowExtraPositionals: true`.
+
+With `strict: true`, direct command execution also requires the command path to
+appear before options.
 
 ## How It Works
 

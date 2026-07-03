@@ -303,9 +303,10 @@ export async function runCommand<
 >(
   command: CommandDefinition<TSchema, TContext, TResult>,
   args: readonly string[],
-  context: TContext
+  context: TContext,
+  options: CommandResolutionOptions = {}
 ): Promise<TResult> {
-  const prepared = await prepareCommand(command, args);
+  const prepared = await prepareCommand(command, args, options);
 
   return runPreparedCommand(
     prepared,
@@ -315,8 +316,13 @@ export async function runCommand<
 
 async function prepareCommand<TCommand extends AnyCommandDefinition>(
   command: TCommand,
-  args: readonly string[]
+  args: readonly string[],
+  options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommand>> {
+  if (options.strict === true) {
+    assertNoOptionBeforeCommand(args);
+  }
+
   const argv = parseArgv(args, command.options);
   const extraPositionals = resolveCommandPositionals(command.path, argv.positionals);
   const resolved = {
@@ -443,11 +449,7 @@ function findStrictCommand<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): TCommands[number] | undefined {
-  const firstArg = args[0];
-
-  if (firstArg !== undefined && isOptionBeforeCommand(firstArg)) {
-    throw createUnexpectedArgumentError(firstArg);
-  }
+  assertNoOptionBeforeCommand(args);
 
   for (const command of commandsBySpecificity(registry.commands)) {
     if (commandPathMatchesArgs(command.path, args)) {
@@ -456,6 +458,14 @@ function findStrictCommand<
   }
 
   return undefined;
+}
+
+function assertNoOptionBeforeCommand(args: readonly string[]): void {
+  const firstArg = args[0];
+
+  if (firstArg !== undefined && isOptionBeforeCommand(firstArg)) {
+    throw createUnexpectedArgumentError(firstArg);
+  }
 }
 
 function resolveCommandCandidate<TCommand extends AnyCommandDefinition>(

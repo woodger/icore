@@ -778,6 +778,89 @@ describe('runCommand', () => {
     });
   });
 
+  test('keeps legacy before-command option handling by default', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['--unknown', 'users', 'get-accounts'], undefined),
+      /Expected command 'users get-accounts'/
+    );
+  });
+
+  test('rejects options before command path in strict mode', async () => {
+    let handled = false;
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        handled = true;
+        return 'ok';
+      }
+    });
+
+    for (const args of [
+      ['--unknown', 'users', 'get-accounts'],
+      ['--verbose', 'users', 'get-accounts'],
+      ['-x', 'users', 'get-accounts']
+    ]) {
+      await assert.rejects(
+        () => runCommand(command, args, undefined, {
+          strict: true
+        }),
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+          assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
+          assert.deepStrictEqual(error.details, {
+            argument: args[0]
+          });
+
+          return true;
+        }
+      );
+    }
+
+    assert.strictEqual(handled, false);
+  });
+
+  test('accepts options after command path in strict mode', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      },
+      handle({ options }) {
+        return options.format;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--format', 'json'],
+        undefined,
+        {
+          strict: true
+        }
+      ),
+      'json'
+    );
+  });
+
   test('passes user-provided option metadata to handler', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
