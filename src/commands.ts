@@ -36,10 +36,19 @@ export type PreparedCommandInput<TSchema extends OptionsSchema> = {
  */
 export type CommandInput<
   TSchema extends OptionsSchema,
-  TContext
+  TContext,
+  TPayload = void
 > = PreparedCommandInput<TSchema> & {
   context: TContext;
-};
+} & (
+  [TPayload] extends [void]
+    ? {
+      payload?: TPayload;
+    }
+    : {
+      payload: TPayload;
+    }
+);
 
 /**
  * Declarative command contract.
@@ -53,23 +62,30 @@ export type CommandDefinition<
   TContext,
   TResult,
   TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
-  TMetadata = unknown
+  TMetadata = unknown,
+  TPayload = void
 > = {
   path: TPath;
   options: TSchema;
   metadata?: TMetadata;
   allowExtraPositionals?: boolean;
-  prepare?(input: PreparedCommandInput<TSchema>): void | Promise<void>;
-  handle(input: CommandInput<TSchema, TContext>): TResult | Promise<TResult>;
+  prepare?(input: PreparedCommandInput<TSchema>): TPayload | Promise<TPayload>;
+  handle(input: CommandInput<TSchema, TContext, TPayload>): TResult | Promise<TResult>;
 };
 
-type AnyCommandDefinition = CommandDefinition<
-  OptionsSchema,
-  unknown,
-  unknown,
-  readonly [string, ...string[]],
-  unknown
->;
+type AnyCommandInput = PreparedCommandInput<OptionsSchema> & {
+  context: unknown;
+  payload?: unknown;
+};
+
+type AnyCommandDefinition = {
+  path: readonly [string, ...string[]];
+  options: OptionsSchema;
+  metadata?: unknown;
+  allowExtraPositionals?: boolean;
+  prepare?(input: PreparedCommandInput<OptionsSchema>): unknown | Promise<unknown>;
+  handle(input: AnyCommandInput): unknown | Promise<unknown>;
+};
 
 type CommandPathName<TPath extends readonly string[]> =
   number extends TPath['length']
@@ -83,20 +99,43 @@ type CommandPathName<TPath extends readonly string[]> =
         ? `${THead} ${CommandPathName<TRest>}`
         : never;
 
+type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
+  TCommand extends CommandDefinition<
+    infer TSchema,
+    infer TContext,
+    infer TResult,
+    infer TPath,
+    infer TMetadata,
+    infer TPayload
+  >
+    ? {
+      schema: TSchema;
+      context: TContext;
+      result: TResult;
+      path: TPath;
+      metadata: TMetadata;
+      payload: TPayload;
+    }
+    : {
+      schema: TCommand['options'];
+      context: unknown;
+      result: unknown;
+      path: TCommand['path'];
+      metadata: TCommand['metadata'];
+      payload: unknown;
+    };
+
 type CommandContext<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, infer TContext, unknown>
-    ? TContext
-    : never;
+  CommandDefinitionParts<TCommand>['context'];
 
 type CommandResult<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, unknown, infer TResult>
-    ? Awaited<TResult>
-    : never;
+  Awaited<CommandDefinitionParts<TCommand>['result']>;
 
 type CommandSchema<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<infer TSchema, unknown, unknown>
-    ? TSchema
-    : never;
+  CommandDefinitionParts<TCommand>['schema'];
+
+type CommandPayload<TCommand extends AnyCommandDefinition> =
+  CommandDefinitionParts<TCommand>['payload'];
 
 /**
  * Infers the public command name from a command path.
@@ -144,6 +183,7 @@ export type PreparedCommand<TCommand extends AnyCommandDefinition> = {
   options: InferOptions<CommandSchema<TCommand>>;
   provided: InferProvidedOptions<CommandSchema<TCommand>>;
   positionals: string[];
+  payload: CommandPayload<TCommand>;
 };
 
 /**
@@ -154,10 +194,11 @@ export function defineCommand<
   const TPath extends readonly [string, ...string[]],
   TContext = undefined,
   TResult = unknown,
-  TMetadata = unknown
+  TMetadata = unknown,
+  TPayload = void
 >(
-  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata>
-): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata> {
+  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>
+): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload> {
   return command;
 }
 
@@ -270,7 +311,8 @@ export async function runPreparedCommand<TCommand extends AnyCommandDefinition>(
     options: prepared.options,
     provided: prepared.provided,
     positionals: prepared.positionals,
-    context
+    context,
+    payload: prepared.payload
   });
 
   return result as CommandResult<TCommand>;
@@ -299,9 +341,12 @@ export async function runCommandFromRegistry<
 export async function runCommand<
   const TSchema extends OptionsSchema,
   TContext,
-  TResult
+  TResult,
+  const TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
+  TMetadata = unknown,
+  TPayload = void
 >(
-  command: CommandDefinition<TSchema, TContext, TResult>,
+  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>,
   args: readonly string[],
   context: TContext,
   options: CommandResolutionOptions = {}
@@ -384,7 +429,7 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
     positionals: resolved.positionals
   };
 
-  await command.prepare?.(input);
+  const payload = await command.prepare?.(input);
 
   return {
     name: resolved.name,
@@ -392,7 +437,8 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
     command,
     options: parsed.options,
     provided: parsed.provided,
-    positionals: resolved.positionals
+    positionals: resolved.positionals,
+    payload
   } as PreparedCommand<TCommand>;
 }
 

@@ -298,6 +298,41 @@ const prepared = await prepareCommandFromArgs(
 );
 ```
 
+A command `prepare` hook can return a typed payload. The payload is available
+on the prepared command before runtime context is created, then passed to the
+handler:
+
+```ts
+const helloCommand = defineCommand({
+  path: ['hello'],
+  options: {
+    name: {
+      type: 'string',
+      required: true
+    }
+  },
+  prepare({ options }) {
+    return {
+      normalizedName: options.name.trim().toLowerCase()
+    };
+  },
+  handle({ payload, context }) {
+    return context.greeter.greet(payload.normalizedName);
+  }
+});
+
+const prepared = await prepareCommandFromArgs(registry, [
+  'hello',
+  '--name',
+  ' Alice '
+]);
+
+prepared.payload.normalizedName;
+```
+
+Use payload for derived CLI data. Runtime resources such as databases, sockets,
+or SDK clients should still be created outside `icore` and passed as `context`.
+
 With `strict: true`, the command path must appear before options:
 
 ```console
@@ -417,7 +452,7 @@ HELLO, ALICE!
 ```
 
 The command handler receives parsed options, user-provided option metadata,
-remaining positionals, and caller provided context.
+remaining positionals, prepared payload, and caller provided context.
 
 ## Option Schemas
 

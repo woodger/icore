@@ -554,6 +554,51 @@ describe('two-phase command execution', () => {
     assert.strictEqual(prepared.command.metadata?.resource, 'database');
   });
 
+  test('returns typed prepare payload before runtime context is created', async () => {
+    const options = {
+      name: {
+        type: 'string',
+        required: true
+      }
+    } as const;
+    const command = defineCommand({
+      path: ['users'],
+      options,
+      prepare({ options: parsedOptions }) {
+        return {
+          normalizedName: parsedOptions.name.trim().toLowerCase()
+        };
+      },
+      handle({ payload, context }: {
+        payload: { normalizedName: string };
+        context: { prefix: string };
+      }) {
+        return `${context.prefix}:${payload.normalizedName}`;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    const prepared: PreparedCommand<typeof command> = await prepareCommandFromArgs(
+      commandRegistry,
+      [
+        'users',
+        '--name',
+        ' Alice '
+      ]
+    );
+    const normalizedName: string = prepared.payload.normalizedName;
+
+    assert.strictEqual(normalizedName, 'alice');
+    assert.strictEqual(
+      await runPreparedCommand(prepared, {
+        prefix: 'user'
+      }),
+      'user:alice'
+    );
+  });
+
   test('runs prepared commands with parsed input and runtime context', async () => {
     const options = {
       name: {
@@ -691,6 +736,33 @@ describe('two-phase command execution', () => {
       'prepare',
       'handle'
     ]);
+  });
+
+  test('runCommand and runCommandFromRegistry pass prepare payload to handlers', async () => {
+    const command = defineCommand({
+      path: ['users'],
+      options: {},
+      prepare() {
+        return {
+          value: 'prepared'
+        };
+      },
+      handle({ payload }) {
+        return payload.value;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    assert.strictEqual(
+      await runCommand(command, ['users'], undefined),
+      'prepared'
+    );
+    assert.strictEqual(
+      await runCommandFromRegistry(commandRegistry, ['users'], undefined),
+      'prepared'
+    );
   });
 
   test('runCommandFromRegistry calls prepare hooks before handlers', async () => {
