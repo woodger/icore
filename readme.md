@@ -10,7 +10,7 @@ Small dependency-free command line interface mechanics for [Node.js®](https://n
 Supports a practical GNU-style option syntax:
 
 - long options: `--name value`, `--name=value`;
-- boolean flags: `--flag`, `--flag=true`, `--flag=false`, `--no-flag` by default;
+- boolean flags: `--flag`, `--no-flag`;
 - short aliases: `-f`, `-n value`;
 - option terminator: `--`.
 
@@ -34,9 +34,10 @@ npm install icore
   - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
   - [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
   - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
-  - [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
+  - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargsregistry-args-options)
+  - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
-  - [`runCommand(command, args, context)`](#runcommandcommand-args-context)
+  - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
 - [How It Works](#how-it-works)
 - [Example](#example)
 - [Option Schemas](#option-schemas)
@@ -278,7 +279,71 @@ const resolved = resolveCommandFromArgs(registry, [
 ]);
 ```
 
-### `runCommandFromRegistry(registry, args, context)`
+`resolveCommandFromArgs` keeps legacy option-anywhere command resolution. Use
+`prepareCommandFromArgs(..., { strict: true })` when command path diagnostics
+should reject options before the command path.
+
+### `prepareCommandFromArgs(registry, args, options?)`
+
+Resolves and validates a command without requiring runtime context or calling
+the command handler.
+
+```ts
+const prepared = await prepareCommandFromArgs(
+  registry,
+  ['hello', '--name', 'Alice', '--uppercase'],
+  {
+    strict: true
+  }
+);
+```
+
+A command `prepare` hook can return a typed payload. The payload is available
+on the prepared command before runtime context is created, then passed to the
+handler:
+
+```ts
+const helloCommand = defineCommand({
+  path: ['hello'],
+  options: {
+    name: {
+      type: 'string',
+      required: true
+    }
+  },
+  prepare({ options }) {
+    return {
+      normalizedName: options.name.trim().toLowerCase()
+    };
+  },
+  handle({ payload, context }) {
+    return context.greeter.greet(payload.normalizedName);
+  }
+});
+
+const prepared = await prepareCommandFromArgs(registry, [
+  'hello',
+  '--name',
+  ' Alice '
+]);
+
+prepared.payload.normalizedName;
+```
+
+Use payload for derived CLI data. Runtime resources such as databases, sockets,
+or SDK clients should still be created outside `icore` and passed as `context`.
+
+With `strict: true`, the command path must appear before options:
+
+```console
+$ node cli.js --unknown hello
+Unexpected argument '--unknown'
+```
+
+Without strict mode, legacy candidate-schema resolution is preserved for
+backward compatibility.
+
+### `runCommandFromRegistry(registry, args, context, options?)`
 
 Resolves a command from a registry and runs its handler.
 
@@ -286,7 +351,10 @@ Resolves a command from a registry and runs its handler.
 const output = await runCommandFromRegistry(
   registry,
   ['hello', '--name', 'Alice', '--uppercase'],
-  context
+  context,
+  {
+    strict: true
+  }
 );
 ```
 
@@ -317,7 +385,7 @@ const greetingOptions = {
 const options = mergeOptionsSchema(nameOptions, greetingOptions);
 ```
 
-### `runCommand(command, args, context)`
+### `runCommand(command, args, context, options?)`
 
 Parses arguments, validates options, checks command positionals, and runs the
 handler.
@@ -326,12 +394,18 @@ handler.
 const output = await runCommand(
   command,
   ['hello', '--name', 'Alice', '--uppercase'],
-  context
+  context,
+  {
+    strict: true
+  }
 );
 ```
 
 **By default**, extra positionals are rejected. A command can opt in to extra
 positionals with `allowExtraPositionals: true`.
+
+With `strict: true`, direct command execution also requires the command path to
+appear before options.
 
 ## How It Works
 
@@ -378,7 +452,7 @@ HELLO, ALICE!
 ```
 
 The command handler receives parsed options, user-provided option metadata,
-remaining positionals, and caller provided context.
+remaining positionals, prepared payload, and caller provided context.
 
 ## Option Schemas
 
@@ -435,19 +509,18 @@ const schema = {
 } as const;
 ```
 
-Boolean options accept **flag form**, explicit `true` / `false` values, and
-schema-known negation:
+Boolean options accept **flag form** and schema-known negation:
 
 ```sh
 --uppercase
---uppercase=true
---uppercase=false
 --no-uppercase
 ```
 
-Invalid explicit values are rejected:
+Explicit values are rejected:
 
 ```sh
+--uppercase=true
+--uppercase=false
 --uppercase=yes
 --uppercase=
 ```
@@ -467,8 +540,8 @@ const schema = {
 } as const;
 ```
 
-With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=true`,
-`--uppercase=false`, and `--no-uppercase` are rejected.
+With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=value`
+and `--no-uppercase` are rejected.
 
 ### `type: 'number'`
 
@@ -573,9 +646,45 @@ boolean options are rejected.
 
 ## Error Messages
 
-`icore` throws regular `Error` objects with predictable user-facing messages.
-Applications should treat these messages as **display text**, not as a
-**machine-readable API**.
+`icore` throws `IcoreError` objects for CLI parsing, option validation, and
+command resolution failures. `IcoreError` extends the regular `Error` class and
+adds a stable machine-readable `code` plus structured `details`.
+
+Applications should treat `error.message` as **display text**. Use `error.code`
+for machine-readable handling:
+
+```ts
+import { IcoreError } from 'icore';
+
+try {
+  await main(args);
+} catch (error) {
+  if (error instanceof IcoreError && error.code === 'UNKNOWN_COMMAND') {
+    printHelp();
+    process.exitCode = 2;
+    return;
+  }
+
+  throw error;
+}
+```
+
+Supported error codes:
+
+```ts
+type IcoreErrorCode =
+  | 'UNKNOWN_COMMAND'
+  | 'UNEXPECTED_ARGUMENT'
+  | 'DUPLICATE_ARGUMENT'
+  | 'EXPECTED_REQUIRED_ARGUMENT'
+  | 'INVALID_OPTION_TYPE'
+  | 'INVALID_OPTION_CHOICE'
+  | 'UNEXPECTED_POSITIONAL'
+  | 'INVALID_OPTION_ALIAS'
+  | 'DUPLICATE_ALIAS'
+  | 'INVALID_OPTION_DEFAULT'
+  | 'DUPLICATE_COMMAND';
+```
 
 Applications can catch these errors and decide how to print them. For example,
 after printing `error.message`, terminal output can look like this:
@@ -590,6 +699,9 @@ Expected '--uppercase' as boolean flag
 $ node cli.js hello --name=
 Expected '--name' as string
 ```
+
+Errors thrown by command `prepare` and `handle` functions are application errors
+and pass through unchanged.
 
 ## Project Boundary
 

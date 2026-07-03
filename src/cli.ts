@@ -27,10 +27,16 @@ export {
   type CommandInput,
   type CommandName,
   type CommandRegistry,
+  type CommandResolutionOptions,
   type PreparedCommand,
   type PreparedCommandInput,
   type ResolvedCommand
 } from './commands';
+export {
+  IcoreError,
+  type IcoreErrorCode,
+  type IcoreErrorDetails
+} from './errors';
 export {
   mergeOptionsSchema,
   parseOptions,

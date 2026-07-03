@@ -3,6 +3,7 @@ import { describe, test } from 'node:test';
 import {
   defineCommand,
   defineCommandRegistry,
+  IcoreError,
   isCommandName,
   prepareCommandFromArgs,
   resolveCommand,
@@ -60,6 +61,33 @@ describe('command registry', () => {
         command
       ] as const),
       /Unexpected duplicate command 'users get-accounts'/
+    );
+  });
+
+  test('throws machine-readable duplicate command errors', () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'accounts';
+      }
+    });
+
+    assert.throws(
+      () => defineCommandRegistry([
+        command,
+        command
+      ] as const),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_COMMAND');
+        assert.strictEqual(error.message, "Unexpected duplicate command 'users get-accounts'");
+        assert.deepStrictEqual(error.details, {
+          command: 'users get-accounts'
+        });
+
+        return true;
+      }
     );
   });
 
@@ -196,6 +224,39 @@ describe('command registry', () => {
       /Unknown command: unknown/
     );
   });
+
+  test('throws machine-readable unknown command errors', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'users';
+        }
+      })
+    ] as const);
+    const assertUnknownCommandError = (error: unknown): boolean => {
+      assert.ok(error instanceof IcoreError);
+      assert.strictEqual(error.code, 'UNKNOWN_COMMAND');
+      assert.strictEqual(error.message, 'Unknown command: unknown');
+      assert.deepStrictEqual(error.details, {
+        command: 'unknown',
+        positionals: ['unknown']
+      });
+
+      return true;
+    };
+
+    assert.throws(
+      () => resolveCommand(commandRegistry, ['unknown']),
+      assertUnknownCommandError
+    );
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['unknown']),
+      assertUnknownCommandError
+    );
+  });
 });
 
 describe('two-phase command execution', () => {
@@ -237,6 +298,119 @@ describe('two-phase command execution', () => {
       /Unexpected argument '--unknown'/
     );
     assert.strictEqual(handled, false);
+  });
+
+  test('keeps legacy before-command option resolution by default', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['--unknown', 'users']),
+      /Unknown command: <empty>/
+    );
+  });
+
+  test('rejects long options before command path in strict mode', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          verbose: {
+            type: 'boolean'
+          }
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    for (const args of [
+      ['--unknown', 'users'],
+      ['--verbose', 'users']
+    ]) {
+      await assert.rejects(
+        () => prepareCommandFromArgs(commandRegistry, args, {
+          strict: true
+        }),
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+          assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
+          assert.deepStrictEqual(error.details, {
+            argument: args[0]
+          });
+
+          return true;
+        }
+      );
+    }
+
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects short options before command path in strict mode', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['-x', 'users'], {
+        strict: true
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '-x'");
+        assert.deepStrictEqual(error.details, {
+          argument: '-x'
+        });
+
+        return true;
+      }
+    );
+  });
+
+  test('accepts options after command path in strict mode', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          verbose: {
+            type: 'boolean'
+          }
+        },
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      'users',
+      '--verbose'
+    ], {
+      strict: true
+    });
+
+    assert.deepStrictEqual(prepared.options, {
+      verbose: true
+    });
   });
 
   test('rejects missing required options during prepare', async () => {
@@ -380,6 +554,51 @@ describe('two-phase command execution', () => {
     assert.strictEqual(prepared.command.metadata?.resource, 'database');
   });
 
+  test('returns typed prepare payload before runtime context is created', async () => {
+    const options = {
+      name: {
+        type: 'string',
+        required: true
+      }
+    } as const;
+    const command = defineCommand({
+      path: ['users'],
+      options,
+      prepare({ options: parsedOptions }) {
+        return {
+          normalizedName: parsedOptions.name.trim().toLowerCase()
+        };
+      },
+      handle({ payload, context }: {
+        payload: { normalizedName: string };
+        context: { prefix: string };
+      }) {
+        return `${context.prefix}:${payload.normalizedName}`;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    const prepared: PreparedCommand<typeof command> = await prepareCommandFromArgs(
+      commandRegistry,
+      [
+        'users',
+        '--name',
+        ' Alice '
+      ]
+    );
+    const normalizedName: string = prepared.payload.normalizedName;
+
+    assert.strictEqual(normalizedName, 'alice');
+    assert.strictEqual(
+      await runPreparedCommand(prepared, {
+        prefix: 'user'
+      }),
+      'user:alice'
+    );
+  });
+
   test('runs prepared commands with parsed input and runtime context', async () => {
     const options = {
       name: {
@@ -519,6 +738,33 @@ describe('two-phase command execution', () => {
     ]);
   });
 
+  test('runCommand and runCommandFromRegistry pass prepare payload to handlers', async () => {
+    const command = defineCommand({
+      path: ['users'],
+      options: {},
+      prepare() {
+        return {
+          value: 'prepared'
+        };
+      },
+      handle({ payload }) {
+        return payload.value;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    assert.strictEqual(
+      await runCommand(command, ['users'], undefined),
+      'prepared'
+    );
+    assert.strictEqual(
+      await runCommandFromRegistry(commandRegistry, ['users'], undefined),
+      'prepared'
+    );
+  });
+
   test('runCommandFromRegistry calls prepare hooks before handlers', async () => {
     const calls: string[] = [];
     const commandRegistry = defineCommandRegistry([
@@ -548,6 +794,28 @@ describe('two-phase command execution', () => {
       'prepare',
       'handle'
     ]);
+  });
+
+  test('runCommandFromRegistry passes strict mode to prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => runCommandFromRegistry(commandRegistry, ['--unknown', 'users'], undefined, {
+        strict: true
+      }),
+      /Unexpected argument '--unknown'/
+    );
+    assert.strictEqual(handled, false);
   });
 });
 
@@ -580,6 +848,89 @@ describe('runCommand', () => {
         'account-id:json'
       );
     });
+  });
+
+  test('keeps legacy before-command option handling by default', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['--unknown', 'users', 'get-accounts'], undefined),
+      /Expected command 'users get-accounts'/
+    );
+  });
+
+  test('rejects options before command path in strict mode', async () => {
+    let handled = false;
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        verbose: {
+          type: 'boolean'
+        }
+      },
+      handle() {
+        handled = true;
+        return 'ok';
+      }
+    });
+
+    for (const args of [
+      ['--unknown', 'users', 'get-accounts'],
+      ['--verbose', 'users', 'get-accounts'],
+      ['-x', 'users', 'get-accounts']
+    ]) {
+      await assert.rejects(
+        () => runCommand(command, args, undefined, {
+          strict: true
+        }),
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+          assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
+          assert.deepStrictEqual(error.details, {
+            argument: args[0]
+          });
+
+          return true;
+        }
+      );
+    }
+
+    assert.strictEqual(handled, false);
+  });
+
+  test('accepts options after command path in strict mode', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      },
+      handle({ options }) {
+        return options.format;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--format', 'json'],
+        undefined,
+        {
+          strict: true
+        }
+      ),
+      'json'
+    );
   });
 
   test('passes user-provided option metadata to handler', async () => {
@@ -799,6 +1150,35 @@ describe('runCommand', () => {
     await assert.rejects(
       () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
       /Unexpected positional argument for 'users get-accounts': extra/
+    );
+  });
+
+  test('throws machine-readable unexpected positional errors', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_POSITIONAL');
+        assert.strictEqual(
+          error.message,
+          "Unexpected positional argument for 'users get-accounts': extra"
+        );
+        assert.deepStrictEqual(error.details, {
+          command: 'users get-accounts',
+          positional: 'extra',
+          positionals: ['extra']
+        });
+
+        return true;
+      }
     );
   });
 });

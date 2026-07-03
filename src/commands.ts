@@ -12,6 +12,7 @@
  */
 
 import { parseArgv } from './argv';
+import { IcoreError } from './errors';
 import {
   parseOptionsDetailed,
   type InferOptions,
@@ -35,10 +36,19 @@ export type PreparedCommandInput<TSchema extends OptionsSchema> = {
  */
 export type CommandInput<
   TSchema extends OptionsSchema,
-  TContext
+  TContext,
+  TPayload = void
 > = PreparedCommandInput<TSchema> & {
   context: TContext;
-};
+} & (
+  [TPayload] extends [void]
+    ? {
+      payload?: TPayload;
+    }
+    : {
+      payload: TPayload;
+    }
+);
 
 /**
  * Declarative command contract.
@@ -52,23 +62,30 @@ export type CommandDefinition<
   TContext,
   TResult,
   TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
-  TMetadata = unknown
+  TMetadata = unknown,
+  TPayload = void
 > = {
   path: TPath;
   options: TSchema;
   metadata?: TMetadata;
   allowExtraPositionals?: boolean;
-  prepare?(input: PreparedCommandInput<TSchema>): void | Promise<void>;
-  handle(input: CommandInput<TSchema, TContext>): TResult | Promise<TResult>;
+  prepare?(input: PreparedCommandInput<TSchema>): TPayload | Promise<TPayload>;
+  handle(input: CommandInput<TSchema, TContext, TPayload>): TResult | Promise<TResult>;
 };
 
-type AnyCommandDefinition = CommandDefinition<
-  OptionsSchema,
-  unknown,
-  unknown,
-  readonly [string, ...string[]],
-  unknown
->;
+type AnyCommandInput = PreparedCommandInput<OptionsSchema> & {
+  context: unknown;
+  payload?: unknown;
+};
+
+type AnyCommandDefinition = {
+  path: readonly [string, ...string[]];
+  options: OptionsSchema;
+  metadata?: unknown;
+  allowExtraPositionals?: boolean;
+  prepare?(input: PreparedCommandInput<OptionsSchema>): unknown | Promise<unknown>;
+  handle(input: AnyCommandInput): unknown | Promise<unknown>;
+};
 
 type CommandPathName<TPath extends readonly string[]> =
   number extends TPath['length']
@@ -82,20 +99,43 @@ type CommandPathName<TPath extends readonly string[]> =
         ? `${THead} ${CommandPathName<TRest>}`
         : never;
 
+type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
+  TCommand extends CommandDefinition<
+    infer TSchema,
+    infer TContext,
+    infer TResult,
+    infer TPath,
+    infer TMetadata,
+    infer TPayload
+  >
+    ? {
+      schema: TSchema;
+      context: TContext;
+      result: TResult;
+      path: TPath;
+      metadata: TMetadata;
+      payload: TPayload;
+    }
+    : {
+      schema: TCommand['options'];
+      context: unknown;
+      result: unknown;
+      path: TCommand['path'];
+      metadata: TCommand['metadata'];
+      payload: unknown;
+    };
+
 type CommandContext<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, infer TContext, unknown>
-    ? TContext
-    : never;
+  CommandDefinitionParts<TCommand>['context'];
 
 type CommandResult<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<OptionsSchema, unknown, infer TResult>
-    ? Awaited<TResult>
-    : never;
+  Awaited<CommandDefinitionParts<TCommand>['result']>;
 
 type CommandSchema<TCommand extends AnyCommandDefinition> =
-  TCommand extends CommandDefinition<infer TSchema, unknown, unknown>
-    ? TSchema
-    : never;
+  CommandDefinitionParts<TCommand>['schema'];
+
+type CommandPayload<TCommand extends AnyCommandDefinition> =
+  CommandDefinitionParts<TCommand>['payload'];
 
 /**
  * Infers the public command name from a command path.
@@ -109,6 +149,18 @@ export type CommandName<TCommand extends AnyCommandDefinition> =
 export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> = {
   commands: TCommands;
   commandNames: readonly CommandName<TCommands[number]>[];
+};
+
+/**
+ * Options for command resolution from raw CLI arguments.
+ */
+export type CommandResolutionOptions = {
+  /**
+   * When enabled, command path must appear before options. Options before the
+   * command path are rejected instead of participating in legacy candidate
+   * schema parsing.
+   */
+  strict?: boolean;
 };
 
 /**
@@ -131,6 +183,7 @@ export type PreparedCommand<TCommand extends AnyCommandDefinition> = {
   options: InferOptions<CommandSchema<TCommand>>;
   provided: InferProvidedOptions<CommandSchema<TCommand>>;
   positionals: string[];
+  payload: CommandPayload<TCommand>;
 };
 
 /**
@@ -141,10 +194,11 @@ export function defineCommand<
   const TPath extends readonly [string, ...string[]],
   TContext = undefined,
   TResult = unknown,
-  TMetadata = unknown
+  TMetadata = unknown,
+  TPayload = void
 >(
-  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata>
-): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata> {
+  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>
+): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload> {
   return command;
 }
 
@@ -196,7 +250,7 @@ export function resolveCommand<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(positionals)}`);
+  throw createUnknownCommandError(positionals);
 }
 
 /**
@@ -217,7 +271,7 @@ export function resolveCommandFromArgs<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(parseArgv(args).positionals)}`);
+  throw createUnknownCommandError(parseArgv(args).positionals);
 }
 
 /**
@@ -227,8 +281,13 @@ export async function prepareCommandFromArgs<
   const TCommands extends readonly AnyCommandDefinition[]
 >(
   registry: CommandRegistry<TCommands>,
-  args: readonly string[]
+  args: readonly string[],
+  options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommands[number]>> {
+  if (options.strict === true) {
+    return prepareCommandFromArgsStrict(registry, args);
+  }
+
   for (const command of commandsBySpecificity(registry.commands)) {
     const argv = parseArgv(args, command.options);
     const resolved = resolveCommandCandidate(command, argv.positionals);
@@ -238,7 +297,7 @@ export async function prepareCommandFromArgs<
     }
   }
 
-  throw new Error(`Unknown command: ${formatCommandPositionals(parseArgv(args).positionals)}`);
+  throw createUnknownCommandError(parseArgv(args).positionals);
 }
 
 /**
@@ -252,7 +311,8 @@ export async function runPreparedCommand<TCommand extends AnyCommandDefinition>(
     options: prepared.options,
     provided: prepared.provided,
     positionals: prepared.positionals,
-    context
+    context,
+    payload: prepared.payload
   });
 
   return result as CommandResult<TCommand>;
@@ -266,9 +326,10 @@ export async function runCommandFromRegistry<
 >(
   registry: CommandRegistry<TCommands>,
   args: readonly string[],
-  context: CommandContext<TCommands[number]>
+  context: CommandContext<TCommands[number]>,
+  options: CommandResolutionOptions = {}
 ): Promise<CommandResult<TCommands[number]>> {
-  const prepared = await prepareCommandFromArgs(registry, args);
+  const prepared = await prepareCommandFromArgs(registry, args, options);
 
   return runPreparedCommand(prepared, context);
 }
@@ -280,13 +341,17 @@ export async function runCommandFromRegistry<
 export async function runCommand<
   const TSchema extends OptionsSchema,
   TContext,
-  TResult
+  TResult,
+  const TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
+  TMetadata = unknown,
+  TPayload = void
 >(
-  command: CommandDefinition<TSchema, TContext, TResult>,
+  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>,
   args: readonly string[],
-  context: TContext
+  context: TContext,
+  options: CommandResolutionOptions = {}
 ): Promise<TResult> {
-  const prepared = await prepareCommand(command, args);
+  const prepared = await prepareCommand(command, args, options);
 
   return runPreparedCommand(
     prepared,
@@ -296,8 +361,13 @@ export async function runCommand<
 
 async function prepareCommand<TCommand extends AnyCommandDefinition>(
   command: TCommand,
-  args: readonly string[]
+  args: readonly string[],
+  options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommand>> {
+  if (options.strict === true) {
+    assertNoOptionBeforeCommand(args);
+  }
+
   const argv = parseArgv(args, command.options);
   const extraPositionals = resolveCommandPositionals(command.path, argv.positionals);
   const resolved = {
@@ -310,6 +380,28 @@ async function prepareCommand<TCommand extends AnyCommandDefinition>(
   return prepareResolvedCommand(resolved, argv.options);
 }
 
+async function prepareCommandFromArgsStrict<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): Promise<PreparedCommand<TCommands[number]>> {
+  const command = findStrictCommand(registry, args);
+
+  if (command === undefined) {
+    throw createUnknownCommandError(commandPositionalsBeforeOptions(args));
+  }
+
+  const argv = parseArgv(args, command.options);
+  const resolved = resolveCommandCandidate(command, argv.positionals);
+
+  if (resolved === undefined) {
+    throw createUnknownCommandError(argv.positionals);
+  }
+
+  return prepareResolvedCommand(resolved, argv.options);
+}
+
 async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
   resolved: ResolvedCommand<TCommand>,
   rawOptions: Record<string, RawOptionValue>
@@ -317,8 +409,16 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
   const { command } = resolved;
 
   if (resolved.positionals.length > 0 && command.allowExtraPositionals !== true) {
-    throw new Error(
-      `Unexpected positional argument for '${command.path.join(' ')}': ${resolved.positionals[0] ?? ''}`
+    const positional = resolved.positionals[0] ?? '';
+
+    throw new IcoreError(
+      'UNEXPECTED_POSITIONAL',
+      `Unexpected positional argument for '${command.path.join(' ')}': ${positional}`,
+      {
+        command: command.path.join(' '),
+        positional,
+        positionals: [...resolved.positionals]
+      }
     );
   }
 
@@ -329,7 +429,7 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
     positionals: resolved.positionals
   };
 
-  await command.prepare?.(input);
+  const payload = await command.prepare?.(input);
 
   return {
     name: resolved.name,
@@ -337,7 +437,8 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
     command,
     options: parsed.options,
     provided: parsed.provided,
-    positionals: resolved.positionals
+    positionals: resolved.positionals,
+    payload
   } as PreparedCommand<TCommand>;
 }
 
@@ -347,7 +448,17 @@ function resolveCommandPositionals(
 ): string[] {
   for (let index = 0; index < path.length; index += 1) {
     if (positionals[index] !== path[index]) {
-      throw new Error(`Expected command '${path.join(' ')}'`);
+      const command = path.join(' ');
+
+      throw new IcoreError(
+        'UNKNOWN_COMMAND',
+        `Expected command '${command}'`,
+        {
+          command,
+          path: [...path],
+          positionals: [...positionals]
+        }
+      );
     }
   }
 
@@ -363,7 +474,7 @@ function assertNoDuplicateCommandNames(commandNames: readonly string[]): void {
 
   for (const name of commandNames) {
     if (seen.has(name)) {
-      throw new Error(`Unexpected duplicate command '${name}'`);
+      throw createDuplicateCommandError(name);
     }
 
     seen.add(name);
@@ -376,6 +487,31 @@ function commandsBySpecificity<TCommand extends AnyCommandDefinition>(
   return [...commands].sort(
     (left, right) => right.path.length - left.path.length
   );
+}
+
+function findStrictCommand<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): TCommands[number] | undefined {
+  assertNoOptionBeforeCommand(args);
+
+  for (const command of commandsBySpecificity(registry.commands)) {
+    if (commandPathMatchesArgs(command.path, args)) {
+      return command;
+    }
+  }
+
+  return undefined;
+}
+
+function assertNoOptionBeforeCommand(args: readonly string[]): void {
+  const firstArg = args[0];
+
+  if (firstArg !== undefined && isOptionBeforeCommand(firstArg)) {
+    throw createUnexpectedArgumentError(firstArg);
+  }
 }
 
 function resolveCommandCandidate<TCommand extends AnyCommandDefinition>(
@@ -414,4 +550,68 @@ function resolveMatchingCommandPositionals(
 
 function formatCommandPositionals(positionals: readonly string[]): string {
   return positionals.length === 0 ? '<empty>' : positionals.join(' ');
+}
+
+function commandPathMatchesArgs(
+  path: readonly string[],
+  args: readonly string[]
+): boolean {
+  for (let index = 0; index < path.length; index += 1) {
+    if (args[index] !== path[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function commandPositionalsBeforeOptions(args: readonly string[]): string[] {
+  const positionals: string[] = [];
+
+  for (const arg of args) {
+    if (isOptionBeforeCommand(arg)) {
+      break;
+    }
+
+    positionals.push(arg);
+  }
+
+  return positionals;
+}
+
+function isOptionBeforeCommand(arg: string): boolean {
+  return arg !== '-' && arg.startsWith('-');
+}
+
+function createUnknownCommandError(positionals: readonly string[]): IcoreError {
+  const command = formatCommandPositionals(positionals);
+
+  return new IcoreError(
+    'UNKNOWN_COMMAND',
+    `Unknown command: ${command}`,
+    {
+      command,
+      positionals: [...positionals]
+    }
+  );
+}
+
+function createUnexpectedArgumentError(argument: string): IcoreError {
+  return new IcoreError(
+    'UNEXPECTED_ARGUMENT',
+    `Unexpected argument '${argument}'`,
+    {
+      argument
+    }
+  );
+}
+
+function createDuplicateCommandError(command: string): IcoreError {
+  return new IcoreError(
+    'DUPLICATE_COMMAND',
+    `Unexpected duplicate command '${command}'`,
+    {
+      command
+    }
+  );
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  IcoreError,
   parseArgv
 } from './cli';
 
@@ -30,6 +31,23 @@ describe('parseArgv', () => {
     assert.throws(
       () => parseArgv(['--format', 'json', '--format', 'table']),
       /Unexpected duplicate argument '--format'/
+    );
+  });
+
+  test('throws machine-readable duplicate argument errors', () => {
+    assert.throws(
+      () => parseArgv(['--format', 'json', '--format', 'table']),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected duplicate argument '--format'");
+        assert.deepStrictEqual(error.details, {
+          argument: '--format',
+          option: 'format'
+        });
+
+        return true;
+      }
     );
   });
 
@@ -237,6 +255,53 @@ describe('parseArgv', () => {
         }
       }),
       /Unexpected duplicate alias '-v'/
+    );
+  });
+
+  test('throws machine-readable alias schema errors', () => {
+    assert.throws(
+      () => parseArgv([], {
+        verbose: {
+          type: 'boolean',
+          alias: '1'
+        }
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'INVALID_OPTION_ALIAS');
+        assert.strictEqual(error.message, "Expected alias for '--verbose' as single ASCII letter");
+        assert.deepStrictEqual(error.details, {
+          argument: '--verbose',
+          option: 'verbose',
+          alias: '1'
+        });
+
+        return true;
+      }
+    );
+
+    assert.throws(
+      () => parseArgv([], {
+        verbose: {
+          type: 'boolean',
+          alias: 'v'
+        },
+        version: {
+          type: 'boolean',
+          alias: 'v'
+        }
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_ALIAS');
+        assert.strictEqual(error.message, "Unexpected duplicate alias '-v'");
+        assert.deepStrictEqual(error.details, {
+          alias: 'v',
+          argument: '-v'
+        });
+
+        return true;
+      }
     );
   });
 
