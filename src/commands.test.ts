@@ -5,6 +5,7 @@ import {
   defineCommandRegistry,
   IcoreError,
   isCommandName,
+  isPreparedCommandName,
   prepareCommandFromArgs,
   resolveCommand,
   resolveCommandFromArgs,
@@ -639,7 +640,7 @@ describe('two-phase command execution', () => {
 
     const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
 
-    if (prepared.name === 'accounts') {
+    if (isPreparedCommandName(prepared, 'accounts')) {
       const payload: CommandPayload<typeof accountCommand> = prepared.payload;
       const context: CommandContext<typeof accountCommand> = {
         prefix: 'account'
@@ -651,10 +652,12 @@ describe('two-phase command execution', () => {
 
       assert.strictEqual(payload.accountId, 'account-id');
       assert.strictEqual(result, 'account:account-id');
-    } else {
+    } else if (isPreparedCommandName(prepared, 'projects')) {
       const payload: CommandPayload<typeof projectCommand> = prepared.payload;
 
       assert.strictEqual(payload.projectId, 'project-id');
+    } else {
+      assert.fail('Expected a known command');
     }
   });
 
