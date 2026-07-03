@@ -125,16 +125,16 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
       payload: unknown;
     };
 
-type CommandContext<TCommand extends AnyCommandDefinition> =
+export type CommandContext<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['context'];
 
-type CommandResult<TCommand extends AnyCommandDefinition> =
+export type CommandResult<TCommand extends AnyCommandDefinition> =
   Awaited<CommandDefinitionParts<TCommand>['result']>;
 
 type CommandSchema<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['schema'];
 
-type CommandPayload<TCommand extends AnyCommandDefinition> =
+export type CommandPayload<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['payload'];
 
 /**
@@ -176,15 +176,18 @@ export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
 /**
  * Command resolved and validated without runtime context.
  */
-export type PreparedCommand<TCommand extends AnyCommandDefinition> = {
-  name: CommandName<TCommand>;
-  path: TCommand['path'];
-  command: TCommand;
-  options: InferOptions<CommandSchema<TCommand>>;
-  provided: InferProvidedOptions<CommandSchema<TCommand>>;
-  positionals: string[];
-  payload: CommandPayload<TCommand>;
-};
+export type PreparedCommand<TCommand extends AnyCommandDefinition> =
+  TCommand extends AnyCommandDefinition
+    ? {
+      name: CommandName<TCommand>;
+      path: TCommand['path'];
+      command: TCommand;
+      options: InferOptions<CommandSchema<TCommand>>;
+      provided: InferProvidedOptions<CommandSchema<TCommand>>;
+      positionals: string[];
+      payload: CommandPayload<TCommand>;
+    }
+    : never;
 
 /**
  * Defines a command while preserving literal option schema types.
@@ -293,7 +296,10 @@ export async function prepareCommandFromArgs<
     const resolved = resolveCommandCandidate(command, argv.positionals);
 
     if (resolved !== undefined) {
-      return prepareResolvedCommand(resolved, argv.options);
+      return prepareResolvedCommand(
+        resolved,
+        argv.options
+      ) as Promise<PreparedCommand<TCommands[number]>>;
     }
   }
 

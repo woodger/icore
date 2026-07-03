@@ -17,7 +17,12 @@ conservative.
 - Added opt-in `strict: true` command resolution for rejecting options before command paths.
 - Added `strict: true` support to direct `runCommand` execution.
 - Added typed prepared command `payload` returned from `prepare` and passed to `handle`.
+- Added public `CommandPayload`, `CommandContext`, and `CommandResult` helper types.
 - Added this changelog.
+
+### Changed
+
+- Changed `PreparedCommand` typing to preserve payload correlation when narrowing registry unions by command name.
 
 ### Removed
 

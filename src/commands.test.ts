@@ -12,6 +12,9 @@ import {
   runPreparedCommand,
   runCommandFromRegistry,
   type CommandName,
+  type CommandContext,
+  type CommandPayload,
+  type CommandResult,
   type PreparedCommand,
   type PreparedCommandInput
 } from './cli';
@@ -599,6 +602,62 @@ describe('two-phase command execution', () => {
     );
   });
 
+  test('narrows prepared payload by command name in registry unions', async () => {
+    const accountCommand = defineCommand({
+      path: ['accounts'],
+      options: {},
+      prepare() {
+        return {
+          accountId: 'account-id'
+        };
+      },
+      handle({ payload, context }: {
+        payload: { accountId: string };
+        context: { prefix: string };
+      }) {
+        return `${context.prefix}:${payload.accountId}`;
+      }
+    });
+    const projectCommand = defineCommand({
+      path: ['projects'],
+      options: {},
+      prepare() {
+        return {
+          projectId: 'project-id'
+        };
+      },
+      handle({ payload }: {
+        payload: { projectId: string };
+      }) {
+        return payload.projectId;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      accountCommand,
+      projectCommand
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
+
+    if (prepared.name === 'accounts') {
+      const payload: CommandPayload<typeof accountCommand> = prepared.payload;
+      const context: CommandContext<typeof accountCommand> = {
+        prefix: 'account'
+      };
+      const result: CommandResult<typeof accountCommand> = await runPreparedCommand(
+        prepared,
+        context
+      );
+
+      assert.strictEqual(payload.accountId, 'account-id');
+      assert.strictEqual(result, 'account:account-id');
+    } else {
+      const payload: CommandPayload<typeof projectCommand> = prepared.payload;
+
+      assert.strictEqual(payload.projectId, 'project-id');
+    }
+  });
+
   test('runs prepared commands with parsed input and runtime context', async () => {
     const options = {
       name: {
@@ -701,12 +760,17 @@ describe('two-phase command execution', () => {
     const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
 
     assert.strictEqual(prepared.command, accountCommand);
-    assert.strictEqual(
-      await runPreparedCommand(prepared, {
-        accountId: 'account-id'
-      }),
-      'account:account-id'
-    );
+
+    if (prepared.name === 'accounts') {
+      assert.strictEqual(
+        await runPreparedCommand(prepared, {
+          accountId: 'account-id'
+        }),
+        'account:account-id'
+      );
+    } else {
+      assert.fail('Expected accounts command');
+    }
   });
 
   test('runCommand calls prepare hooks before handlers', async () => {
