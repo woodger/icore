@@ -17,6 +17,18 @@ describe('createPresentation', () => {
     const presentation = createPresentation();
 
     assert.deepStrictEqual(presentation.formats, ['json', 'table', 'csv']);
+    assert.deepStrictEqual(presentation.view.records([
+      {
+        id: 'account-id'
+      }
+    ]), {
+      type: 'records',
+      value: [
+        {
+          id: 'account-id'
+        }
+      ]
+    });
     assert.equal(presentation.json.render({ id: 'account-id' }), [
       '{',
       '  "id": "account-id"',
@@ -39,6 +51,44 @@ describe('createPresentation', () => {
       'account-id',
       ''
     ].join('\n'));
+  });
+
+  test('creates presentation views', () => {
+    const presentation = createPresentation();
+
+    assert.deepStrictEqual(presentation.view.empty(), {
+      type: 'empty'
+    });
+    assert.deepStrictEqual(presentation.view.text('ok\n'), {
+      type: 'text',
+      value: 'ok\n'
+    });
+    assert.deepStrictEqual(presentation.view.record({ id: 'account-id' }), {
+      type: 'record',
+      value: {
+        id: 'account-id'
+      }
+    });
+    assert.deepStrictEqual(presentation.view.table([
+      ['id'],
+      ['account-id']
+    ]), {
+      type: 'table',
+      rows: [
+        ['id'],
+        ['account-id']
+      ]
+    });
+    assert.deepStrictEqual(presentation.view.csv([
+      ['id'],
+      ['account-id']
+    ]), {
+      type: 'csv',
+      rows: [
+        ['id'],
+        ['account-id']
+      ]
+    });
   });
 });
 

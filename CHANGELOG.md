@@ -15,6 +15,7 @@ conservative.
 
 - Added `createCommands` as a high-level command mechanics facade.
 - Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
+- Added `presentation.view.*` factory methods for creating terminal presentation views.
 - Added `createOutput` as a stdout/stderr output boundary facade.
 - Added semantic `Output.write()` and `Output.error()` methods.
 - Added `createTerminalApp` to compose command, presentation, and output mechanics.

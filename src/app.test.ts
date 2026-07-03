@@ -3,6 +3,7 @@ import { describe, test } from 'node:test';
 import {
   createCommands,
   createOutput,
+  createPresentation,
   createTerminalApp,
   defineCommand,
   presentationFormatOptions
@@ -42,25 +43,24 @@ function createMemoryOutput() {
 describe('createTerminalApp', () => {
   test('runs commands and renders presentation results to stdout', async () => {
     const memory = createMemoryOutput();
+    const presentation = createPresentation();
     const commands = createCommands([
       defineCommand({
         path: ['users', 'get-accounts'],
         options: presentationFormatOptions,
         handle() {
-          return {
-            type: 'records',
-            value: [
-              {
-                id: 'account-1',
-                active: true
-              }
-            ]
-          } as const;
+          return presentation.view.records([
+            {
+              id: 'account-1',
+              active: true
+            }
+          ]);
         }
       })
     ] as const);
     const app = createTerminalApp({
       commands,
+      presentation,
       output: memory.output
     });
 

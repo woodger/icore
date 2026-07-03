@@ -41,7 +41,7 @@ npm install icore
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
   - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
   - [Terminal App Form](#terminal-app-form)
-  - [Presentation Renderers](#presentation-renderers)
+  - [Presentation Layer](#presentation-layer)
   - [Output Writers](#output-writers)
 - [How It Works](#how-it-works)
 - [Example](#example)
@@ -478,27 +478,25 @@ import {
   presentationFormatOptions
 } from 'icore';
 
+const presentation = createPresentation();
 const commands = createCommands([
   defineCommand({
     path: ['users', 'get-accounts'],
     options: presentationFormatOptions,
     async handle() {
-      return {
-        type: 'records',
-        value: [
-          {
-            id: 'account-id',
-            name: 'Main account'
-          }
-        ]
-      } as const;
+      return presentation.view.records([
+        {
+          id: 'account-id',
+          name: 'Main account'
+        }
+      ]);
     }
   })
 ] as const);
 
 const app = createTerminalApp({
   commands,
-  presentation: createPresentation(),
+  presentation,
   output: createOutput()
 });
 
@@ -524,10 +522,11 @@ Commands may return `string`, `AsyncIterable<string>`, `PresentationResult`, or
 `undefined`. Application-specific mapping to `PresentationResult` remains in
 the consuming application.
 
-### Presentation Renderers
+### Presentation Layer
 
-`icore` provides generic terminal presentation helpers for common CLI output
-formats. They do not know application DTOs, report contracts, or command names.
+`icore` provides generic terminal presentation view models and renderers for
+common CLI output formats. They do not know application DTOs, report contracts,
+or command names.
 
 ```ts
 import {
@@ -540,12 +539,17 @@ import {
 
 const presentation = createPresentation();
 
-presentation.render({
-  type: 'record',
-  value: {
+const view = presentation.view.record({
+  id: 'account-id'
+});
+
+presentation.render(view, 'json');
+
+presentation.render(presentation.view.records([
+  {
     id: 'account-id'
   }
-}, 'json');
+]), 'table');
 
 renderJson({
   id: 'account-id'

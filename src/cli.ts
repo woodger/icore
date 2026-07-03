@@ -75,10 +75,18 @@ export {
   renderTextTable,
   type CsvCell,
   type CsvRow,
+  type CsvPresentationView,
+  type EmptyPresentationView,
   type Presentation,
   type PresentationFormat,
   type PresentationRecord,
   type PresentationResult,
+  type PresentationView,
+  type PresentationViewFactory,
+  type RecordPresentationView,
+  type RecordsPresentationView,
+  type TablePresentationView,
+  type TextPresentationView,
   type TextTableRow
 } from './presentation';
 export {

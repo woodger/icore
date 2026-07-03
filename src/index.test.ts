@@ -22,6 +22,10 @@ describe('package entrypoint', () => {
     assert.equal(typeof createCommands, 'function');
     assert.equal(typeof createPresentation, 'function');
     assert.equal(typeof createTerminalApp, 'function');
+    assert.deepStrictEqual(createPresentation().view.text('ok\n'), {
+      type: 'text',
+      value: 'ok\n'
+    });
     assert.deepStrictEqual(presentationFormatOptions.format.choices, [
       'json',
       'table',
