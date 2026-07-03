@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Declarative command line interface mechanics for Node.js",
   "keywords": [
     "command-line",
@@ -28,6 +28,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "test": "node --test dist/*.test.js",
     "lint": "eslint src"
   },

@@ -3,6 +3,7 @@ export {
   defineCommandRegistry,
   IcoreError,
   isCommandName,
+  isPreparedCommandName,
   mergeOptionsSchema,
   parseArgv,
   parseOptions,

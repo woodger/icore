@@ -237,6 +237,19 @@ export function isCommandName<
 }
 
 /**
+ * Checks whether a prepared command has the given command name.
+ */
+export function isPreparedCommandName<
+  TPrepared extends PreparedCommand<AnyCommandDefinition>,
+  TName extends TPrepared['name']
+>(
+  prepared: TPrepared,
+  name: TName
+): prepared is Extract<TPrepared, { name: TName }> {
+  return prepared.name === name;
+}
+
+/**
  * Resolves a command from already parsed positional arguments.
  */
 export function resolveCommand<

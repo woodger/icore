@@ -18,6 +18,7 @@ conservative.
 - Added `strict: true` support to direct `runCommand` execution.
 - Added typed prepared command `payload` returned from `prepare` and passed to `handle`.
 - Added public `CommandPayload`, `CommandContext`, and `CommandResult` helper types.
+- Added `isPreparedCommandName` for narrowing prepared command unions by name.
 - Added this changelog.
 
 ### Changed

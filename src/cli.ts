@@ -17,6 +17,7 @@ export {
   defineCommand,
   defineCommandRegistry,
   isCommandName,
+  isPreparedCommandName,
   prepareCommandFromArgs,
   resolveCommand,
   resolveCommandFromArgs,

@@ -32,6 +32,7 @@ npm install icore
   - [`defineCommand(command)`](#definecommandcommand)
   - [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
   - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
+  - [`isPreparedCommandName(prepared, name)`](#ispreparedcommandnameprepared-name)
   - [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
   - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
   - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargsregistry-args-options)
@@ -233,6 +234,17 @@ Checks whether an unknown value is a command name registered in the registry.
 ```ts
 if (isCommandName(registry, value)) {
   // value is narrowed to the registry command name union.
+}
+```
+
+### `isPreparedCommandName(prepared, name)`
+
+Checks whether a prepared command has the given command name and narrows the
+prepared command union.
+
+```ts
+if (isPreparedCommandName(prepared, 'hello')) {
+  // prepared.payload is narrowed to the `hello` command payload.
 }
 ```
 
