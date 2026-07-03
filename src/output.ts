@@ -19,6 +19,16 @@ export type BackpressureTextSink = {
   once?(event: 'drain', listener: () => void): unknown;
 };
 
+export type Output = {
+  stdout: TextWriter;
+  stderr: TextWriter;
+};
+
+export type OutputOptions = {
+  stdout?: BackpressureTextSink;
+  stderr?: BackpressureTextSink;
+};
+
 export function createBackpressureTextWriter(
   sink: BackpressureTextSink
 ): TextWriter {
@@ -47,6 +57,13 @@ export function createStderrWriter(
   stderr: BackpressureTextSink = process.stderr
 ): TextWriter {
   return createBackpressureTextWriter(stderr);
+}
+
+export function createOutput(options: OutputOptions = {}): Output {
+  return {
+    stdout: createStdoutWriter(options.stdout),
+    stderr: createStderrWriter(options.stderr)
+  };
 }
 
 function waitForDrain(

@@ -6,6 +6,7 @@
  * - re-exporting public option schema contracts;
  * - re-exporting public command registry contracts;
  * - re-exporting public presentation and output contracts;
+ * - re-exporting public terminal app composition contracts;
  *
  * This file must not contain parser, validator, or command runtime logic.
  */
@@ -15,6 +16,7 @@ export {
   type ParsedArgv
 } from './argv';
 export {
+  createCommands,
   defineCommand,
   defineCommandRegistry,
   isCommandName,
@@ -33,6 +35,7 @@ export {
   type CommandRegistry,
   type CommandResolutionOptions,
   type CommandResult,
+  type Commands,
   type PreparedCommand,
   type PreparedCommandInput,
   type ResolvedCommand
@@ -58,21 +61,37 @@ export {
   type StringOption
 } from './options';
 export {
+  createPresentation,
+  isPresentationFormat,
+  isPresentationResult,
   presentationFormatOptions,
   presentationFormats,
   renderCsv,
   renderCsvRow,
   renderJson,
+  renderPresentationResult,
   renderTextTable,
   type CsvCell,
   type CsvRow,
+  type Presentation,
   type PresentationFormat,
+  type PresentationRecord,
+  type PresentationResult,
   type TextTableRow
 } from './presentation';
 export {
   createBackpressureTextWriter,
+  createOutput,
   createStderrWriter,
   createStdoutWriter,
   type BackpressureTextSink,
+  type Output,
+  type OutputOptions,
   type TextWriter
 } from './output';
+export {
+  createTerminalApp,
+  type TerminalApp,
+  type TerminalAppOptions,
+  type TerminalCommandOutput
+} from './app';

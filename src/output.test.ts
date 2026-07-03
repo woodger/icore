@@ -2,9 +2,39 @@ import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   createBackpressureTextWriter,
+  createOutput,
   createStderrWriter,
   createStdoutWriter
 } from './cli';
+
+describe('createOutput', () => {
+  test('creates stdout and stderr writer channels', async () => {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const output = createOutput({
+      stdout: {
+        write(chunk) {
+          stdout.push(chunk);
+
+          return true;
+        }
+      },
+      stderr: {
+        write(chunk) {
+          stderr.push(chunk);
+
+          return true;
+        }
+      }
+    });
+
+    await output.stdout.write('ok\n');
+    await output.stderr.write('warning\n');
+
+    assert.deepStrictEqual(stdout, ['ok\n']);
+    assert.deepStrictEqual(stderr, ['warning\n']);
+  });
+});
 
 describe('output writers', () => {
   describe('createBackpressureTextWriter', () => {

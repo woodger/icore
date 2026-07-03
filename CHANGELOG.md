@@ -13,6 +13,10 @@ conservative.
 
 ### Added
 
+- Added `createCommands` as a high-level command mechanics facade.
+- Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
+- Added `createOutput` as a stdout/stderr output boundary facade.
+- Added `createTerminalApp` to compose command, presentation, and output mechanics.
 - Added generic terminal presentation renderers for JSON, CSV, and text tables.
 - Added reusable stdout/stderr text writers with backpressure handling.
 - Added shared `presentationFormatOptions` for common `--format` command options.

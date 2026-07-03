@@ -39,6 +39,7 @@ npm install icore
   - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
   - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
+  - [Terminal App Form](#terminal-app-form)
   - [Presentation Renderers](#presentation-renderers)
   - [Output Writers](#output-writers)
 - [How It Works](#how-it-works)
@@ -421,6 +422,67 @@ positionals with `allowExtraPositionals: true`.
 With `strict: true`, direct command execution also requires the command path to
 appear before options.
 
+### Terminal App Form
+
+`icore` also exposes a higher-level terminal application form. It keeps command
+mechanics, presentation, and output as explicit boundaries:
+
+```ts
+import {
+  createCommands,
+  createOutput,
+  createPresentation,
+  createTerminalApp,
+  defineCommand,
+  presentationFormatOptions
+} from 'icore';
+
+const commands = createCommands([
+  defineCommand({
+    path: ['users', 'get-accounts'],
+    options: presentationFormatOptions,
+    async handle() {
+      return {
+        type: 'records',
+        value: [
+          {
+            id: 'account-id',
+            name: 'Main account'
+          }
+        ]
+      } as const;
+    }
+  })
+] as const);
+
+const app = createTerminalApp({
+  commands,
+  presentation: createPresentation(),
+  output: createOutput()
+});
+
+const exitCode = await app.run([
+  'users',
+  'get-accounts',
+  '--format=table'
+], undefined);
+```
+
+The shape is intentionally explicit:
+
+```ts
+const prepared = await commands.prepare(args);
+const result = await commands.run(prepared, context);
+const text = presentation.render(result, prepared.options.format);
+
+await output.stdout.write(text);
+await output.stderr.write('warning\n');
+```
+
+Commands may return `string`, `AsyncIterable<string>`, `PresentationResult`, or
+`undefined`. Application-specific mapping to `PresentationResult` remains in
+the consuming application.
+
 ### Presentation Renderers
 
 `icore` provides generic terminal presentation helpers for common CLI output
@@ -428,11 +490,21 @@ formats. They do not know application DTOs, report contracts, or command names.
 
 ```ts
 import {
+  createPresentation,
   presentationFormatOptions,
   renderCsv,
   renderJson,
   renderTextTable
 } from 'icore';
+
+const presentation = createPresentation();
+
+presentation.render({
+  type: 'record',
+  value: {
+    id: 'account-id'
+  }
+}, 'json');
 
 renderJson({
   id: 'account-id'
@@ -478,13 +550,17 @@ adapters.
 
 ```ts
 import {
+  createOutput,
   createStderrWriter,
   createStdoutWriter
 } from 'icore';
 
+const output = createOutput();
 const stdout = createStdoutWriter();
 const stderr = createStderrWriter();
 
+await output.stdout.write('ok\n');
+await output.stderr.write('warning\n');
 await stdout.write('ok\n');
 await stderr.write('warning\n');
 ```

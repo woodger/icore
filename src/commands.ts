@@ -152,6 +152,30 @@ export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> =
 };
 
 /**
+ * High-level command mechanics facade for terminal applications.
+ */
+export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
+  definitions: TCommands;
+  names: readonly CommandName<TCommands[number]>[];
+  registry: CommandRegistry<TCommands>;
+  resolve(positionals: readonly string[]): ResolvedCommand<TCommands[number]>;
+  resolveFromArgs(args: readonly string[]): ResolvedCommand<TCommands[number]>;
+  prepare(
+    args: readonly string[],
+    options?: CommandResolutionOptions
+  ): Promise<PreparedCommand<TCommands[number]>>;
+  run(
+    prepared: PreparedCommand<TCommands[number]>,
+    context: CommandContext<TCommands[number]>
+  ): Promise<CommandResult<TCommands[number]>>;
+  runFromArgs(
+    args: readonly string[],
+    context: CommandContext<TCommands[number]>,
+    options?: CommandResolutionOptions
+  ): Promise<CommandResult<TCommands[number]>>;
+};
+
+/**
  * Options for command resolution from raw CLI arguments.
  */
 export type CommandResolutionOptions = {
@@ -220,6 +244,38 @@ export function defineCommandRegistry<
   return {
     commands,
     commandNames: commandNames as unknown as readonly CommandName<TCommands[number]>[]
+  };
+}
+
+/**
+ * Creates a command mechanics facade from declarative command definitions.
+ */
+export function createCommands<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  definitions: TCommands
+): Commands<TCommands> {
+  const registry = defineCommandRegistry(definitions);
+
+  return {
+    definitions,
+    names: registry.commandNames,
+    registry,
+    resolve(positionals) {
+      return resolveCommand(registry, positionals);
+    },
+    resolveFromArgs(args) {
+      return resolveCommandFromArgs(registry, args);
+    },
+    prepare(args, options) {
+      return prepareCommandFromArgs(registry, args, options);
+    },
+    run(prepared, context) {
+      return runPreparedCommand(prepared, context);
+    },
+    runFromArgs(args, context, options) {
+      return runCommandFromRegistry(registry, args, context, options);
+    }
   };
 }
 
