@@ -113,6 +113,18 @@ export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> =
 };
 
 /**
+ * Options for command resolution from raw CLI arguments.
+ */
+export type CommandResolutionOptions = {
+  /**
+   * When enabled, command path must appear before options. Options before the
+   * command path are rejected instead of participating in legacy candidate
+   * schema parsing.
+   */
+  strict?: boolean;
+};
+
+/**
  * Result of resolving a command from user positionals.
  */
 export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
@@ -228,8 +240,13 @@ export async function prepareCommandFromArgs<
   const TCommands extends readonly AnyCommandDefinition[]
 >(
   registry: CommandRegistry<TCommands>,
-  args: readonly string[]
+  args: readonly string[],
+  options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommands[number]>> {
+  if (options.strict === true) {
+    return prepareCommandFromArgsStrict(registry, args);
+  }
+
   for (const command of commandsBySpecificity(registry.commands)) {
     const argv = parseArgv(args, command.options);
     const resolved = resolveCommandCandidate(command, argv.positionals);
@@ -267,9 +284,10 @@ export async function runCommandFromRegistry<
 >(
   registry: CommandRegistry<TCommands>,
   args: readonly string[],
-  context: CommandContext<TCommands[number]>
+  context: CommandContext<TCommands[number]>,
+  options: CommandResolutionOptions = {}
 ): Promise<CommandResult<TCommands[number]>> {
-  const prepared = await prepareCommandFromArgs(registry, args);
+  const prepared = await prepareCommandFromArgs(registry, args, options);
 
   return runPreparedCommand(prepared, context);
 }
@@ -307,6 +325,28 @@ async function prepareCommand<TCommand extends AnyCommandDefinition>(
     command,
     positionals: extraPositionals
   };
+
+  return prepareResolvedCommand(resolved, argv.options);
+}
+
+async function prepareCommandFromArgsStrict<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): Promise<PreparedCommand<TCommands[number]>> {
+  const command = findStrictCommand(registry, args);
+
+  if (command === undefined) {
+    throw createUnknownCommandError(commandPositionalsBeforeOptions(args));
+  }
+
+  const argv = parseArgv(args, command.options);
+  const resolved = resolveCommandCandidate(command, argv.positionals);
+
+  if (resolved === undefined) {
+    throw createUnknownCommandError(argv.positionals);
+  }
 
   return prepareResolvedCommand(resolved, argv.options);
 }
@@ -397,6 +437,27 @@ function commandsBySpecificity<TCommand extends AnyCommandDefinition>(
   );
 }
 
+function findStrictCommand<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): TCommands[number] | undefined {
+  const firstArg = args[0];
+
+  if (firstArg !== undefined && isOptionBeforeCommand(firstArg)) {
+    throw createUnexpectedArgumentError(firstArg);
+  }
+
+  for (const command of commandsBySpecificity(registry.commands)) {
+    if (commandPathMatchesArgs(command.path, args)) {
+      return command;
+    }
+  }
+
+  return undefined;
+}
+
 function resolveCommandCandidate<TCommand extends AnyCommandDefinition>(
   command: TCommand,
   positionals: readonly string[]
@@ -435,6 +496,37 @@ function formatCommandPositionals(positionals: readonly string[]): string {
   return positionals.length === 0 ? '<empty>' : positionals.join(' ');
 }
 
+function commandPathMatchesArgs(
+  path: readonly string[],
+  args: readonly string[]
+): boolean {
+  for (let index = 0; index < path.length; index += 1) {
+    if (args[index] !== path[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function commandPositionalsBeforeOptions(args: readonly string[]): string[] {
+  const positionals: string[] = [];
+
+  for (const arg of args) {
+    if (isOptionBeforeCommand(arg)) {
+      break;
+    }
+
+    positionals.push(arg);
+  }
+
+  return positionals;
+}
+
+function isOptionBeforeCommand(arg: string): boolean {
+  return arg !== '-' && arg.startsWith('-');
+}
+
 function createUnknownCommandError(positionals: readonly string[]): IcoreError {
   const command = formatCommandPositionals(positionals);
 
@@ -444,6 +536,16 @@ function createUnknownCommandError(positionals: readonly string[]): IcoreError {
     {
       command,
       positionals: [...positionals]
+    }
+  );
+}
+
+function createUnexpectedArgumentError(argument: string): IcoreError {
+  return new IcoreError(
+    'UNEXPECTED_ARGUMENT',
+    `Unexpected argument '${argument}'`,
+    {
+      argument
     }
   );
 }

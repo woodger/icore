@@ -34,7 +34,8 @@ npm install icore
   - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
   - [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
   - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
-  - [`runCommandFromRegistry(registry, args, context)`](#runcommandfromregistryregistry-args-context)
+  - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargsregistry-args-options)
+  - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
   - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
   - [`runCommand(command, args, context)`](#runcommandcommand-args-context)
 - [How It Works](#how-it-works)
@@ -278,7 +279,36 @@ const resolved = resolveCommandFromArgs(registry, [
 ]);
 ```
 
-### `runCommandFromRegistry(registry, args, context)`
+`resolveCommandFromArgs` keeps legacy option-anywhere command resolution. Use
+`prepareCommandFromArgs(..., { strict: true })` when command path diagnostics
+should reject options before the command path.
+
+### `prepareCommandFromArgs(registry, args, options?)`
+
+Resolves and validates a command without requiring runtime context or calling
+the command handler.
+
+```ts
+const prepared = await prepareCommandFromArgs(
+  registry,
+  ['hello', '--name', 'Alice', '--uppercase'],
+  {
+    strict: true
+  }
+);
+```
+
+With `strict: true`, the command path must appear before options:
+
+```console
+$ node cli.js --unknown hello
+Unexpected argument '--unknown'
+```
+
+Without strict mode, legacy candidate-schema resolution is preserved for
+backward compatibility.
+
+### `runCommandFromRegistry(registry, args, context, options?)`
 
 Resolves a command from a registry and runs its handler.
 
@@ -286,7 +316,10 @@ Resolves a command from a registry and runs its handler.
 const output = await runCommandFromRegistry(
   registry,
   ['hello', '--name', 'Alice', '--uppercase'],
-  context
+  context,
+  {
+    strict: true
+  }
 );
 ```
 

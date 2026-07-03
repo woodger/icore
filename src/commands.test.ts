@@ -300,6 +300,119 @@ describe('two-phase command execution', () => {
     assert.strictEqual(handled, false);
   });
 
+  test('keeps legacy before-command option resolution by default', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['--unknown', 'users']),
+      /Unknown command: <empty>/
+    );
+  });
+
+  test('rejects long options before command path in strict mode', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          verbose: {
+            type: 'boolean'
+          }
+        },
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    for (const args of [
+      ['--unknown', 'users'],
+      ['--verbose', 'users']
+    ]) {
+      await assert.rejects(
+        () => prepareCommandFromArgs(commandRegistry, args, {
+          strict: true
+        }),
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+          assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
+          assert.deepStrictEqual(error.details, {
+            argument: args[0]
+          });
+
+          return true;
+        }
+      );
+    }
+
+    assert.strictEqual(handled, false);
+  });
+
+  test('rejects short options before command path in strict mode', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, ['-x', 'users'], {
+        strict: true
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '-x'");
+        assert.deepStrictEqual(error.details, {
+          argument: '-x'
+        });
+
+        return true;
+      }
+    );
+  });
+
+  test('accepts options after command path in strict mode', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {
+          verbose: {
+            type: 'boolean'
+          }
+        },
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      'users',
+      '--verbose'
+    ], {
+      strict: true
+    });
+
+    assert.deepStrictEqual(prepared.options, {
+      verbose: true
+    });
+  });
+
   test('rejects missing required options during prepare', async () => {
     let handled = false;
     const commandRegistry = defineCommandRegistry([
@@ -609,6 +722,28 @@ describe('two-phase command execution', () => {
       'prepare',
       'handle'
     ]);
+  });
+
+  test('runCommandFromRegistry passes strict mode to prepare', async () => {
+    let handled = false;
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          handled = true;
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => runCommandFromRegistry(commandRegistry, ['--unknown', 'users'], undefined, {
+        strict: true
+      }),
+      /Unexpected argument '--unknown'/
+    );
+    assert.strictEqual(handled, false);
   });
 });
 

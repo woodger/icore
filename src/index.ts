@@ -18,6 +18,7 @@ export {
   type CommandInput,
   type CommandName,
   type CommandRegistry,
+  type CommandResolutionOptions,
   type InferOptions,
   type InferProvidedOptions,
   type IcoreErrorCode,

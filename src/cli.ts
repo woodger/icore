@@ -27,6 +27,7 @@ export {
   type CommandInput,
   type CommandName,
   type CommandRegistry,
+  type CommandResolutionOptions,
   type PreparedCommand,
   type PreparedCommandInput,
   type ResolvedCommand
