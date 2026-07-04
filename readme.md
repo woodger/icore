@@ -30,6 +30,7 @@ npm install icore
   - [`parseOptions(schema, values)`](#parseoptionsschema-values)
   - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
   - [`parseOptionsSubsetDetailed(schema, values)`](#parseoptionssubsetdetailedschema-values)
+  - [`createCommand()`](#createcommand)
   - [`defineCommand(command)`](#definecommandcommand)
   - [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
   - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
@@ -214,6 +215,39 @@ Result:
 
 This is useful for bootstrap options such as `--help` and `--version`, where
 command-specific options should be left for the command layer.
+
+### `createCommand()`
+
+Creates a semantic command mechanics facade.
+
+```ts
+import { createCommand } from 'icore';
+
+const command = createCommand();
+
+const helloCommand = command.define({
+  path: ['hello'],
+  options: {
+    name: {
+      type: 'string',
+      default: 'world'
+    }
+  },
+  async handle({ options }) {
+    return `Hello, ${options.name}!`;
+  }
+});
+
+const commands = command.registry([
+  helloCommand
+] as const);
+
+const prepared = await commands.prepare([
+  'hello',
+  '--name=Alice'
+]);
+const output = await commands.run(prepared, undefined);
+```
 
 ### `defineCommand(command)`
 
@@ -470,17 +504,17 @@ mechanics, presentation, and output as explicit boundaries:
 
 ```ts
 import {
-  createCommands,
+  createCommand,
   createOutput,
   createPresentation,
   createTerminalApp,
-  defineCommand,
   presentationFormatOptions
 } from 'icore';
 
+const command = createCommand();
 const presentation = createPresentation();
-const commands = createCommands([
-  defineCommand({
+const commands = command.registry([
+  command.define({
     path: ['users', 'get-accounts'],
     options: presentationFormatOptions,
     async handle() {

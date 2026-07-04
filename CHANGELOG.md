@@ -13,6 +13,7 @@ conservative.
 
 ### Added
 
+- Added `createCommand` as a semantic command mechanics facade.
 - Added `createCommands` as a high-level command mechanics facade.
 - Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
 - Added semantic `Presentation` view factory methods such as `presentation.records(...)`.

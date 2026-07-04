@@ -16,6 +16,7 @@ export {
   type ParsedArgv
 } from './argv';
 export {
+  createCommand,
   createCommands,
   defineCommand,
   defineCommandRegistry,
@@ -27,6 +28,7 @@ export {
   runCommand,
   runPreparedCommand,
   runCommandFromRegistry,
+  type Command,
   type CommandDefinition,
   type CommandContext,
   type CommandInput,

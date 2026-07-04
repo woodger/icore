@@ -1,4 +1,5 @@
 export {
+  createCommand,
   defineCommand,
   defineCommandRegistry,
   IcoreError,
@@ -33,6 +34,7 @@ export {
   renderTextTable,
   type BackpressureTextSink,
   type BooleanOption,
+  type Command,
   type CommandDefinition,
   type CommandContext,
   type CommandInput,

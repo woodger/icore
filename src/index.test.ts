@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  createCommand,
   createCommands,
   createOutput,
   createStdoutWriter,
@@ -19,6 +20,7 @@ describe('package entrypoint', () => {
     assert.equal(typeof renderTextTable, 'function');
     assert.equal(typeof createStdoutWriter, 'function');
     assert.equal(typeof createOutput, 'function');
+    assert.equal(typeof createCommand, 'function');
     assert.equal(typeof createCommands, 'function');
     assert.equal(typeof createPresentation, 'function');
     assert.equal(typeof createTerminalApp, 'function');

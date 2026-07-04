@@ -176,6 +176,15 @@ export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
 };
 
 /**
+ * Semantic facade for command mechanics.
+ */
+export type Command = {
+  define: typeof defineCommand;
+  registry: typeof createCommands;
+  run: typeof runCommand;
+};
+
+/**
  * Options for command resolution from raw CLI arguments.
  */
 export type CommandResolutionOptions = {
@@ -276,6 +285,17 @@ export function createCommands<
     runFromArgs(args, context, options) {
       return runCommandFromRegistry(registry, args, context, options);
     }
+  };
+}
+
+/**
+ * Creates a semantic command mechanics facade.
+ */
+export function createCommand(): Command {
+  return {
+    define: defineCommand,
+    registry: createCommands,
+    run: runCommand
   };
 }
 
