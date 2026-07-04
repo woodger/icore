@@ -30,6 +30,8 @@ npm run build
 npm test
 ```
 
+The development test runner is `fwa`, which requires Node.js `>=20.19.0`.
+
 ## Test Requirements
 
 Tests must be:
