@@ -22,7 +22,7 @@ describe('package entrypoint', () => {
     assert.equal(typeof createCommands, 'function');
     assert.equal(typeof createPresentation, 'function');
     assert.equal(typeof createTerminalApp, 'function');
-    assert.deepStrictEqual(createPresentation().view.text('ok\n'), {
+    assert.deepStrictEqual(createPresentation().text('ok\n'), {
       type: 'text',
       value: 'ok\n'
     });

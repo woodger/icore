@@ -49,7 +49,7 @@ describe('createTerminalApp', () => {
         path: ['users', 'get-accounts'],
         options: presentationFormatOptions,
         handle() {
-          return presentation.view.records([
+          return presentation.records([
             {
               id: 'account-1',
               active: true

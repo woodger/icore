@@ -17,7 +17,7 @@ describe('createPresentation', () => {
     const presentation = createPresentation();
 
     assert.deepStrictEqual(presentation.formats, ['json', 'table', 'csv']);
-    assert.deepStrictEqual(presentation.view.records([
+    assert.deepStrictEqual(presentation.records([
       {
         id: 'account-id'
       }
@@ -29,13 +29,13 @@ describe('createPresentation', () => {
         }
       ]
     });
-    assert.equal(presentation.json.render({ id: 'account-id' }), [
+    assert.equal(presentation.renderers.json.render({ id: 'account-id' }), [
       '{',
       '  "id": "account-id"',
       '}',
       ''
     ].join('\n'));
-    assert.equal(presentation.table.render([
+    assert.equal(presentation.renderers.table.render([
       ['id'],
       ['account-id']
     ]), [
@@ -43,7 +43,7 @@ describe('createPresentation', () => {
       'account-id',
       ''
     ].join('\n'));
-    assert.equal(presentation.csv.render([
+    assert.equal(presentation.renderers.csv.render([
       ['id'],
       ['account-id']
     ]), [
@@ -56,20 +56,20 @@ describe('createPresentation', () => {
   test('creates presentation views', () => {
     const presentation = createPresentation();
 
-    assert.deepStrictEqual(presentation.view.empty(), {
+    assert.deepStrictEqual(presentation.empty(), {
       type: 'empty'
     });
-    assert.deepStrictEqual(presentation.view.text('ok\n'), {
+    assert.deepStrictEqual(presentation.text('ok\n'), {
       type: 'text',
       value: 'ok\n'
     });
-    assert.deepStrictEqual(presentation.view.record({ id: 'account-id' }), {
+    assert.deepStrictEqual(presentation.record({ id: 'account-id' }), {
       type: 'record',
       value: {
         id: 'account-id'
       }
     });
-    assert.deepStrictEqual(presentation.view.table([
+    assert.deepStrictEqual(presentation.table([
       ['id'],
       ['account-id']
     ]), {
@@ -79,7 +79,7 @@ describe('createPresentation', () => {
         ['account-id']
       ]
     });
-    assert.deepStrictEqual(presentation.view.csv([
+    assert.deepStrictEqual(presentation.csv([
       ['id'],
       ['account-id']
     ]), {

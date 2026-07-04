@@ -80,6 +80,7 @@ export {
   type Presentation,
   type PresentationFormat,
   type PresentationRecord,
+  type PresentationRenderers,
   type PresentationResult,
   type PresentationView,
   type PresentationViewFactory,

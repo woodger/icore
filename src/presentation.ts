@@ -68,10 +68,7 @@ export type PresentationViewFactory = {
   csv(rows: readonly CsvRow[]): CsvPresentationView;
 };
 
-export type Presentation = {
-  formats: typeof presentationFormats;
-  view: PresentationViewFactory;
-  render(result: PresentationResult, format?: PresentationFormat): string;
+export type PresentationRenderers = {
   json: {
     render(value: unknown): string;
   };
@@ -84,20 +81,30 @@ export type Presentation = {
   };
 };
 
+export type Presentation = PresentationViewFactory & {
+  formats: typeof presentationFormats;
+  render(result: PresentationResult, format?: PresentationFormat): string;
+  renderers: PresentationRenderers;
+};
+
 export function createPresentation(): Presentation {
+  const viewFactory = createPresentationViewFactory();
+
   return {
+    ...viewFactory,
     formats: presentationFormats,
-    view: createPresentationViewFactory(),
     render: renderPresentationResult,
-    json: {
-      render: renderJson
-    },
-    table: {
-      render: renderTextTable
-    },
-    csv: {
-      render: renderCsv,
-      renderRow: renderCsvRow
+    renderers: {
+      json: {
+        render: renderJson
+      },
+      table: {
+        render: renderTextTable
+      },
+      csv: {
+        render: renderCsv,
+        renderRow: renderCsvRow
+      }
     }
   };
 }

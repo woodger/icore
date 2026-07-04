@@ -484,7 +484,7 @@ const commands = createCommands([
     path: ['users', 'get-accounts'],
     options: presentationFormatOptions,
     async handle() {
-      return presentation.view.records([
+      return presentation.records([
         {
           id: 'account-id',
           name: 'Main account'
@@ -539,13 +539,13 @@ import {
 
 const presentation = createPresentation();
 
-const view = presentation.view.record({
+const view = presentation.record({
   id: 'account-id'
 });
 
 presentation.render(view, 'json');
 
-presentation.render(presentation.view.records([
+presentation.render(presentation.records([
   {
     id: 'account-id'
   }
