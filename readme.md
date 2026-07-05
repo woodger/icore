@@ -37,7 +37,19 @@ npm install icore
     - [`commands.run(prepared, context)`](#commandsrunprepared-context)
     - [`commands.runFromArgs(args, context, options?)`](#commandsrunfromargsargs-context-options)
   - [`createPresentation()`](#createpresentation)
+    - [`presentation.empty()`](#presentationempty)
+    - [`presentation.text(value)`](#presentationtextvalue)
+    - [`presentation.record(value)`](#presentationrecordvalue)
+    - [`presentation.records(values)`](#presentationrecordsvalues)
+    - [`presentation.table(rows)`](#presentationtablerows)
+    - [`presentation.csv(rows)`](#presentationcsvrows)
+    - [`presentation.render(result, format?)`](#presentationrenderresult-format)
+    - [`presentation.renderers.*`](#presentationrenderers)
   - [`createOutput()`](#createoutput)
+    - [`output.write(chunk)`](#outputwritechunk)
+    - [`output.error(chunk)`](#outputerrorchunk)
+    - [`output.stdout.write(chunk)`](#outputstdoutwritechunk)
+    - [`output.stderr.write(chunk)`](#outputstderrwritechunk)
   - [Lower-Level Mechanics](#lower-level-mechanics)
     - [`parseArgv(args, schema?)`](#parseargv)
     - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailed)
@@ -70,7 +82,19 @@ createTerminalApp()
 │  │     └─ commands.runFromArgs(args, context, options?)
 │  └─ command.run(command, args, context)
 ├─ createPresentation()
+│  ├─ presentation.empty()
+│  ├─ presentation.text(value)
+│  ├─ presentation.record(value)
+│  ├─ presentation.records(values)
+│  ├─ presentation.table(rows)
+│  ├─ presentation.csv(rows)
+│  ├─ presentation.render(result, format?)
+│  └─ presentation.renderers.*
 └─ createOutput()
+   ├─ output.write(chunk)
+   ├─ output.error(chunk)
+   ├─ output.stdout.write(chunk)
+   └─ output.stderr.write(chunk)
 ```
 
 The map is a documentation route, not a complete internal call graph. The
@@ -215,11 +239,22 @@ application boundary. Use it when a custom boundary owns presentation or output.
 `createPresentation()` creates the presentation object used by
 `createTerminalApp()` to render terminal-ready results.
 
+Source of truth:
+
+- [src/presentation/facade.ts](src/presentation/facade.ts) for the presentation
+  object;
+- [src/presentation/view.ts](src/presentation/view.ts) for presentation view
+  factories;
+- [src/presentation/result-renderer.ts](src/presentation/result-renderer.ts)
+  for rendering presentation results.
+
 Simplified shape:
 
 ```ts
 const presentation = createPresentation();
 
+presentation.empty();
+presentation.text(value);
 presentation.record(value);
 presentation.records(values);
 presentation.table(rows);
@@ -230,10 +265,53 @@ presentation.render(result, format);
 The presentation object owns generic JSON, CSV, and table rendering mechanics.
 Application code still maps domain objects to presentation-ready values.
 
+#### `presentation.empty()`
+
+Creates a presentation result with no terminal output.
+
+#### `presentation.text(value)`
+
+Wraps ready terminal text. Use it when the command already owns the final text.
+
+#### `presentation.record(value)`
+
+Creates a generic one-record view. The renderer can print it as table, CSV, or
+JSON depending on the selected format.
+
+#### `presentation.records(values)`
+
+Creates a generic multi-record view. Application code still decides which fields
+belong in each record.
+
+#### `presentation.table(rows)`
+
+Creates an explicit table view from prepared text rows.
+
+#### `presentation.csv(rows)`
+
+Creates an explicit CSV view from scalar rows.
+
+#### `presentation.render(result, format?)`
+
+Renders a presentation result to terminal text. The default format is `table`.
+
+#### `presentation.renderers.*`
+
+Exposes lower-level JSON, table, and CSV renderers for custom presentation
+composition. Prefer `presentation.render(...)` for regular terminal commands.
+
 ### `createOutput()`
 
 `createOutput()` creates the output object used by `createTerminalApp()` to
 write rendered text.
+
+Source of truth:
+
+- [src/output/facade.ts](src/output/facade.ts) for the output object;
+- [src/output/node-writer.ts](src/output/node-writer.ts) for stdout and stderr
+  writers;
+- [src/output/text-writer.ts](src/output/text-writer.ts) for backpressure-aware
+  text writing.
 
 Simplified shape:
 
@@ -248,6 +326,24 @@ await output.stderr.write(chunk);
 
 The default output writes regular text to `stdout` and diagnostic text to
 `stderr`. Pass custom sinks when tests or applications need controlled output.
+
+#### `output.write(chunk)`
+
+Writes regular terminal output through stdout.
+
+#### `output.error(chunk)`
+
+Writes diagnostic terminal output through stderr.
+
+#### `output.stdout.write(chunk)`
+
+Writes directly to the stdout channel. Use this only when a specific channel
+must be passed around.
+
+#### `output.stderr.write(chunk)`
+
+Writes directly to the stderr channel. Use this only when a specific channel
+must be passed around.
 
 ### Lower-Level Mechanics
 
