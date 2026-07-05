@@ -7,7 +7,7 @@ import {
   createTerminalApp,
   defineCommand,
   presentationFormatOptions
-} from './cli';
+} from '../cli';
 
 function createMemoryOutput() {
   const stdout: string[] = [];

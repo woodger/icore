@@ -9,7 +9,7 @@ import {
   type InferOptions,
   type InferProvidedOptions,
   type ParseOptionsSubsetResult
-} from './cli';
+} from '../cli';
 
 describe('mergeOptionsSchema', () => {
   test('merges schemas and preserves literal option types', () => {

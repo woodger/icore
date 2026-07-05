@@ -11,15 +11,15 @@
  * domain behavior, SDK calls, or output formatting.
  */
 
-import { parseArgv } from './argv';
-import { IcoreError } from './errors';
+import { parseArgv } from '../argv/parser';
+import { IcoreError } from '../errors/icore-error';
 import {
   parseOptionsDetailed,
   type InferOptions,
   type InferProvidedOptions,
   type OptionsSchema,
   type RawOptionValue
-} from './options';
+} from '../options/parser';
 
 /**
  * Input produced after command path and option validation, before runtime

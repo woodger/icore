@@ -14,7 +14,7 @@
 import {
   IcoreError,
   type IcoreErrorDetails
-} from './errors';
+} from '../errors/icore-error';
 
 type OptionBase<TType extends string, TValue> = {
   type: TType;

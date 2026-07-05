@@ -14,7 +14,7 @@
 export {
   parseArgv,
   type ParsedArgv
-} from './argv';
+} from './argv/parser';
 export {
   createCommand,
   createCommands,
@@ -41,12 +41,12 @@ export {
   type PreparedCommand,
   type PreparedCommandInput,
   type ResolvedCommand
-} from './commands';
+} from './command/mechanics';
 export {
   IcoreError,
   type IcoreErrorCode,
   type IcoreErrorDetails
-} from './errors';
+} from './errors/icore-error';
 export {
   mergeOptionsSchema,
   parseOptions,
@@ -63,26 +63,38 @@ export {
   type ParseOptionsSubsetResult,
   type RawOptionValue,
   type StringOption
-} from './options';
+} from './options/parser';
 export {
   createPresentation,
+  type Presentation,
+  type PresentationRenderers
+} from './presentation/facade';
+export {
   isPresentationFormat,
-  isPresentationResult,
   presentationFormatOptions,
   presentationFormats,
+  type PresentationFormat
+} from './presentation/format-options';
+export {
   renderCsv,
-  renderCsvRow,
-  renderJson,
-  renderPresentationResult,
-  renderTextTable,
+  renderCsvRow
+} from './presentation/renderers/csv';
+export {
+  renderJson
+} from './presentation/renderers/json';
+export {
+  renderTextTable
+} from './presentation/renderers/table';
+export {
+  isPresentationResult,
+  renderPresentationResult
+} from './presentation/result-renderer';
+export {
   type CsvCell,
   type CsvRow,
   type CsvPresentationView,
   type EmptyPresentationView,
-  type Presentation,
-  type PresentationFormat,
   type PresentationRecord,
-  type PresentationRenderers,
   type PresentationResult,
   type PresentationView,
   type PresentationViewFactory,
@@ -91,20 +103,24 @@ export {
   type TablePresentationView,
   type TextPresentationView,
   type TextTableRow
-} from './presentation';
+} from './presentation/view';
+export {
+  createOutput,
+  type Output,
+  type OutputOptions
+} from './output/facade';
+export {
+  createStderrWriter,
+  createStdoutWriter
+} from './output/node-writer';
 export {
   createBackpressureTextWriter,
-  createOutput,
-  createStderrWriter,
-  createStdoutWriter,
   type BackpressureTextSink,
-  type Output,
-  type OutputOptions,
   type TextWriter
-} from './output';
+} from './output/text-writer';
 export {
   createTerminalApp,
   type TerminalApp,
   type TerminalAppOptions,
   type TerminalCommandOutput
-} from './app';
+} from './terminal/app';

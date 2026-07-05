@@ -15,20 +15,22 @@ import type {
   CommandResolutionOptions,
   Commands,
   PreparedCommand
-} from './commands';
-import type { OptionsSchema } from './options';
+} from '../command/mechanics';
+import type { OptionsSchema } from '../options/parser';
 import {
   createPresentation,
-  isPresentationFormat,
-  isPresentationResult,
   type Presentation,
-  type PresentationFormat,
   type PresentationResult
-} from './presentation';
+} from '../presentation/facade';
+import {
+  isPresentationFormat,
+  type PresentationFormat
+} from '../presentation/format-options';
+import { isPresentationResult } from '../presentation/result-renderer';
 import {
   createOutput,
   type Output
-} from './output';
+} from '../output/facade';
 
 export type TerminalCommandOutput =
   | string

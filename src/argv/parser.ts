@@ -14,8 +14,8 @@ import type {
   OptionDefinition,
   OptionsSchema,
   RawOptionValue
-} from './options';
-import { IcoreError } from './errors';
+} from '../options/parser';
+import { IcoreError } from '../errors/icore-error';
 
 /**
  * Parsed CLI arguments split into positional command path segments and raw

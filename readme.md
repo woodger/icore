@@ -45,6 +45,7 @@ npm install icore
   - [Presentation Layer](#presentation-layer)
   - [Output Writers](#output-writers)
 - [How It Works](#how-it-works)
+- [Internal Source Layout](#internal-source-layout)
 - [Example](#example)
 - [Option Schemas](#option-schemas)
 - [Type Inference](#type-inference)
@@ -655,6 +656,25 @@ stream commands from buffering output faster than the consumer reads it.
 ## How It Works
 
 ![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20Alice%20--uppercase]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=Alice;%20uppercase=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+
+## Internal Source Layout
+
+The public package entrypoint remains `src/index.ts`. Internal source files are
+grouped by CLI framework responsibility:
+
+```text
+src/
+  argv/          raw argv token parsing
+  options/       option schema validation
+  command/       command resolution and execution mechanics
+  presentation/  terminal view models and JSON/CSV/table renderers
+  output/        stdout/stderr writer boundaries
+  terminal/      command + presentation + output app composition
+  errors/        machine-readable icore errors
+```
+
+Consumers should continue importing from `icore`; deep imports are an internal
+source layout detail.
 
 
 ## Example

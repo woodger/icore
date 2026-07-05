@@ -20,7 +20,7 @@ import {
   type CommandResult,
   type PreparedCommand,
   type PreparedCommandInput
-} from './cli';
+} from '../cli';
 
 describe('createCommand', () => {
   test('creates a semantic command mechanics facade', async () => {
