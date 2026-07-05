@@ -3,6 +3,12 @@
 Use this shape when your package owns a command-line entrypoint and wants icore
 to connect command parsing, presentation rendering, and stdout/stderr writing.
 
+This is the default shape for a regular terminal application because it keeps
+the CLI boundary in one place: commands return text or presentation views, while
+`createTerminalApp()` owns rendering, stdout/stderr delivery, and exit codes.
+The tradeoff is that command handlers must return terminal-supported values,
+not arbitrary application objects.
+
 Create the file that becomes your CLI entrypoint, for example `src/cli.ts`, and
 put the terminal app composition there:
 
@@ -52,6 +58,12 @@ async function main(args: readonly string[]): Promise<void> {
 
 void main(process.argv.slice(2));
 ```
+
+Create `command`, `presentation`, and `output` once near the entrypoint. That is
+slightly more explicit than hiding them behind defaults, but it keeps stdout,
+stderr, and format behavior visible at the terminal boundary. `strict: true`
+keeps the public command form predictable by rejecting option placement that the
+application does not intentionally support.
 
 After compiling the consuming project, run the generated entrypoint:
 

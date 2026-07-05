@@ -1,8 +1,8 @@
 # Examples
 
-These examples are guide-style notes for application code. They show what to
-put into a consuming project, how to run it from a terminal, and what output to
-expect.
+These examples are guide-style notes for application code. They explain what to
+put into a consuming project, how to run it from a terminal, what output to
+expect, and why a particular shape is useful or intentionally limited.
 
 - [terminal-app.md](terminal-app.md) shows the regular `createTerminalApp()`
   path with commands, presentation, and output.
