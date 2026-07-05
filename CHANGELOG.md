@@ -14,6 +14,10 @@ verified against git tags.
 
 ## [Unreleased]
 
+### Added
+
+- Added `TerminalApp.runPrepared(...)` for running prepared commands through terminal rendering and output.
+
 ### Changed
 
 - Changed `createTerminalApp` typing to accept command registries with void and prepared payloads.

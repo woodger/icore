@@ -75,6 +75,35 @@ This is useful when the selected command decides which runtime resources to
 create. If preparation fails, the application can print an argument error
 without opening connections or starting background work.
 
+## Run Prepared Through A Terminal App
+
+`app.runPrepared(...)` keeps terminal rendering, stdout/stderr writing, and exit
+code handling in `createTerminalApp()` after the application has created its
+own runtime context.
+
+```ts
+const prepared = await app.prepare([
+  'jobs',
+  'run',
+  '--job-id',
+  'job-42'
+], {
+  strict: true
+});
+
+const context = await createContext(prepared);
+
+try {
+  process.exitCode = await app.runPrepared(prepared, context);
+}
+finally {
+  await cleanup(context);
+}
+```
+
+Resource creation and cleanup stay application-owned. The terminal app only
+runs the prepared command and applies the same output behavior as `app.run(...)`.
+
 ## Prepare From A Registry
 
 `prepareCommandFromArgs(...)` is the standalone primitive behind
