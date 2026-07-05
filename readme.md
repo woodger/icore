@@ -397,6 +397,8 @@ source layout detail.
 
 ## Example
 
+More examples live in [examples/readme.md](examples/readme.md).
+
 ```ts
 import { defineCommand, runCommand } from 'icore';
 
