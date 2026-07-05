@@ -398,8 +398,8 @@ source layout detail.
 ## Example
 
 More examples live in [examples/readme.md](examples/readme.md), including
-[option schema usage](examples/option-schemas.md) and
-[CLI argument syntax](examples/cli-argument-syntax.md).
+option schemas, CLI argument syntax, practical CLI patterns, and lower-level
+primitives.
 
 ```ts
 import { defineCommand, runCommand } from 'icore';

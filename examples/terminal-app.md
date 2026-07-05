@@ -91,3 +91,28 @@ The terminal prints:
   "user": "Alice"
 }
 ```
+
+## Override Format Resolution
+
+By default, `createTerminalApp()` looks for a parsed `format` option and uses it
+when it is one of the supported presentation formats. Override `resolveFormat`
+when format policy is application-specific.
+
+```ts
+const appWithFormatPolicy = createTerminalApp({
+  commands,
+  presentation,
+  output: createOutput(),
+  resolveFormat(prepared) {
+    if (prepared.name === 'users export') {
+      return 'csv';
+    }
+
+    return undefined;
+  }
+});
+```
+
+This is useful when one command has a different default output contract. It is
+also a point where the application can make a bad abstraction: avoid hiding
+format decisions here when a normal `--format` option would be clearer.
