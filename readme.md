@@ -255,9 +255,21 @@ The command definition keeps the application-specific parts: command path,
 option schema, and handler behavior. The terminal app only needs the resulting
 registry object.
 
-Use `command.run(...)` only when a single command should be executed without a
-registry or terminal application boundary. Regular applications should prefer
-`createTerminalApp()`.
+##### `command.define(command)`
+
+Declares one command and preserves its literal path and option schema types.
+Use it when defining commands inline before adding them to a registry.
+
+##### `command.registry(commands)`
+
+Builds the `commands` object required by `createTerminalApp()`. It keeps the
+registered command definitions, derived command names, and command flow methods
+together.
+
+##### `command.run(command, args, context)`
+
+Runs a single command without a registry. Use it for focused command execution,
+small tests, or custom flows where command path resolution is not needed.
 
 #### `createCommands(commands)`
 
@@ -294,6 +306,13 @@ work inside `icore`.
 
 For application code, prefer `createTerminalApp()` first. Drop to this level
 only when the terminal application flow or the layer toolkit is too coarse.
+
+Source of truth:
+
+- [src/argv/parser.ts](src/argv/parser.ts) for raw argv parsing;
+- [src/options/parser.ts](src/options/parser.ts) for option value validation;
+- [src/command/mechanics.ts](src/command/mechanics.ts) for command resolution,
+  preparation, and execution.
 
 #### Parsing And Resolution
 
