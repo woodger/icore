@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { createPresentation } from '../cli';
+import { createPresentation } from '../index';
 
 describe('createPresentation', () => {
   test('creates a terminal presentation facade', () => {

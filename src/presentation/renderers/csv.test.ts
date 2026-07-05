@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import {
   renderCsv,
   renderCsvRow
-} from '../../cli';
+} from '../../index';
 
 describe('renderCsvRow', () => {
   test('escapes comma, quote and newline cells', () => {

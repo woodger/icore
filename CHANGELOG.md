@@ -39,6 +39,7 @@ conservative.
 - Reorganized internal source files by CLI framework responsibility without changing the root public API.
 - Split option schema contracts from option value parsing internals.
 - Changed npm package contents to include `CHANGELOG.md`.
+- Removed the redundant `cli` barrel so `index` is the only package entrypoint.
 
 ### Removed
 

@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import {
   isPresentationResult,
   renderPresentationResult
-} from '../cli';
+} from '../index';
 
 describe('renderPresentationResult', () => {
   test('renders records as table by default', () => {

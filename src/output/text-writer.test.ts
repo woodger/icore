@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { createBackpressureTextWriter } from '../cli';
+import { createBackpressureTextWriter } from '../index';
 
 describe('createBackpressureTextWriter', () => {
   test('writes chunks to the sink', async () => {

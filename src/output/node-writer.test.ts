@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import {
   createStderrWriter,
   createStdoutWriter
-} from '../cli';
+} from '../index';
 
 describe('createStdoutWriter', () => {
   test('adapts stdout-compatible sinks', async () => {

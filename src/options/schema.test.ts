@@ -4,7 +4,7 @@ import {
   mergeOptionsSchema,
   parseOptions,
   type InferOptions
-} from '../cli';
+} from '../index';
 
 describe('mergeOptionsSchema', () => {
   test('merges schemas and preserves literal option types', () => {

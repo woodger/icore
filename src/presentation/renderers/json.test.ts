@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { renderJson } from '../../cli';
+import { renderJson } from '../../index';
 
 describe('renderJson', () => {
   test('renders pretty JSON with a trailing newline', () => {

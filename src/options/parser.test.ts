@@ -8,7 +8,7 @@ import {
   type InferOptions,
   type InferProvidedOptions,
   type ParseOptionsSubsetResult
-} from '../cli';
+} from '../index';
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {
