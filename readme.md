@@ -80,8 +80,8 @@ without taking ownership of application behavior.
 
 The checked TypeScript contract lives in [`src/terminal/app.ts`](src/terminal/app.ts).
 
-The method returns an application object with `prepare(args)` and
-`run(args, context)`.
+The method returns an application object with `prepare(args)`,
+`runPrepared(prepared, context)`, and `run(args, context)`.
 
 Construction inputs:
 
@@ -97,6 +97,8 @@ Returned app methods:
 
 - `app.prepare(args, options?)` delegates to
   [`commands.prepare(args, options?)`](#commandsprepareargs-options);
+- `app.runPrepared(prepared, context)` runs an already prepared command, then
+  renders and writes terminal output;
 - `app.run(args, context, options?)` prepares the command, delegates command
   execution to [`commands.run(prepared, context)`](#commandsrunprepared-context),
   then renders and writes terminal output.

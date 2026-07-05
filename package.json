@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Declarative command line interface and terminal presentation mechanics for Node.js",
   "keywords": [
     "command-line",

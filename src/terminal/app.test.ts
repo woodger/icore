@@ -127,6 +127,75 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, '');
   });
 
+  test('runs prepared commands through terminal rendering and output', async () => {
+    const memory = createMemoryOutput();
+    const presentation = createPresentation();
+    const command = createCommand();
+    const commands = command.registry([
+      command.define({
+        path: ['users', 'current'],
+        options: presentationFormatOptions,
+        handle({ context }: {
+          context: {
+            currentUser: string;
+          };
+        }) {
+          return presentation.record({
+            user: context.currentUser
+          });
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      presentation,
+      output: memory.output
+    });
+    const prepared = await app.prepare([
+      'users',
+      'current',
+      '--format',
+      'json'
+    ], {
+      strict: true
+    });
+
+    const exitCode = await app.runPrepared(prepared, {
+      currentUser: 'Alice'
+    });
+
+    assert.equal(exitCode, 0);
+    assert.deepEqual(JSON.parse(memory.read().stdout), {
+      user: 'Alice'
+    });
+    assert.equal(memory.read().stderr, '');
+  });
+
+  test('writes prepared command errors to stderr and returns a non-zero exit code', async () => {
+    const memory = createMemoryOutput();
+    const command = createCommand();
+    const commands = command.registry([
+      command.define({
+        path: ['fail'],
+        options: {},
+        handle() {
+          throw new Error('prepared command failed');
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output
+    });
+    const prepared = await app.prepare(['fail']);
+
+    const exitCode = await app.runPrepared(prepared, undefined);
+
+    assert.equal(exitCode, 1);
+    assert.equal(memory.read().stdout, '');
+    assert.equal(memory.read().stderr, 'prepared command failed\n');
+  });
+
   test('writes string and async iterable command output to stdout', async () => {
     const memory = createMemoryOutput();
     const commands = createCommands([

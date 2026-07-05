@@ -99,6 +99,11 @@ export type TerminalApp<
     args: readonly string[],
     options?: CommandResolutionOptions
   ): Promise<PreparedCommand<TCommands[number]>>;
+  /** Runs an already prepared command through terminal rendering and output. */
+  runPrepared(
+    prepared: PreparedCommand<TCommands[number]>,
+    context: CommandContext<TCommands[number]>
+  ): Promise<number>;
   /** Returns a process-style exit code. */
   run(
     args: readonly string[],
@@ -123,6 +128,25 @@ export function createTerminalApp<
   const output = options.output ?? createOutput();
   const resolveFormat = options.resolveFormat ?? resolvePreparedFormat;
 
+  async function runPrepared(
+    prepared: PreparedCommand<TCommands[number]>,
+    context: CommandContext<TCommands[number]>
+  ): Promise<number> {
+    try {
+      const result = await options.commands.run(prepared, context);
+      const format = resolveFormat(prepared);
+
+      await writeTerminalOutput(result, format, presentation, output);
+
+      return 0;
+    }
+    catch (error) {
+      await output.error(renderTerminalError(error));
+
+      return 1;
+    }
+  }
+
   return {
     commands: options.commands,
     presentation,
@@ -130,15 +154,12 @@ export function createTerminalApp<
     prepare(args, commandOptions) {
       return options.commands.prepare(args, commandOptions);
     },
+    runPrepared,
     async run(args, context, commandOptions) {
       try {
         const prepared = await options.commands.prepare(args, commandOptions);
-        const result = await options.commands.run(prepared, context);
-        const format = resolveFormat(prepared);
 
-        await writeTerminalOutput(result, format, presentation, output);
-
-        return 0;
+        return runPrepared(prepared, context);
       }
       catch (error) {
         await output.error(renderTerminalError(error));
