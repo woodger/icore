@@ -81,7 +81,8 @@ without taking ownership of application behavior.
 The checked TypeScript contract lives in [`src/terminal/app.ts`](src/terminal/app.ts).
 
 The method returns an application object with `prepare(args)`,
-`runPrepared(prepared, context)`, and `run(args, context)`.
+`writePreparedOutput(prepared, output)`, `runPrepared(prepared, context)`, and
+`run(args, context)`.
 
 Construction inputs:
 
@@ -97,6 +98,8 @@ Returned app methods:
 
 - `app.prepare(args, options?)` delegates to
   [`commands.prepare(args, options?)`](#commandsprepareargs-options);
+- `app.writePreparedOutput(prepared, output)` renders and writes already
+  obtained terminal output without running the command;
 - `app.runPrepared(prepared, context)` runs an already prepared command, then
   renders and writes terminal output;
 - `app.run(args, context, options?)` prepares the command, delegates command
@@ -118,10 +121,15 @@ const exitCode = await app.run(args, context, {
 });
 ```
 
-Command handlers keep ownership of application work. The terminal app only
-accepts terminal-ready results: text, streaming text, presentation results, or
-no output. Application DTO mapping, config loading, network clients, and domain
-behavior stay in the consuming application.
+Command handlers keep ownership of application work. Terminal output methods
+accept terminal-ready results: text, streaming text, presentation results, or no
+output. If a command returns an application lifecycle object, run it with
+`app.commands.run(...)`, inspect or map the result, then pass only terminal
+output to `app.writePreparedOutput(...)`. Application DTO mapping, config
+loading, network clients, and domain behavior stay in the consuming application.
+
+String output is written exactly as provided. Return `\n` from the command when
+line output is desired.
 
 ### `createCommand()`
 

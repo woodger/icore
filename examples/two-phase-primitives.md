@@ -104,6 +104,43 @@ finally {
 Resource creation and cleanup stay application-owned. The terminal app only
 runs the prepared command and applies the same output behavior as `app.run(...)`.
 
+## Write Prepared Output
+
+Use `app.writePreparedOutput(...)` when the application needs to inspect the raw
+command result before terminal output is written.
+
+```ts
+const prepared = await app.prepare([
+  'jobs',
+  'run',
+  '--job-id',
+  'job-42'
+], {
+  strict: true
+});
+
+const context = await createContext(prepared);
+
+try {
+  const result = await app.commands.run(prepared, context);
+
+  if (isShutdownHandle(result)) {
+    installShutdownHooks(result);
+
+    return;
+  }
+
+  await app.writePreparedOutput(prepared, result);
+}
+finally {
+  await cleanup(context);
+}
+```
+
+Only terminal output belongs here: ready text, streaming text, presentation
+results, or no output. Strings are written exactly as provided; include `\n`
+when line output is desired.
+
 ## Prepare From A Registry
 
 `prepareCommandFromArgs(...)` is the standalone primitive behind

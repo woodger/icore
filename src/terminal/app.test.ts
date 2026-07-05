@@ -196,6 +196,126 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, 'prepared command failed\n');
   });
 
+  test('writes prepared output without running the command handler', async () => {
+    const memory = createMemoryOutput();
+    const presentation = createPresentation();
+    const command = createCommand();
+    let handled = false;
+    const commands = command.registry([
+      command.define({
+        path: ['users', 'current'],
+        options: presentationFormatOptions,
+        handle() {
+          handled = true;
+
+          return presentation.record({
+            user: 'Handler'
+          });
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      presentation,
+      output: memory.output
+    });
+    const prepared = await app.prepare([
+      'users',
+      'current',
+      '--format',
+      'json'
+    ]);
+
+    await app.writePreparedOutput(prepared, presentation.record({
+      user: 'Alice'
+    }));
+
+    assert.equal(handled, false);
+    assert.deepEqual(JSON.parse(memory.read().stdout), {
+      user: 'Alice'
+    });
+    assert.equal(memory.read().stderr, '');
+  });
+
+  test('writes prepared string output exactly as provided', async () => {
+    const memory = createMemoryOutput();
+    const commands = createCommands([
+      defineCommand({
+        path: ['status'],
+        options: {},
+        handle() {
+          return 'handler output\n';
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output
+    });
+    const prepared = await app.prepare(['status']);
+
+    await app.writePreparedOutput(prepared, 'ok');
+
+    assert.equal(memory.read().stdout, 'ok');
+    assert.equal(memory.read().stderr, '');
+  });
+
+  test('allows custom lifecycle results before writing terminal output', async () => {
+    type ShutdownHandle = {
+      close(): void;
+    };
+
+    function isShutdownHandle(value: unknown): value is ShutdownHandle {
+      return (
+        typeof value === 'object'
+        && value !== null
+        && 'close' in value
+      );
+    }
+
+    const memory = createMemoryOutput();
+    const command = createCommand();
+    const commands = command.registry([
+      command.define({
+        path: ['serve'],
+        options: {},
+        handle(): ShutdownHandle {
+          return {
+            close() {}
+          };
+        }
+      }),
+      command.define({
+        path: ['status'],
+        options: {},
+        handle() {
+          return 'ready\n';
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output
+    });
+    const preparedServer = await app.prepare(['serve']);
+    const serverResult = await app.commands.run(preparedServer, undefined);
+
+    assert.equal(isShutdownHandle(serverResult), true);
+    assert.equal(memory.read().stdout, '');
+
+    const preparedStatus = await app.prepare(['status']);
+    const statusResult = await app.commands.run(preparedStatus, undefined);
+
+    if (isShutdownHandle(statusResult)) {
+      assert.fail('status command returned a shutdown handle');
+    }
+
+    await app.writePreparedOutput(preparedStatus, statusResult);
+
+    assert.equal(memory.read().stdout, 'ready\n');
+    assert.equal(memory.read().stderr, '');
+  });
+
   test('writes string and async iterable command output to stdout', async () => {
     const memory = createMemoryOutput();
     const commands = createCommands([

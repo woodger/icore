@@ -33,10 +33,10 @@ import {
 } from '../output/facade';
 
 /**
- * Supported handler result shapes for the terminal app boundary.
+ * Supported terminal output shapes for the terminal app boundary.
  *
- * Domain commands may return ready text, streaming text, a presentation view,
- * or no output. Other result shapes are rejected before writing to stdout.
+ * Terminal output may be ready text, streaming text, a presentation view, or
+ * no output. Other result shapes are rejected before writing to stdout.
  */
 export type TerminalCommandOutput =
   | string
@@ -59,7 +59,7 @@ type TerminalCommandDefinition = {
   >;
   handle: BivariantCallback<
     TerminalCommandInput,
-    TerminalCommandOutput | Promise<TerminalCommandOutput>
+    unknown | Promise<unknown>
   >;
 };
 
@@ -104,6 +104,16 @@ export type TerminalApp<
     prepared: PreparedCommand<TCommands[number]>,
     context: CommandContext<TCommands[number]>
   ): Promise<number>;
+  /**
+   * Renders and writes already obtained terminal output.
+   *
+   * String output is written exactly as provided; add a trailing newline in the
+   * command result when line output is desired.
+   */
+  writePreparedOutput(
+    prepared: PreparedCommand<TCommands[number]>,
+    output: TerminalCommandOutput
+  ): Promise<void>;
   /** Returns a process-style exit code. */
   run(
     args: readonly string[],
@@ -128,15 +138,28 @@ export function createTerminalApp<
   const output = options.output ?? createOutput();
   const resolveFormat = options.resolveFormat ?? resolvePreparedFormat;
 
+  async function writePreparedOutput(
+    prepared: PreparedCommand<TCommands[number]>,
+    terminalOutput: TerminalCommandOutput
+  ): Promise<void> {
+    const format = resolveFormat(prepared);
+
+    await writeTerminalOutput(terminalOutput, format, presentation, output);
+  }
+
   async function runPrepared(
     prepared: PreparedCommand<TCommands[number]>,
     context: CommandContext<TCommands[number]>
   ): Promise<number> {
     try {
       const result = await options.commands.run(prepared, context);
-      const format = resolveFormat(prepared);
 
-      await writeTerminalOutput(result, format, presentation, output);
+      await writeTerminalOutput(
+        result,
+        resolveFormat(prepared),
+        presentation,
+        output
+      );
 
       return 0;
     }
@@ -155,6 +178,7 @@ export function createTerminalApp<
       return options.commands.prepare(args, commandOptions);
     },
     runPrepared,
+    writePreparedOutput,
     async run(args, context, commandOptions) {
       try {
         const prepared = await options.commands.prepare(args, commandOptions);
@@ -177,7 +201,7 @@ export function createTerminalApp<
  * mapped to text or presentation views before they reach stdout.
  */
 async function writeTerminalOutput(
-  result: TerminalCommandOutput,
+  result: unknown,
   format: PresentationFormat | undefined,
   presentation: Presentation,
   output: Output

@@ -17,10 +17,12 @@ verified against git tags.
 ### Added
 
 - Added `TerminalApp.runPrepared(...)` for running prepared commands through terminal rendering and output.
+- Added `TerminalApp.writePreparedOutput(...)` for rendering and writing already obtained terminal output.
 
 ### Changed
 
 - Changed `createTerminalApp` typing to accept command registries with void and prepared payloads.
+- Changed `createTerminalApp` typing to allow custom command results when consumers run prepared commands themselves.
 - Updated testing instructions to use `yarn build` and `yarn test`.
 
 ## [1.0.16]
