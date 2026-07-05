@@ -25,483 +25,137 @@ npm install icore
 ## Table of Contents
 
 - [Installation](#installation)
-- [API](#api)
-  - [`parseArgv(args, schema?)`](#parseargvargs-schema)
-  - [`parseOptions(schema, values)`](#parseoptionsschema-values)
-  - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailedschema-values)
-  - [`parseOptionsSubsetDetailed(schema, values)`](#parseoptionssubsetdetailedschema-values)
-  - [`createCommand()`](#createcommand)
-  - [`defineCommand(command)`](#definecommandcommand)
-  - [`defineCommandRegistry(commands)`](#definecommandregistrycommands)
-  - [`isCommandName(registry, value)`](#iscommandnameregistry-value)
-  - [`isPreparedCommandName(prepared, name)`](#ispreparedcommandnameprepared-name)
-  - [`resolveCommand(registry, positionals)`](#resolvecommandregistry-positionals)
-  - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargsregistry-args)
-  - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargsregistry-args-options)
-  - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistryregistry-args-context-options)
-  - [`mergeOptionsSchema(...schemas)`](#mergeoptionsschemaschemas)
-  - [`runCommand(command, args, context, options?)`](#runcommandcommand-args-context-options)
-  - [Terminal App Form](#terminal-app-form)
-  - [Presentation Layer](#presentation-layer)
-  - [Output Writers](#output-writers)
-- [How It Works](#how-it-works)
+- [Command API Reference](#command-api-reference)
+  - [Architecture Map](#architecture-map)
+  - [Terminal Application](#terminal-application)
+  - [Layer Toolkit](#layer-toolkit)
+  - [Primitive Mechanics](#primitive-mechanics)
 - [Internal Source Layout](#internal-source-layout)
-- [Example](#example)
-- [Option Schemas](#option-schemas)
-- [Type Inference](#type-inference)
-- [Facade of arguments](#facade-of-arguments)
-- [Error Messages](#error-messages)
 - [Project Boundary](#project-boundary)
 
-## API
+## Command API Reference
 
-### `parseArgv(args, schema?)`
+The command API is documented from the architectural map. Start at the top when
+building a regular terminal application, and move down only when custom
+composition needs lower-level mechanics.
 
-Parses raw CLI arguments into positionals and raw option values.
+### Architecture Map
 
-```ts
-import { parseArgv } from 'icore';
+```text
+Terminal Application
+└─ createTerminalApp()
+   ├─ app.prepare(args)
+   │  └─ commands.prepare(args)
+   │     └─ prepareCommandFromArgs(registry, args, options?)
+   │        ├─ resolveCommandFromArgs(registry, args)
+   │        │  ├─ parseArgv(args, schema?)
+   │        │  └─ resolveCommand(registry, positionals)
+   │        └─ parseOptionsDetailed(schema, values)
+   │
+   └─ app.run(args, context)
+      ├─ commands.prepare(args)
+      ├─ commands.run(prepared, context)
+      │  └─ runPreparedCommand(prepared, context)
+      └─ presentation and output boundary
 
-const argv = parseArgv([
-  'hello',
-  '--name',
-  'Alice',
-  '--uppercase'
-]);
+Layer Toolkit
+├─ createCommand()
+│  ├─ command.define(command)
+│  │  └─ defineCommand(command)
+│  ├─ command.registry(commands)
+│  │  └─ createCommands(commands)
+│  └─ command.run(command, args, context)
+│     └─ runCommand(command, args, context, options?)
+│
+└─ createCommands(commands)
+   ├─ commands.resolve(positionals)
+   │  └─ resolveCommand(registry, positionals)
+   ├─ commands.resolveFromArgs(args)
+   │  └─ resolveCommandFromArgs(registry, args)
+   ├─ commands.prepare(args)
+   │  └─ prepareCommandFromArgs(registry, args, options?)
+   ├─ commands.run(prepared, context)
+   │  └─ runPreparedCommand(prepared, context)
+   └─ commands.runFromArgs(args, context)
+      └─ runCommandFromRegistry(registry, args, context, options?)
 ```
 
-Result:
+The map is a documentation route, not a complete internal call graph.
+
+### Terminal Application
+
+#### `createTerminalApp()`
+
+`createTerminalApp()` is the top-level terminal application composition point.
+It wires command execution, presentation rendering, and stdout/stderr delivery
+without taking ownership of application behavior.
+
+The checked TypeScript contract lives in [`src/terminal/app.ts`](src/terminal/app.ts).
+
+The method returns an application object with `prepare(args)` and
+`run(args, context)`, as shown in the architecture map.
+
+#### Interface
+
+Simplified shape:
 
 ```ts
-{
-  positionals: ['hello'],
-  options: {
-    name: 'Alice',
-    uppercase: true
-  }
-}
+type CreateTerminalAppOptions = {
+  commands: Commands; // required
+  presentation?: Presentation; // optional, defaults to createPresentation()
+  output?: Output; // optional, defaults to createOutput()
+  resolveFormat?: (prepared: PreparedCommand) => PresentationFormat | undefined;
+};
 ```
 
-When an option schema is provided, boolean options are parsed as flags without
-consuming the following positional argument:
+`commands` is the command mechanics object used by the terminal application.
+The terminal app cannot run without it, so this option is required.
+
+`presentation` controls how terminal-ready presentation results are rendered.
+Pass it when commands create presentation views with a shared presentation
+object, or omit it to use the default `createPresentation()`.
+
+`output` controls where rendered text is written. Omit it for regular
+`stdout`/`stderr`; pass it when tests or applications need custom sinks.
+
+`resolveFormat` customizes format selection. By default, the terminal app reads
+the prepared command option named `format` when it is present.
+
+#### Application Methods
+
+`app.prepare(args, options?)` resolves and validates a command before runtime
+context exists.
+
+- `args` are raw CLI arguments, usually `process.argv.slice(2)`;
+- `options` are command resolution options, such as `strict: true`;
+- the command handler is not called;
+- stdout and stderr are not used;
+- the result can be inspected before creating runtime resources.
 
 ```ts
-const argv = parseArgv([
-  'hello',
-  '--uppercase',
-  'Alice'
-], {
-  uppercase: {
-    type: 'boolean'
-  }
+const prepared = await app.prepare(args, {
+  strict: true
 });
 ```
 
-Result:
+`app.run(args, context, options?)` is the regular process path.
+
+- it prepares the command;
+- runs the selected command handler with application context;
+- renders supported terminal results;
+- writes regular output to stdout and command errors to stderr;
+- returns a process-style exit code.
 
 ```ts
-{
-  positionals: ['hello', 'Alice'],
-  options: {
-    uppercase: true
-  }
-}
-```
-
-### `parseOptions(schema, values)`
-
-Validates raw option values using an option schema and returns typed options.
-
-```ts
-import { parseOptions } from 'icore';
-
-const options = parseOptions({
-  name: {
-    type: 'string',
-    default: 'world'
-  },
-  uppercase: {
-    type: 'boolean'
-  }
-} as const, {
-  name: 'Alice',
-  uppercase: true
+process.exitCode = await app.run(args, context, {
+  strict: true
 });
 ```
 
-Result:
+#### Application Construction
 
-```ts
-{
-  name: 'Alice',
-  uppercase: true
-}
-```
-
-### `parseOptionsDetailed(schema, values)`
-
-Validates raw option values and returns parsed options together with
-user-provided metadata.
-
-```ts
-import { parseOptionsDetailed } from 'icore';
-
-const result = parseOptionsDetailed({
-  name: {
-    type: 'string',
-    default: 'world'
-  },
-  uppercase: {
-    type: 'boolean'
-  }
-} as const, {
-  uppercase: true
-});
-```
-
-Result:
-
-```ts
-{
-  options: {
-    name: 'world',
-    uppercase: true
-  },
-  provided: {
-    name: false,
-    uppercase: true
-  }
-}
-```
-
-`provided` is useful when a default value and an omitted option have different
-application-level meaning.
-
-### `parseOptionsSubsetDetailed(schema, values)`
-
-Validates only raw option values known by the given schema and returns the
-remaining raw options untouched.
-
-```ts
-const global = parseOptionsSubsetDetailed({
-  help: {
-    type: 'boolean'
-  },
-  version: {
-    type: 'boolean'
-  }
-} as const, {
-  help: true,
-  format: 'json'
-});
-```
-
-Result:
-
-```ts
-{
-  options: {
-    help: true,
-    version: undefined
-  },
-  provided: {
-    help: true,
-    version: false
-  },
-  rest: {
-    format: 'json'
-  }
-}
-```
-
-This is useful for bootstrap options such as `--help` and `--version`, where
-command-specific options should be left for the command layer.
-
-### `createCommand()`
-
-Creates a semantic command mechanics facade.
-
-```ts
-import { createCommand } from 'icore';
-
-const command = createCommand();
-
-const helloCommand = command.define({
-  path: ['hello'],
-  options: {
-    name: {
-      type: 'string',
-      default: 'world'
-    }
-  },
-  async handle({ options }) {
-    return `Hello, ${options.name}!`;
-  }
-});
-
-const commands = command.registry([
-  helloCommand
-] as const);
-
-const prepared = await commands.prepare([
-  'hello',
-  '--name=Alice'
-]);
-const output = await commands.run(prepared, undefined);
-```
-
-### `defineCommand(command)`
-
-Defines a command while preserving its option schema types.
-
-```ts
-import { defineCommand } from 'icore';
-
-const command = defineCommand({
-  path: ['hello'],
-  options: {
-    name: {
-      type: 'string',
-      default: 'world'
-    },
-    uppercase: {
-      type: 'boolean'
-    }
-  },
-  async handle({ options }) {
-    const message = `Hello, ${options.name}!`;
-
-    return options.uppercase ? message.toUpperCase() : message;
-  }
-});
-```
-
-### `defineCommandRegistry(commands)`
-
-Defines a command registry while preserving literal command path types.
-
-```ts
-import { defineCommandRegistry } from 'icore';
-
-const registry = defineCommandRegistry([
-  helloCommand,
-  helloFormalCommand
-] as const);
-```
-
-The registry exposes ordered commands and derived command names:
-
-```ts
-registry.commandNames;
-```
-
-Result:
-
-```ts
-[
-  'hello',
-  'hello formal'
-]
-```
-
-Duplicate command paths are rejected.
-
-### `isCommandName(registry, value)`
-
-Checks whether an unknown value is a command name registered in the registry.
-
-```ts
-if (isCommandName(registry, value)) {
-  // value is narrowed to the registry command name union.
-}
-```
-
-### `isPreparedCommandName(prepared, name)`
-
-Checks whether a prepared command has the given command name and narrows the
-prepared command union.
-
-```ts
-if (isPreparedCommandName(prepared, 'hello')) {
-  // prepared.payload is narrowed to the `hello` command payload.
-}
-```
-
-### `resolveCommand(registry, positionals)`
-
-Resolves a command from already parsed positional arguments.
-
-```ts
-import { resolveCommand } from 'icore';
-
-const resolved = resolveCommand(registry, [
-  'hello',
-  'formal',
-  'Alice'
-]);
-```
-
-Result:
-
-```ts
-{
-  name: 'hello formal',
-  path: ['hello', 'formal'],
-  command: helloFormalCommand,
-  positionals: ['Alice']
-}
-```
-
-When several command paths match, the most specific command wins. For example,
-`hello formal` is preferred over `hello`.
-
-### `resolveCommandFromArgs(registry, args)`
-
-Resolves a command from raw CLI arguments. Each candidate command is parsed with
-its own option schema, so boolean flags do not accidentally consume command path
-segments.
-
-```ts
-const resolved = resolveCommandFromArgs(registry, [
-  'hello',
-  '--name',
-  'Alice',
-  '--uppercase'
-]);
-```
-
-`resolveCommandFromArgs` keeps legacy option-anywhere command resolution. Use
-`prepareCommandFromArgs(..., { strict: true })` when command path diagnostics
-should reject options before the command path.
-
-### `prepareCommandFromArgs(registry, args, options?)`
-
-Resolves and validates a command without requiring runtime context or calling
-the command handler.
-
-```ts
-const prepared = await prepareCommandFromArgs(
-  registry,
-  ['hello', '--name', 'Alice', '--uppercase'],
-  {
-    strict: true
-  }
-);
-```
-
-A command `prepare` hook can return a typed payload. The payload is available
-on the prepared command before runtime context is created, then passed to the
-handler:
-
-```ts
-const helloCommand = defineCommand({
-  path: ['hello'],
-  options: {
-    name: {
-      type: 'string',
-      required: true
-    }
-  },
-  prepare({ options }) {
-    return {
-      normalizedName: options.name.trim().toLowerCase()
-    };
-  },
-  handle({ payload, context }) {
-    return context.greeter.greet(payload.normalizedName);
-  }
-});
-
-const prepared = await prepareCommandFromArgs(registry, [
-  'hello',
-  '--name',
-  ' Alice '
-]);
-
-prepared.payload.normalizedName;
-```
-
-Use payload for derived CLI data. Runtime resources such as databases, sockets,
-or SDK clients should still be created outside `icore` and passed as `context`.
-
-With `strict: true`, the command path must appear before options:
-
-```console
-$ node cli.js --unknown hello
-Unexpected argument '--unknown'
-```
-
-Without strict mode, legacy candidate-schema resolution is preserved for
-backward compatibility.
-
-### `runCommandFromRegistry(registry, args, context, options?)`
-
-Resolves a command from a registry and runs its handler.
-
-```ts
-const output = await runCommandFromRegistry(
-  registry,
-  ['hello', '--name', 'Alice', '--uppercase'],
-  context,
-  {
-    strict: true
-  }
-);
-```
-
-This is **registry-level mechanics only**. Application-specific setup, side
-effects, and application report mapping still belong outside `icore`.
-
-### `mergeOptionsSchema(...schemas)`
-
-Merges multiple option schemas while preserving literal option definition types.
-Later schemas override earlier schemas with the same option name.
-
-```ts
-import { mergeOptionsSchema } from 'icore';
-
-const nameOptions = {
-  name: {
-    type: 'string',
-    default: 'world'
-  }
-} as const;
-
-const greetingOptions = {
-  uppercase: {
-    type: 'boolean'
-  }
-} as const;
-
-const options = mergeOptionsSchema(nameOptions, greetingOptions);
-```
-
-### `runCommand(command, args, context, options?)`
-
-Parses arguments, validates options, checks command positionals, and runs the
-handler.
-
-```ts
-const output = await runCommand(
-  command,
-  ['hello', '--name', 'Alice', '--uppercase'],
-  context,
-  {
-    strict: true
-  }
-);
-```
-
-**By default**, extra positionals are rejected. A command can opt in to extra
-positionals with `allowExtraPositionals: true`.
-
-With `strict: true`, direct command execution also requires the command path to
-appear before options.
-
-### Terminal App Form
-
-`icore` also exposes a higher-level terminal application form. It keeps command
-mechanics, presentation, and output as explicit boundaries:
+A complete application path starts with commands, then creates the terminal app,
+then runs it with process arguments and application context.
 
 ```ts
 import {
@@ -512,19 +166,21 @@ import {
   presentationFormatOptions
 } from 'icore';
 
+type AppContext = {
+  currentUser: string;
+};
+
 const command = createCommand();
 const presentation = createPresentation();
+
 const commands = command.registry([
   command.define({
-    path: ['users', 'get-accounts'],
+    path: ['hello'],
     options: presentationFormatOptions,
-    async handle() {
-      return presentation.records([
-        {
-          id: 'account-id',
-          name: 'Main account'
-        }
-      ]);
+    handle({ context }: { context: AppContext }) {
+      return presentation.record({
+        message: `Hello, ${context.currentUser}!`
+      });
     }
   })
 ] as const);
@@ -535,127 +191,139 @@ const app = createTerminalApp({
   output: createOutput()
 });
 
-const exitCode = await app.run([
-  'users',
-  'get-accounts',
-  '--format=table'
-], undefined);
-```
+const args = process.argv.slice(2);
+const context: AppContext = {
+  currentUser: 'Alice'
+};
 
-The shape is intentionally explicit:
-
-```ts
-const prepared = await commands.prepare(args);
-const result = await commands.run(prepared, context);
-const text = presentation.render(result, prepared.options.format);
-
-await output.write(text);
-await output.error('warning\n');
-```
-
-Commands may return `string`, `AsyncIterable<string>`, `PresentationResult`, or
-`undefined`. Application-specific mapping to `PresentationResult` remains in
-the consuming application.
-
-### Presentation Layer
-
-`icore` provides generic terminal presentation view models and renderers for
-common CLI output formats. They do not know application DTOs, report contracts,
-or command names.
-
-```ts
-import {
-  createPresentation,
-  presentationFormatOptions,
-  renderCsv,
-  renderJson,
-  renderTextTable
-} from 'icore';
-
-const presentation = createPresentation();
-
-const view = presentation.record({
-  id: 'account-id'
+process.exitCode = await app.run(args, context, {
+  strict: true
 });
-
-presentation.render(view, 'json');
-
-presentation.render(presentation.records([
-  {
-    id: 'account-id'
-  }
-]), 'table');
-
-renderJson({
-  id: 'account-id'
-});
-
-renderTextTable([
-  ['id', 'name'],
-  ['account-id', 'Main account']
-]);
-
-renderCsv([
-  ['id', 'name'],
-  ['account-id', 'Main account']
-]);
 ```
 
-`presentationFormatOptions` can be merged with command-specific options:
+`createTerminalApp({ commands })` is enough for the default presentation and
+regular `stdout`/`stderr` output. Passing `presentation` and `output` makes the
+composition explicit and is useful in tests or custom terminal environments.
+
+#### Runtime Arguments
+
+In Node.js applications, `args` usually comes from `process.argv.slice(2)`.
+`context` is owned by the consuming application and usually contains config,
+clients, or services needed by command handlers. If an application does not use
+context, pass `undefined` and define commands without a context dependency.
+
+Command handlers keep ownership of application work. The terminal app only
+accepts terminal-ready results: text, streaming text, presentation results, or
+no output. Application DTO mapping, config loading, network clients, and domain
+behavior stay in the consuming application.
+
+### Layer Toolkit
+
+#### `createCommand()`
+
+`createCommand()` returns the command mechanics entrypoint used to build
+`commands` for `createTerminalApp()`.
+
+Simplified shape:
 
 ```ts
-import {
-  mergeOptionsSchema,
-  presentationFormatOptions
-} from 'icore';
+const command = createCommand();
 
-const options = mergeOptionsSchema(
-  presentationFormatOptions,
-  {
-    token: {
-      type: 'string',
-      required: true
-    }
-  } as const
-);
+command.define(commandDefinition);
+command.registry(commandDefinitions);
+command.run(commandDefinition, args, context);
 ```
 
-Applications remain responsible for mapping domain objects to stable output
-values before passing rows or JSON values to renderers.
+Build `commands` before creating the terminal app:
 
-### Output Writers
+- `createCommand()` creates the command mechanics entrypoint;
+- `command.define(...)` declares one command;
+- `command.registry([...])` returns the `commands` object required by
+  `createTerminalApp()`.
 
-`icore` exposes a small text writer contract and Node-compatible stdout/stderr
-adapters.
+The command definition keeps the application-specific parts: command path,
+option schema, and handler behavior. The terminal app only needs the resulting
+registry object.
+
+Use `command.run(...)` only when a single command should be executed without a
+registry or terminal application boundary. Regular applications should prefer
+`createTerminalApp()`.
+
+#### `createCommands(commands)`
+
+Use `createCommands(commands)` when the application already has command
+definitions and does not need the `createCommand()` object form.
+
+The returned object is the same `commands` contract consumed by
+`createTerminalApp()`: it can resolve, prepare, and run registered commands.
+
+Simplified shape:
 
 ```ts
-import {
-  createOutput,
-  createStderrWriter,
-  createStdoutWriter
-} from 'icore';
+const commands = createCommands(commandDefinitions);
 
-const output = createOutput();
-const stdout = createStdoutWriter();
-const stderr = createStderrWriter();
-
-await output.write('ok\n');
-await output.error('warning\n');
-await output.stdout.write('ok\n');
-await output.stderr.write('warning\n');
-await stdout.write('ok\n');
-await stderr.write('warning\n');
+commands.names;
+commands.registry;
+commands.resolve(positionals);
+commands.resolveFromArgs(args);
+commands.prepare(args, options);
+commands.run(prepared, context);
+commands.runFromArgs(args, context, options);
 ```
 
-`output.write()` delegates to stdout, and `output.error()` delegates to stderr.
-Direct writer channels remain available when a caller needs to pass a specific
-sink around. Writers await promise-returning custom sinks and wait for `drain`
-when a Node writable stream reports backpressure. This keeps long-running
-stream commands from buffering output faster than the consumer reads it.
+Use `commands.prepare(...)` and `commands.run(...)` when application code needs
+the same two-phase flow used by `createTerminalApp()`. Use
+`commands.runFromArgs(...)` for custom terminal boundaries that still want the
+registry-level command flow.
 
-## How It Works
+### Primitive Mechanics
 
-![yuml diagram](http://yuml.me/diagram/scruffy;dir:LR;/class/[*argv*%20{bg:gray}|External;hello%20--name%20Alice%20--uppercase]->[*matches*%20{bg:lavender}|System;parse,%20resolve,%20validate,%20infer]->[*typed%20result*%20{bg:honeydew}|Container;command=hello;%20name=Alice;%20uppercase=true]->[*your%20app*%20{bg:cornsilk}|System;business%20logic%20and%20output])
+Primitive mechanics are the lower-level functions shown at the leaves of the
+architecture map. Use them for custom composition, focused tests, or framework
+work inside `icore`.
+
+For application code, prefer `createTerminalApp()` first. Drop to this level
+only when the terminal application flow or the layer toolkit is too coarse.
+
+#### Parsing And Resolution
+
+This group turns raw arguments or positionals into a selected command.
+
+- `parseArgv(args, schema?)` parses raw CLI arguments into positionals and raw
+  option values;
+- `resolveCommand(registry, positionals)` resolves from already parsed
+  positionals;
+- `resolveCommandFromArgs(registry, args)` resolves from raw CLI arguments by
+  using registered command schemas.
+
+Use these methods when command selection is needed without validation or
+execution.
+
+#### Preparation
+
+This group validates command input without runtime context.
+
+- `parseOptionsDetailed(schema, values)` validates raw option values and keeps
+  option presence metadata;
+- `prepareCommandFromArgs(registry, args, options?)` resolves and validates a
+  registered command;
+- `options.strict` rejects options before the command path.
+
+Use preparation when runtime resources should be created only after command
+selection is known.
+
+#### Execution
+
+This group calls command handlers after command input is prepared.
+
+- `runPreparedCommand(prepared, context)` runs an already prepared command;
+- `runCommandFromRegistry(registry, args, context, options?)` prepares and runs
+  a command from a registry;
+- `runCommand(command, args, context, options?)` runs a single command without a
+  registry.
+
+Use execution primitives for custom boundaries. Regular CLI applications should
+usually stay at `createTerminalApp()`.
 
 ## Internal Source Layout
 
@@ -675,298 +343,6 @@ src/
 
 Consumers should continue importing from `icore`; deep imports are an internal
 source layout detail.
-
-
-## Example
-
-```ts
-import { defineCommand, runCommand } from 'icore';
-
-const exampleCommand = defineCommand({
-  path: ['hello'],
-  options: {
-    name: {
-      type: 'string',
-      default: 'world'
-    },
-    uppercase: {
-      type: 'boolean'
-    }
-  },
-  async handle({ options }) {
-    const message = `Hello, ${options.name}!`;
-
-    return options.uppercase ? message.toUpperCase() : message;
-  }
-});
-
-const output = await runCommand(
-  exampleCommand,
-  ['hello', '--name', 'Alice', '--uppercase'],
-  {}
-);
-
-console.log(output);
-```
-
-Terminal output:
-
-```console
-$ node cli.js hello --name Alice --uppercase
-HELLO, ALICE!
-```
-
-The command handler receives parsed options, user-provided option metadata,
-remaining positionals, prepared payload, and caller provided context.
-
-## Option Schemas
-
-Options are described as plain objects.
-
-**Option names are exact.** `icore` does not normalize `camelCase` to
-`kebab-case`. Use quoted object keys when your public CLI option contains
-`-`.
-
-Each option can define an optional short alias:
-
-```ts
-const schema = {
-  name: {
-    type: 'string',
-    alias: 'n'
-  },
-  uppercase: {
-    type: 'boolean',
-    alias: 'u'
-  }
-} as const;
-```
-
-Aliases must be a single ASCII letter and unique within the schema. Parsed
-values are always returned by long option name.
-
-### `type: 'string'`
-
-```ts
-const schema = {
-  name: {
-    type: 'string',
-    required: true
-  },
-  style: {
-    type: 'string',
-    choices: ['short', 'long'],
-    default: 'short'
-  }
-} as const;
-```
-
-String options reject missing required values, blank strings such as `--name=`,
-boolean flag form, and values outside `choices`.
-
-### `type: 'boolean'`
-
-```ts
-const schema = {
-  uppercase: {
-    type: 'boolean'
-  }
-} as const;
-```
-
-Boolean options accept **flag form** and schema-known negation:
-
-```sh
---uppercase
---no-uppercase
-```
-
-Explicit values are rejected:
-
-```sh
---uppercase=true
---uppercase=false
---uppercase=yes
---uppercase=
-```
-
-`--uppercase false` keeps `--uppercase` as `true` and leaves `false` as a positional
-argument.
-
-Use `syntax: 'flag'` when a boolean option should accept only flag form:
-
-```ts
-const schema = {
-  uppercase: {
-    type: 'boolean',
-    default: false,
-    syntax: 'flag'
-  }
-} as const;
-```
-
-With `syntax: 'flag'`, `--uppercase` is accepted, while `--uppercase=value`
-and `--no-uppercase` are rejected.
-
-### `type: 'number'`
-
-```ts
-const schema = {
-  limit: {
-    type: 'number',
-    integer: true,
-    min: 1,
-    max: 1000,
-    default: 100
-  }
-} as const;
-```
-
-Number options parse decimal numeric values and can validate integer and range
-constraints. Defaults are validated with the same rules as user-provided values.
-
-## Type Inference
-
-Use `InferOptions` when you need the parsed option type explicitly.
-
-```ts
-import type { InferOptions } from 'icore';
-
-const schema = {
-  name: {
-    type: 'string',
-    default: 'world'
-  },
-  uppercase: {
-    type: 'boolean'
-  }
-} as const;
-
-type Options = InferOptions<typeof schema>;
-```
-
-`Options` is equivalent to:
-
-```ts
-type Options = {
-  name: string;
-  uppercase: boolean | undefined;
-};
-```
-
-**Required options and options with defaults are always present.** Optional
-options without defaults are returned as `T | undefined`.
-
-Use `InferProvidedOptions` when you need the option presence type explicitly.
-
-```ts
-import type { InferProvidedOptions } from 'icore';
-
-type Provided = InferProvidedOptions<typeof schema>;
-```
-
-`Provided` maps every schema option to `boolean`. `true` means the user
-specified that option explicitly; defaults keep the flag `false`.
-
-Use `MergeOptionsSchemas` when you need the merged schema type explicitly.
-
-```ts
-import type { MergeOptionsSchemas } from 'icore';
-
-type Schema = MergeOptionsSchemas<[typeof nameOptions, typeof greetingOptions]>;
-```
-
-Use `CommandName` when you need the inferred command name type explicitly.
-
-```ts
-import type { CommandName } from 'icore';
-
-type Name = CommandName<typeof helloFormalCommand>;
-```
-
-`Name` is equivalent to:
-
-```ts
-type Name = 'hello formal';
-```
-
-## Facade of arguments
-
-Use `--` to stop option parsing. The terminator itself is not included in
-positionals; every following token is treated as positional, even when it starts
-with `-`.
-
-Short syntax is supported only for aliases declared in the option schema.
-Boolean aliases use flag form, such as `-f`; string and number aliases use a
-separate value, such as `-n value`.
-
-Attached short values such as `-nvalue` and grouped short booleans such as
-`-abc` are not supported yet. Unknown short tokens remain positional for
-compatibility.
-
-Negated syntax such as `--no-cache` is interpreted as `cache: false` when
-`cache` is a known boolean option without `syntax: 'flag'`. Unknown negated
-options, negation for string or number options, and negation for flag-only
-boolean options are rejected.
-
-## Error Messages
-
-`icore` throws `IcoreError` objects for CLI parsing, option validation, and
-command resolution failures. `IcoreError` extends the regular `Error` class and
-adds a stable machine-readable `code` plus structured `details`.
-
-Applications should treat `error.message` as **display text**. Use `error.code`
-for machine-readable handling:
-
-```ts
-import { IcoreError } from 'icore';
-
-try {
-  await main(args);
-} catch (error) {
-  if (error instanceof IcoreError && error.code === 'UNKNOWN_COMMAND') {
-    printHelp();
-    process.exitCode = 2;
-    return;
-  }
-
-  throw error;
-}
-```
-
-Supported error codes:
-
-```ts
-type IcoreErrorCode =
-  | 'UNKNOWN_COMMAND'
-  | 'UNEXPECTED_ARGUMENT'
-  | 'DUPLICATE_ARGUMENT'
-  | 'EXPECTED_REQUIRED_ARGUMENT'
-  | 'INVALID_OPTION_TYPE'
-  | 'INVALID_OPTION_CHOICE'
-  | 'UNEXPECTED_POSITIONAL'
-  | 'INVALID_OPTION_ALIAS'
-  | 'DUPLICATE_ALIAS'
-  | 'INVALID_OPTION_DEFAULT'
-  | 'DUPLICATE_COMMAND';
-```
-
-Applications can catch these errors and decide how to print them. For example,
-after printing `error.message`, terminal output can look like this:
-
-```console
-$ node cli.js hello --unknown
-Unexpected argument '--unknown'
-
-$ node cli.js hello --uppercase=yes
-Expected '--uppercase' as boolean flag
-
-$ node cli.js hello --name=
-Expected '--name' as string
-```
-
-Errors thrown by command `prepare` and `handle` functions are application errors
-and pass through unchanged.
 
 ## Project Boundary
 
