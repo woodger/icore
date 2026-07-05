@@ -14,11 +14,21 @@ export type TextWriter = {
   write(chunk: string): unknown | Promise<unknown>;
 };
 
+/**
+ * Minimal writable stream shape accepted by icore output adapters.
+ */
 export type BackpressureTextSink = {
   write(chunk: string): unknown;
+  /** Optional `drain` event hook. */
   once?(event: 'drain', listener: () => void): unknown;
 };
 
+/**
+ * Creates a text writer that preserves writable-stream backpressure.
+ *
+ * Promise-returning sinks are awaited, and Node-style sinks returning `false`
+ * are resumed after their next `drain` event.
+ */
 export function createBackpressureTextWriter(
   sink: BackpressureTextSink
 ): TextWriter {

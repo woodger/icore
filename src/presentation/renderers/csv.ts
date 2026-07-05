@@ -13,10 +13,16 @@ import type {
   CsvRow
 } from '../view';
 
+/**
+ * Renders one CSV row while escaping cells that require quoting.
+ */
 export function renderCsvRow(values: CsvRow): string {
   return values.map(renderCsvValue).join(',');
 }
 
+/**
+ * Renders CSV rows with the trailing newline expected by terminal output.
+ */
 export function renderCsv(rows: readonly CsvRow[]): string {
   if (rows.length === 0) {
     return '';

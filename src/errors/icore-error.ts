@@ -35,7 +35,9 @@ export type IcoreErrorDetails = Readonly<Record<string, unknown>>;
  * resolution, and schema configuration failures.
  */
 export class IcoreError extends Error {
+  /** Stable machine-readable code. */
   readonly code: IcoreErrorCode;
+  /** Structured error context. */
   readonly details: IcoreErrorDetails;
 
   constructor(

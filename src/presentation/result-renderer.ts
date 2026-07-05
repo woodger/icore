@@ -22,6 +22,12 @@ import type {
   TextTableRow
 } from './view';
 
+/**
+ * Renders a presentation result after the caller selects the terminal format.
+ *
+ * Record-like views are projected to table or CSV rows inside this boundary so
+ * applications do not duplicate generic renderer input shaping.
+ */
 export function renderPresentationResult(
   result: PresentationResult,
   format: PresentationFormat = 'table'
@@ -58,9 +64,12 @@ export function renderPresentationResult(
 
   return format === 'csv'
     ? renderCsv(recordsToCsvRows(result.value))
-    : renderTextTable(recordsToTextRows(result.value));
+  : renderTextTable(recordsToTextRows(result.value));
 }
 
+/**
+ * Checks whether an unknown command result is a supported presentation result.
+ */
 export function isPresentationResult(value: unknown): value is PresentationResult {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
     return false;

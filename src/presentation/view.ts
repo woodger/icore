@@ -47,14 +47,23 @@ export type PresentationView =
 export type PresentationResult = PresentationView;
 
 export type PresentationViewFactory = {
+  /** No output. */
   empty(): EmptyPresentationView;
+  /** Ready terminal text. */
   text(value: string): TextPresentationView;
+  /** One generic record. */
   record(value: PresentationRecord | null): RecordPresentationView;
+  /** Generic records. */
   records(value: readonly PresentationRecord[]): RecordsPresentationView;
+  /** Prepared text rows. */
   table(rows: readonly TextTableRow[]): TablePresentationView;
+  /** CSV scalar rows. */
   csv(rows: readonly CsvRow[]): CsvPresentationView;
 };
 
+/**
+ * Creates view-model factory methods without binding them to an output format.
+ */
 export function createPresentationViewFactory(): PresentationViewFactory {
   return {
     empty() {

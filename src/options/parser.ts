@@ -31,7 +31,9 @@ type OptionValueSource = 'value' | 'default';
  * Detailed option parsing result with values and user-provided metadata.
  */
 export type ParseOptionsResult<TSchema extends OptionsSchema> = {
+  /** Parsed values. */
   options: InferOptions<TSchema>;
+  /** Explicit option presence metadata. */
   provided: InferProvidedOptions<TSchema>;
 };
 
@@ -41,6 +43,7 @@ export type ParseOptionsResult<TSchema extends OptionsSchema> = {
  */
 export type ParseOptionsSubsetResult<TSchema extends OptionsSchema> =
   ParseOptionsResult<TSchema> & {
+    /** Unparsed raw values. */
     rest: Record<string, RawOptionValue>;
   };
 

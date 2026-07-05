@@ -26,8 +26,11 @@ import type {
  * context is attached.
  */
 export type PreparedCommandInput<TSchema extends OptionsSchema> = {
+  /** Parsed option values. */
   options: InferOptions<TSchema>;
+  /** Explicit option presence metadata. */
   provided: InferProvidedOptions<TSchema>;
+  /** Positionals after the command path. */
   positionals: string[];
 };
 
@@ -39,13 +42,16 @@ export type CommandInput<
   TContext,
   TPayload = void
 > = PreparedCommandInput<TSchema> & {
+  /** Application runtime context. */
   context: TContext;
 } & (
   [TPayload] extends [void]
     ? {
+      /** Optional prepared payload. */
       payload?: TPayload;
     }
     : {
+      /** Prepared payload. */
       payload: TPayload;
     }
 );
@@ -65,11 +71,17 @@ export type CommandDefinition<
   TMetadata = unknown,
   TPayload = void
 > = {
+  /** Command path segments. */
   path: TPath;
+  /** Command option schema. */
   options: TSchema;
+  /** Caller-owned static metadata. */
   metadata?: TMetadata;
+  /** Allows extra positionals. */
   allowExtraPositionals?: boolean;
+  /** Prepares payload before runtime context. */
   prepare?(input: PreparedCommandInput<TSchema>): TPayload | Promise<TPayload>;
+  /** Runs application command behavior. */
   handle(input: CommandInput<TSchema, TContext, TPayload>): TResult | Promise<TResult>;
 };
 
@@ -125,15 +137,24 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
       payload: unknown;
     };
 
+/**
+ * Infers the runtime context type required by a command.
+ */
 export type CommandContext<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['context'];
 
+/**
+ * Infers the awaited command handler result type.
+ */
 export type CommandResult<TCommand extends AnyCommandDefinition> =
   Awaited<CommandDefinitionParts<TCommand>['result']>;
 
 type CommandSchema<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['schema'];
 
+/**
+ * Infers the payload type produced by a command prepare hook.
+ */
 export type CommandPayload<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['payload'];
 
@@ -147,7 +168,9 @@ export type CommandName<TCommand extends AnyCommandDefinition> =
  * Declarative command registry used to resolve command paths.
  */
 export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> = {
+  /** Registered command definitions. */
   commands: TCommands;
+  /** Derived public command names. */
   commandNames: readonly CommandName<TCommands[number]>[];
 };
 
@@ -155,19 +178,27 @@ export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> =
  * High-level command mechanics facade for terminal applications.
  */
 export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
+  /** Original command definitions. */
   definitions: TCommands;
+  /** Public command names. */
   names: readonly CommandName<TCommands[number]>[];
+  /** Lower-level command registry. */
   registry: CommandRegistry<TCommands>;
+  /** Resolves from positionals. */
   resolve(positionals: readonly string[]): ResolvedCommand<TCommands[number]>;
+  /** Resolves from raw argv. */
   resolveFromArgs(args: readonly string[]): ResolvedCommand<TCommands[number]>;
+  /** Prepares without runtime context. */
   prepare(
     args: readonly string[],
     options?: CommandResolutionOptions
   ): Promise<PreparedCommand<TCommands[number]>>;
+  /** Runs a prepared command. */
   run(
     prepared: PreparedCommand<TCommands[number]>,
     context: CommandContext<TCommands[number]>
   ): Promise<CommandResult<TCommands[number]>>;
+  /** Resolves, prepares, and runs. */
   runFromArgs(
     args: readonly string[],
     context: CommandContext<TCommands[number]>,
@@ -188,11 +219,7 @@ export type Command = {
  * Options for command resolution from raw CLI arguments.
  */
 export type CommandResolutionOptions = {
-  /**
-   * When enabled, command path must appear before options. Options before the
-   * command path are rejected instead of participating in legacy candidate
-   * schema parsing.
-   */
+  /** Rejects options before command path. */
   strict?: boolean;
 };
 
@@ -200,9 +227,13 @@ export type CommandResolutionOptions = {
  * Result of resolving a command from user positionals.
  */
 export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
+  /** Space-joined command name. */
   name: CommandName<TCommand>;
+  /** Literal command path. */
   path: TCommand['path'];
+  /** Selected command definition. */
   command: TCommand;
+  /** Positionals after the command path. */
   positionals: string[];
 };
 
@@ -212,12 +243,19 @@ export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
 export type PreparedCommand<TCommand extends AnyCommandDefinition> =
   TCommand extends AnyCommandDefinition
     ? {
+      /** Space-joined command name. */
       name: CommandName<TCommand>;
+      /** Literal command path. */
       path: TCommand['path'];
+      /** Selected command definition. */
       command: TCommand;
+      /** Parsed option values. */
       options: InferOptions<CommandSchema<TCommand>>;
+      /** Explicit option presence metadata. */
       provided: InferProvidedOptions<CommandSchema<TCommand>>;
+      /** Positionals after the command path. */
       positionals: string[];
+      /** Prepared payload. */
       payload: CommandPayload<TCommand>;
     }
     : never;

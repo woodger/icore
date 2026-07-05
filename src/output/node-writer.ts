@@ -13,12 +13,18 @@ import {
   type TextWriter
 } from './text-writer';
 
+/**
+ * Creates a stdout writer from an already selected Node-compatible sink.
+ */
 export function createStdoutWriter(
   stdout: BackpressureTextSink = process.stdout
 ): TextWriter {
   return createBackpressureTextWriter(stdout);
 }
 
+/**
+ * Creates a stderr writer from an already selected Node-compatible sink.
+ */
 export function createStderrWriter(
   stderr: BackpressureTextSink = process.stderr
 ): TextWriter {

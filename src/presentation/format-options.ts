@@ -12,8 +12,15 @@
 
 import type { OptionsSchema } from '../options/schema';
 
+/**
+ * Supported output formats for the shared terminal presentation renderer.
+ */
 export const presentationFormats = ['json', 'table', 'csv'] as const;
 
+/**
+ * Reusable `--format` option schema for commands that return presentation
+ * results.
+ */
 export const presentationFormatOptions = {
   format: {
     type: 'string',
@@ -24,6 +31,9 @@ export const presentationFormatOptions = {
 
 export type PresentationFormat = typeof presentationFormats[number];
 
+/**
+ * Narrows unknown option values to supported presentation formats.
+ */
 export function isPresentationFormat(value: unknown): value is PresentationFormat {
   return typeof value === 'string'
     && presentationFormats.includes(value as PresentationFormat);

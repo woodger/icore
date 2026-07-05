@@ -51,6 +51,12 @@ export type Presentation = PresentationViewFactory & {
 
 export type { PresentationResult } from './view';
 
+/**
+ * Creates the presentation facade used by terminal applications.
+ *
+ * The facade owns generic rendering mechanics only; callers still map their
+ * domain objects to presentation views.
+ */
 export function createPresentation(): Presentation {
   const viewFactory = createPresentationViewFactory();
 

@@ -22,7 +22,9 @@ import { IcoreError } from '../errors/icore-error';
  * named options.
  */
 export type ParsedArgv = {
+  /** Non-option tokens. */
   positionals: string[];
+  /** Unvalidated option values. */
   options: Record<string, RawOptionValue>;
 };
 

@@ -19,7 +19,9 @@ import type {
 } from './text-writer';
 
 export type Output = {
+  /** Writes regular output. */
   write(chunk: string): unknown | Promise<unknown>;
+  /** Writes diagnostic output. */
   error(chunk: string): unknown | Promise<unknown>;
   stdout: TextWriter;
   stderr: TextWriter;
@@ -30,6 +32,10 @@ export type OutputOptions = {
   stderr?: BackpressureTextSink;
 };
 
+/**
+ * Creates semantic output methods while keeping raw stdout/stderr channels
+ * available for lower-level integrations.
+ */
 export function createOutput(options: OutputOptions = {}): Output {
   const stdout = createStdoutWriter(options.stdout);
   const stderr = createStderrWriter(options.stderr);

@@ -12,8 +12,11 @@
  */
 
 type OptionBase<TType extends string, TValue> = {
+  /** Primitive option kind. */
   type: TType;
+  /** One-letter short alias. */
   alias?: string;
+  /** Requires an explicit value. */
   required?: boolean;
   default?: TValue;
 };
@@ -34,6 +37,7 @@ export type RawOptionValue = string | boolean;
  */
 export type StringOption<TChoices extends readonly string[] = readonly string[]> =
   OptionBase<'string', TChoices[number] | string> & {
+    /** Allowed string values. */
     choices?: TChoices;
   };
 
@@ -44,6 +48,7 @@ export type StringOption<TChoices extends readonly string[] = readonly string[]>
  * syntax is enforced.
  */
 export type BooleanOption = OptionBase<'boolean', boolean> & {
+  /** Restricts boolean syntax. */
   syntax?: 'flag';
 };
 
@@ -55,9 +60,13 @@ export type BooleanOption = OptionBase<'boolean', boolean> & {
  */
 export type NumberOption<TChoices extends readonly number[] = readonly number[]> =
   OptionBase<'number', TChoices[number] | number> & {
+    /** Allowed numeric values. */
     choices?: TChoices;
+    /** Requires a whole number. */
     integer?: boolean;
+    /** Inclusive lower bound. */
     min?: number;
+    /** Inclusive upper bound. */
     max?: number;
   };
 

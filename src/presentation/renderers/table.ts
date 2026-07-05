@@ -10,6 +10,9 @@
 
 import type { TextTableRow } from '../view';
 
+/**
+ * Renders prepared text rows as an aligned table without changing cell values.
+ */
 export function renderTextTable(rows: readonly TextTableRow[]): string {
   if (rows.length === 0) {
     return '';
