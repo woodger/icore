@@ -13,13 +13,13 @@
 
 import { parseArgv } from '../argv/parser';
 import { IcoreError } from '../errors/icore-error';
-import {
-  parseOptionsDetailed,
-  type InferOptions,
-  type InferProvidedOptions,
-  type OptionsSchema,
-  type RawOptionValue
-} from '../options/parser';
+import { parseOptionsDetailed } from '../options/parser';
+import type {
+  InferOptions,
+  InferProvidedOptions,
+  OptionsSchema,
+  RawOptionValue
+} from '../options/schema';
 
 /**
  * Input produced after command path and option validation, before runtime

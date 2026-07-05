@@ -14,7 +14,7 @@ import type {
   OptionDefinition,
   OptionsSchema,
   RawOptionValue
-} from '../options/parser';
+} from '../options/schema';
 import { IcoreError } from '../errors/icore-error';
 
 /**

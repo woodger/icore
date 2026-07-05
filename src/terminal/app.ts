@@ -16,7 +16,7 @@ import type {
   Commands,
   PreparedCommand
 } from '../command/mechanics';
-import type { OptionsSchema } from '../options/parser';
+import type { OptionsSchema } from '../options/schema';
 import {
   createPresentation,
   type Presentation,

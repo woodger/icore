@@ -48,10 +48,14 @@ export {
   type IcoreErrorDetails
 } from './errors/icore-error';
 export {
-  mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,
   parseOptionsSubsetDetailed,
+  type ParseOptionsResult,
+  type ParseOptionsSubsetResult
+} from './options/parser';
+export {
+  mergeOptionsSchema,
   type BooleanOption,
   type InferOptions,
   type InferProvidedOptions,
@@ -59,11 +63,9 @@ export {
   type NumberOption,
   type OptionDefinition,
   type OptionsSchema,
-  type ParseOptionsResult,
-  type ParseOptionsSubsetResult,
   type RawOptionValue,
   type StringOption
-} from './options/parser';
+} from './options/schema';
 export {
   createPresentation,
   type Presentation,

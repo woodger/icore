@@ -665,7 +665,7 @@ grouped by CLI framework responsibility:
 ```text
 src/
   argv/          raw argv token parsing
-  options/       option schema validation
+  options/       option schemas and option value validation
   command/       command resolution and execution mechanics
   presentation/  terminal view models and JSON/CSV/table renderers
   output/        stdout/stderr writer boundaries

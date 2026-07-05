@@ -37,6 +37,8 @@ conservative.
 - Changed `PreparedCommand` typing to preserve payload correlation when narrowing registry unions by command name.
 - Changed output writers to await promise-returning custom sinks.
 - Reorganized internal source files by CLI framework responsibility without changing the root public API.
+- Split option schema contracts from option value parsing internals.
+- Changed npm package contents to include `CHANGELOG.md`.
 
 ### Removed
 

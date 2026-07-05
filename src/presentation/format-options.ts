@@ -10,7 +10,7 @@
  * This file must not contain rendering logic or command execution.
  */
 
-import type { OptionsSchema } from '../options/parser';
+import type { OptionsSchema } from '../options/schema';
 
 export const presentationFormats = ['json', 'table', 'csv'] as const;
 
