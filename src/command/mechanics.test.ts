@@ -1,6 +1,8 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  createCommand,
+  createCommands,
   defineCommand,
   defineCommandRegistry,
   IcoreError,
@@ -18,7 +20,112 @@ import {
   type CommandResult,
   type PreparedCommand,
   type PreparedCommandInput
-} from './cli';
+} from '../index';
+
+describe('createCommand', () => {
+  test('creates a semantic command mechanics facade', async () => {
+    const command = createCommand();
+    const getAccounts = command.define({
+      path: ['users', 'get-accounts'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      } as const,
+      handle({ options, context }: {
+        options: {
+          format: 'json' | 'table';
+        };
+        context: {
+          accountId: string;
+        };
+      }) {
+        return `${context.accountId}:${options.format}`;
+      }
+    });
+    const commands = command.registry([
+      getAccounts
+    ] as const);
+    const prepared = await commands.prepare([
+      'users',
+      'get-accounts',
+      '--format=json'
+    ]);
+
+    assert.deepStrictEqual(commands.names, ['users get-accounts']);
+    assert.strictEqual(prepared.name, 'users get-accounts');
+    assert.strictEqual(
+      await commands.run(prepared, {
+        accountId: 'account-id'
+      }),
+      'account-id:json'
+    );
+    assert.strictEqual(
+      await command.run(getAccounts, [
+        'users',
+        'get-accounts'
+      ], {
+        accountId: 'fallback-id'
+      }),
+      'fallback-id:table'
+    );
+  });
+});
+
+describe('createCommands', () => {
+  test('creates a command mechanics facade', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      } as const,
+      handle({ options, context }: {
+        options: {
+          format: 'json' | 'table';
+        };
+        context: {
+          accountId: string;
+        };
+      }) {
+        return `${context.accountId}:${options.format}`;
+      }
+    });
+    const commands = createCommands([
+      command
+    ] as const);
+    const prepared = await commands.prepare([
+      'users',
+      'get-accounts',
+      '--format=json'
+    ]);
+
+    assert.deepStrictEqual(commands.names, ['users get-accounts']);
+    assert.strictEqual(commands.resolve(['users', 'get-accounts']).command, command);
+    assert.strictEqual(commands.resolveFromArgs(['users', 'get-accounts']).command, command);
+    assert.strictEqual(prepared.name, 'users get-accounts');
+    assert.strictEqual(
+      await commands.run(prepared, {
+        accountId: 'account-id'
+      }),
+      'account-id:json'
+    );
+    assert.strictEqual(
+      await commands.runFromArgs([
+        'users',
+        'get-accounts'
+      ], {
+        accountId: 'fallback-id'
+      }),
+      'fallback-id:table'
+    );
+  });
+});
 
 describe('command registry', () => {
   test('defines command names and checks registered names', () => {

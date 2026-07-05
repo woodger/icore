@@ -1,7 +1,7 @@
 {
   "name": "icore",
-  "version": "1.0.15",
-  "description": "Declarative command line interface mechanics for Node.js",
+  "version": "1.0.16",
+  "description": "Declarative command line interface and terminal presentation mechanics for Node.js",
   "keywords": [
     "command-line",
     "argv",
@@ -9,6 +9,11 @@
     "option-parser",
     "command-registry",
     "command-router",
+    "terminal-app",
+    "terminal-output",
+    "presentation",
+    "table-renderer",
+    "csv-renderer",
     "typed-cli",
     "declarative-cli"
   ],
@@ -28,14 +33,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc",
-    "test": "node --test dist/*.test.js",
+    "test": "fwa --prune",
     "lint": "eslint src"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^26.0.1",
     "eslint": "^9.39.4",
+    "fwa": "^2.0.6",
     "globals": "^17.7.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0"

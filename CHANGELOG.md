@@ -13,7 +13,18 @@ conservative.
 
 ### Added
 
+- Added `createCommand` as a semantic command mechanics facade.
+- Added `createCommands` as a high-level command mechanics facade.
+- Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
+- Added semantic `Presentation` view factory methods such as `presentation.records(...)`.
+- Added `createOutput` as a stdout/stderr output boundary facade.
+- Added semantic `Output.write()` and `Output.error()` methods.
+- Added `createTerminalApp` to compose command, presentation, and output mechanics.
+- Added generic terminal presentation renderers for JSON, CSV, and text tables.
+- Added reusable stdout/stderr text writers with backpressure handling.
+- Added shared `presentationFormatOptions` for common `--format` command options.
 - Added machine-readable `IcoreError` codes and details.
+- Added `parseOptionsSubsetDetailed` for validating known option subsets while preserving unknown raw options.
 - Added opt-in `strict: true` command resolution for rejecting options before command paths.
 - Added `strict: true` support to direct `runCommand` execution.
 - Added typed prepared command `payload` returned from `prepare` and passed to `handle`.
@@ -24,6 +35,11 @@ conservative.
 ### Changed
 
 - Changed `PreparedCommand` typing to preserve payload correlation when narrowing registry unions by command name.
+- Changed output writers to await promise-returning custom sinks.
+- Reorganized internal source files by CLI framework responsibility without changing the root public API.
+- Split option schema contracts from option value parsing internals.
+- Changed npm package contents to include `CHANGELOG.md`.
+- Removed the redundant `cli` barrel so `index` is the only package entrypoint.
 
 ### Removed
 

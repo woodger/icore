@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import {
   IcoreError,
   parseArgv
-} from './cli';
+} from '../index';
 
 describe('parseArgv', () => {
   test('parses positionals and long options', () => {

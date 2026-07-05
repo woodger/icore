@@ -14,15 +14,17 @@ import type {
   OptionDefinition,
   OptionsSchema,
   RawOptionValue
-} from './options';
-import { IcoreError } from './errors';
+} from '../options/schema';
+import { IcoreError } from '../errors/icore-error';
 
 /**
  * Parsed CLI arguments split into positional command path segments and raw
  * named options.
  */
 export type ParsedArgv = {
+  /** Non-option tokens. */
   positionals: string[];
+  /** Unvalidated option values. */
   options: Record<string, RawOptionValue>;
 };
 

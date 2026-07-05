@@ -2,67 +2,13 @@ import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   IcoreError,
-  mergeOptionsSchema,
   parseOptions,
   parseOptionsDetailed,
+  parseOptionsSubsetDetailed,
   type InferOptions,
-  type InferProvidedOptions
-} from './cli';
-
-describe('mergeOptionsSchema', () => {
-  test('merges schemas and preserves literal option types', () => {
-    const sdkOptions = {
-      token: {
-        type: 'string',
-        required: true
-      },
-      insecure: {
-        type: 'boolean'
-      }
-    } as const;
-    const formatOptions = {
-      format: {
-        type: 'string',
-        choices: ['json', 'table'],
-        default: 'table'
-      }
-    } as const;
-
-    const schema = mergeOptionsSchema(sdkOptions, formatOptions);
-    const options: InferOptions<typeof schema> = parseOptions(schema, {
-      token: 'secret',
-      insecure: true
-    });
-    const format: 'json' | 'table' = options.format;
-
-    assert.deepStrictEqual(options, {
-      token: 'secret',
-      insecure: true,
-      format: 'table'
-    });
-    assert.strictEqual(format, 'table');
-  });
-
-  test('uses later schemas for duplicate option names', () => {
-    const schema = mergeOptionsSchema({
-      format: {
-        type: 'string',
-        choices: ['json'],
-        default: 'json'
-      }
-    } as const, {
-      format: {
-        type: 'string',
-        choices: ['json', 'table'],
-        default: 'table'
-      }
-    } as const);
-
-    assert.deepStrictEqual(parseOptions(schema, {}), {
-      format: 'table'
-    });
-  });
-});
+  type InferProvidedOptions,
+  type ParseOptionsSubsetResult
+} from '../index';
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {
@@ -440,5 +386,75 @@ describe('parseOptionsDetailed', () => {
       format: false,
       insecure: true
     });
+  });
+});
+
+describe('parseOptionsSubsetDetailed', () => {
+  test('validates known options and returns untouched rest options', () => {
+    const schema = {
+      help: {
+        type: 'boolean'
+      },
+      version: {
+        type: 'boolean',
+        default: false
+      }
+    } as const;
+
+    const result: ParseOptionsSubsetResult<typeof schema> = parseOptionsSubsetDetailed(schema, {
+      help: true,
+      format: 'json',
+      limit: '10'
+    });
+    const help: boolean | undefined = result.options.help;
+    const version: boolean = result.options.version;
+
+    assert.strictEqual(help, true);
+    assert.strictEqual(version, false);
+    assert.deepStrictEqual(result, {
+      options: {
+        help: true,
+        version: false
+      },
+      provided: {
+        help: true,
+        version: false
+      },
+      rest: {
+        format: 'json',
+        limit: '10'
+      }
+    });
+  });
+
+  test('does not reject unknown options outside the subset schema', () => {
+    assert.deepStrictEqual(
+      parseOptionsSubsetDetailed({}, {
+        format: 'json',
+        verbose: true
+      }),
+      {
+        options: {},
+        provided: {},
+        rest: {
+          format: 'json',
+          verbose: true
+        }
+      }
+    );
+  });
+
+  test('rejects invalid known subset options', () => {
+    assert.throws(
+      () => parseOptionsSubsetDetailed({
+        help: {
+          type: 'boolean'
+        }
+      }, {
+        help: 'yes',
+        format: 'json'
+      }),
+      /Expected '--help' as boolean flag/
+    );
   });
 });
