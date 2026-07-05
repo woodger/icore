@@ -9,48 +9,108 @@ Historical entries before this file was introduced were reconstructed from npm
 publish metadata and local git history. Older entries are intentionally
 conservative.
 
+Version boundaries between `1.0.12` and `1.0.15` are draft-level and should be
+verified against git tags.
+
 ## [Unreleased]
+
+### Changed
+
+- Changed `createTerminalApp` typing to accept command registries with void and prepared payloads.
+- Updated testing instructions to use `yarn build` and `yarn test`.
+
+## [1.0.16]
 
 ### Added
 
-- Added `createCommand` as a semantic command mechanics facade.
-- Added `createCommands` as a high-level command mechanics facade.
-- Added `createPresentation` and `PresentationResult` for terminal view-model rendering.
-- Added semantic `Presentation` view factory methods such as `presentation.records(...)`.
-- Added `createOutput` as a stdout/stderr output boundary facade.
-- Added semantic `Output.write()` and `Output.error()` methods.
-- Added `createTerminalApp` to compose command, presentation, and output mechanics.
-- Added generic terminal presentation renderers for JSON, CSV, and text tables.
-- Added reusable stdout/stderr text writers with backpressure handling.
-- Added shared `presentationFormatOptions` for common `--format` command options.
-- Added machine-readable `IcoreError` codes and details.
-- Added `parseOptionsSubsetDetailed` for validating known option subsets while preserving unknown raw options.
-- Added opt-in `strict: true` command resolution for rejecting options before command paths.
-- Added `strict: true` support to direct `runCommand` execution.
-- Added typed prepared command `payload` returned from `prepare` and passed to `handle`.
-- Added public `CommandPayload`, `CommandContext`, and `CommandResult` helper types.
-- Added `isPreparedCommandName` for narrowing prepared command unions by name.
-- Added this changelog.
+- Added `createTerminalApp()` as the top-level terminal application composition API.
+- Added semantic presentation facade: `createPresentation()`.
+- Added semantic output facade: `createOutput()` with `output.write(...)` and `output.error(...)`.
+- Added terminal-ready command output support: text, async text streams, presentation results, and empty output.
+- Added guide-style examples for terminal app, command flow, option schemas, presentation, output, and lower-level mechanics.
 
 ### Changed
 
-- Changed `PreparedCommand` typing to preserve payload correlation when narrowing registry unions by command name.
-- Changed output writers to await promise-returning custom sinks.
-- Reorganized internal source files by CLI framework responsibility without changing the root public API.
-- Split option schema contracts from option value parsing internals.
-- Changed npm package contents to include `CHANGELOG.md`.
-- Removed the redundant `cli` barrel so `index` is the only package entrypoint.
+- Documentation was reorganized around `command`, `presentation`, and `output`.
+- Examples were grouped by usage level: Terminal Application, Layer Toolkit, Primitive Mechanics.
+- Public README now positions `icore` as terminal application mechanics, not only argv parsing.
 
-### Removed
+## [1.0.15]
 
-- Removed explicit boolean values such as `--flag=true` and `--flag=false`; use `--flag` and `--no-flag`.
+### Added
 
-## [1.0.12] - 2026-07-02
+- Added presentation primitives and renderers:
+  - `renderJson`
+  - `renderCsv`
+  - `renderCsvRow`
+  - `renderTextTable`
+  - `renderPresentationResult`
+  - `isPresentationResult`
+- Added reusable output writer primitives:
+  - `createStdoutWriter`
+  - `createStderrWriter`
+  - `createBackpressureTextWriter`
 
 ### Changed
 
-- Replaced the preliminary flag-only boolean option naming with `syntax: 'flag'`.
-- Documented flag-only boolean option behavior.
+- Extracted generic JSON/CSV/table rendering mechanics from project-specific CLI code.
+
+## [1.0.14]
+
+### Added
+
+- Added command mechanics facade: `createCommand()`.
+- Added command registry flow:
+  - `command.define(...)`
+  - `command.registry(...)`
+  - `commands.prepare(...)`
+  - `commands.run(...)`
+  - `commands.runFromArgs(...)`
+- Added lower-level command primitives:
+  - `defineCommand`
+  - `defineCommandRegistry`
+  - `createCommands`
+  - `resolveCommand`
+  - `prepareCommandFromArgs`
+  - `runPreparedCommand`
+  - `runCommandFromRegistry`
+  - `runCommand`
+
+### Changed
+
+- CLI command execution became explicitly two-phase: prepare without runtime context, then run with context.
+
+## [1.0.13]
+
+### Added
+
+- Added typed option schema composition with `mergeOptionsSchema`.
+- Added option inference helpers for parsed values and provided metadata.
+- Added command-name guards:
+  - `isCommandName`
+  - `isPreparedCommandName`
+- Added detailed option parsing contracts for cases where caller needs explicit provided/not-provided metadata.
+
+### Changed
+
+- Boolean option handling was tightened around flag syntax: `--flag` and `--no-flag`.
+
+## [1.0.12]
+
+### Added
+
+- Added core typed CLI option mechanics based on literal schemas:
+  - `type: 'string'`
+  - `type: 'boolean'`
+  - `type: 'number'`
+- Added GNU-style argv parsing:
+  - `--name value`
+  - `--name=value`
+  - `--flag`
+  - short aliases
+  - `--` terminator
+- Added machine-readable `IcoreError`.
+- Added initial TypeScript-first public API for command-line mechanics.
 
 ## [1.0.11] - 2026-07-02
 
@@ -202,6 +262,10 @@ conservative.
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[1.0.16]: https://www.npmjs.com/package/icore/v/1.0.16
+[1.0.15]: https://www.npmjs.com/package/icore/v/1.0.15
+[1.0.14]: https://www.npmjs.com/package/icore/v/1.0.14
+[1.0.13]: https://www.npmjs.com/package/icore/v/1.0.13
 [1.0.12]: https://www.npmjs.com/package/icore/v/1.0.12
 [1.0.11]: https://www.npmjs.com/package/icore/v/1.0.11
 [1.0.10]: https://www.npmjs.com/package/icore/v/1.0.10
