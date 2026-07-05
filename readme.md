@@ -24,7 +24,6 @@ npm install icore
 
 ## Table of Contents
 
-- [Installation](#installation)
 - [API Reference](#api-reference)
   - [`createTerminalApp()`](#createterminalapp)
   - [`createCommand()`](#createcommand)

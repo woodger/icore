@@ -33,7 +33,6 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc",
     "test": "fwa --prune",
     "lint": "eslint src"
   },
