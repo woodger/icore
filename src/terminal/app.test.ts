@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  createCommand,
   createCommands,
   createOutput,
   createPresentation,
@@ -41,6 +42,57 @@ function createMemoryOutput() {
 }
 
 describe('createTerminalApp', () => {
+  test('accepts commands with void and prepared payloads', async () => {
+    const memory = createMemoryOutput();
+    const presentation = createPresentation();
+    const command = createCommand();
+    const versionCommand = command.define({
+      path: ['version'],
+      options: {},
+      handle() {
+        return 'ok\n';
+      }
+    });
+    const greetCommand = command.define({
+      path: ['greet'],
+      options: {
+        name: {
+          type: 'string',
+          required: true
+        }
+      } as const,
+      prepare({ options }) {
+        return {
+          normalizedName: options.name.trim()
+        };
+      },
+      handle({ payload }) {
+        return presentation.record({
+          name: payload.normalizedName
+        });
+      }
+    });
+    const commands = command.registry([
+      versionCommand,
+      greetCommand
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      presentation,
+      output: memory.output
+    });
+
+    assert.equal(await app.run(['version'], undefined), 0);
+    assert.equal(await app.run([
+      'greet',
+      '--name',
+      ' Alice '
+    ], undefined), 0);
+
+    assert.equal(memory.read().stdout, 'ok\nfield  value\nname   Alice\n');
+    assert.equal(memory.read().stderr, '');
+  });
+
   test('runs commands and renders presentation results to stdout', async () => {
     const memory = createMemoryOutput();
     const presentation = createPresentation();

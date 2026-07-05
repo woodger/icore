@@ -11,7 +11,7 @@
  */
 
 import type {
-  CommandDefinition,
+  CommandContext,
   CommandResolutionOptions,
   Commands,
   PreparedCommand
@@ -44,18 +44,38 @@ export type TerminalCommandOutput =
   | PresentationResult
   | undefined;
 
-type TerminalCommandDefinition<TContext> = CommandDefinition<
-  OptionsSchema,
-  TContext,
-  TerminalCommandOutput,
-  readonly [string, ...string[]],
-  unknown,
-  unknown
->;
+type BivariantCallback<TInput, TOutput> = {
+  bivarianceHack(input: TInput): TOutput;
+}['bivarianceHack'];
+
+type TerminalCommandDefinition = {
+  path: readonly [string, ...string[]];
+  options: OptionsSchema;
+  metadata?: unknown;
+  allowExtraPositionals?: boolean;
+  prepare?: BivariantCallback<
+    PreparedCommandInput,
+    unknown | Promise<unknown>
+  >;
+  handle: BivariantCallback<
+    TerminalCommandInput,
+    TerminalCommandOutput | Promise<TerminalCommandOutput>
+  >;
+};
+
+type PreparedCommandInput = {
+  options: Record<string, unknown>;
+  provided: Record<string, boolean>;
+  positionals: string[];
+};
+
+type TerminalCommandInput = PreparedCommandInput & {
+  context: unknown;
+  payload?: unknown;
+};
 
 export type TerminalAppOptions<
-  TContext,
-  TCommands extends readonly TerminalCommandDefinition<TContext>[]
+  TCommands extends readonly TerminalCommandDefinition[]
 > = {
   commands: Commands<TCommands>;
   /** Custom presentation facade. */
@@ -69,8 +89,7 @@ export type TerminalAppOptions<
 };
 
 export type TerminalApp<
-  TContext,
-  TCommands extends readonly TerminalCommandDefinition<TContext>[]
+  TCommands extends readonly TerminalCommandDefinition[]
 > = {
   commands: Commands<TCommands>;
   presentation: Presentation;
@@ -83,7 +102,7 @@ export type TerminalApp<
   /** Returns a process-style exit code. */
   run(
     args: readonly string[],
-    context: TContext,
+    context: CommandContext<TCommands[number]>,
     options?: CommandResolutionOptions
   ): Promise<number>;
 };
@@ -96,11 +115,10 @@ export type TerminalApp<
  * prepares commands, renders supported terminal results, and writes output.
  */
 export function createTerminalApp<
-  TContext,
-  const TCommands extends readonly TerminalCommandDefinition<TContext>[]
+  const TCommands extends readonly TerminalCommandDefinition[]
 >(
-  options: TerminalAppOptions<TContext, TCommands>
-): TerminalApp<TContext, TCommands> {
+  options: TerminalAppOptions<TCommands>
+): TerminalApp<TCommands> {
   const presentation = options.presentation ?? createPresentation();
   const output = options.output ?? createOutput();
   const resolveFormat = options.resolveFormat ?? resolvePreparedFormat;
@@ -174,7 +192,7 @@ async function writeTerminalOutput(
  * Keeps the default format convention local to terminal composition.
  */
 function resolvePreparedFormat(
-  prepared: PreparedCommand<TerminalCommandDefinition<unknown>>
+  prepared: PreparedCommand<TerminalCommandDefinition>
 ): PresentationFormat | undefined {
   const options = prepared.options as Record<string, unknown>;
   const format = options['format'];
