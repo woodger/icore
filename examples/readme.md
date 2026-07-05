@@ -11,6 +11,9 @@ expect.
   TypeScript types.
 - [cli-argument-syntax.md](cli-argument-syntax.md) documents supported CLI
   argument syntax with terminal input examples.
+- [practical-cli-patterns.md](practical-cli-patterns.md) shows application-level
+  patterns for global help/version shortcuts, command help, deprecated options,
+  and edge-case argument handling.
 - [custom-command-flow.md](custom-command-flow.md) shows explicit
   `commands.prepare(...)`, `commands.run(...)`, and `commands.runFromArgs(...)`
   usage without the terminal app boundary.

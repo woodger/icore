@@ -20,11 +20,11 @@ Build a view from application data:
 ```ts
 const result = presentation.records([
   {
-    id: 'account-1',
+    id: 'job-1',
     active: true
   },
   {
-    id: 'account-2',
+    id: 'job-2',
     active: false
   }
 ]);
@@ -34,19 +34,19 @@ Render the view and write it to stdout. Write operational messages to stderr:
 
 ```ts
 await output.write(presentation.render(result, 'table'));
-await output.error('Rendered account table\n');
+await output.error('Rendered job table\n');
 ```
 
 The user sees the table in stdout:
 
 ```text
 id         active
-account-1  true
-account-2  false
+job-1      true
+job-2      false
 ```
 
 The status line goes to stderr:
 
 ```text
-Rendered account table
+Rendered job table
 ```

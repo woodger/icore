@@ -189,3 +189,6 @@ node dist/cli.js users get --unknown value
 Unknown short tokens are not expanded automatically. If the active command does
 not allow them as positionals, command validation rejects them as unexpected
 positional arguments.
+
+For application-level patterns built from this syntax, see
+[practical-cli-patterns.md](practical-cli-patterns.md).

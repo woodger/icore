@@ -17,10 +17,10 @@ import {
 const command = createCommand();
 
 const reportOptions = {
-  account: {
+  project: {
     type: 'string',
     required: true,
-    alias: 'a'
+    alias: 'p'
   },
   format: {
     type: 'string',
@@ -62,14 +62,14 @@ choices, one boolean option, and one bounded number option.
 The user can pass long options:
 
 ```bash
-node dist/cli.js reports list --account brokerage --format json --archived --limit 5
+node dist/cli.js reports list --project alpha --format json --archived --limit 5
 ```
 
 The handler receives:
 
 ```json
 {
-  "account": "brokerage",
+  "project": "alpha",
   "format": "json",
   "archived": true,
   "limit": 5
@@ -79,14 +79,14 @@ The handler receives:
 The user can pass declared short aliases:
 
 ```bash
-node dist/cli.js reports list -a brokerage -l 5
+node dist/cli.js reports list -p alpha -l 5
 ```
 
 The handler receives defaults for options that were not typed:
 
 ```json
 {
-  "account": "brokerage",
+  "project": "alpha",
   "format": "table",
   "archived": false,
   "limit": 5
@@ -99,8 +99,8 @@ Boolean options can be turned off with `--no-<name>` when the option is known by
 the schema:
 
 ```bash
-node dist/cli.js reports list --account brokerage --archived
-node dist/cli.js reports list --account brokerage --no-archived
+node dist/cli.js reports list --project alpha --archived
+node dist/cli.js reports list --project alpha --no-archived
 ```
 
 The first command gives the handler `archived: true`; the second gives it
@@ -109,8 +109,8 @@ The first command gives the handler `archived: true`; the second gives it
 Do not pass explicit boolean values:
 
 ```bash
-node dist/cli.js reports list --account brokerage --archived=true
-node dist/cli.js reports list --account brokerage --archived=false
+node dist/cli.js reports list --project alpha --archived=true
+node dist/cli.js reports list --project alpha --archived=false
 ```
 
 Both forms are rejected. Boolean options use flag syntax, not `true` / `false`
@@ -145,7 +145,7 @@ node dist/cli.js reports list --dry-run=false
 
 ## Reuse shared schema pieces
 
-When several commands share the same public options, keep small schema pieces
+When several commands reuse the same public options, keep small schema pieces
 and merge them at the command boundary:
 
 ```ts
@@ -174,3 +174,7 @@ const options = mergeOptionsSchema(pagingOptions, outputOptions);
 
 Later schemas override earlier schemas when an option name is repeated. Keep
 that behavior intentional and visible near the command definition.
+
+For larger application patterns that combine shared schemas, global shortcuts,
+and compatibility options, see
+[practical-cli-patterns.md](practical-cli-patterns.md).
