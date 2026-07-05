@@ -39,6 +39,14 @@ npm install icore
   - [`createPresentation()`](#createpresentation)
   - [`createOutput()`](#createoutput)
   - [Lower-Level Mechanics](#lower-level-mechanics)
+    - [`parseArgv(args, schema?)`](#parseargv)
+    - [`parseOptionsDetailed(schema, values)`](#parseoptionsdetailed)
+    - [`resolveCommand(registry, positionals)`](#resolvecommand)
+    - [`resolveCommandFromArgs(registry, args)`](#resolvecommandfromargs)
+    - [`prepareCommandFromArgs(registry, args, options?)`](#preparecommandfromargs)
+    - [`runPreparedCommand(prepared, context)`](#runpreparedcommand)
+    - [`runCommandFromRegistry(registry, args, context, options?)`](#runcommandfromregistry)
+    - [`runCommand(command, args, context, options?)`](#runcommand)
 - [Internal Source Layout](#internal-source-layout)
 - [Project Boundary](#project-boundary)
 
@@ -244,8 +252,8 @@ The default output writes regular text to `stdout` and diagnostic text to
 ### Lower-Level Mechanics
 
 Lower-level mechanics sit behind the construction methods in the API map. They
-are kept out of the main navigation to avoid turning README into a flat
-function reference.
+are kept out of the main navigation to keep the application construction path
+first.
 
 For application code, prefer `createTerminalApp()` first. Drop to this level
 only when the terminal application flow or construction methods are too coarse.
@@ -261,11 +269,11 @@ Source of truth:
 
 This group turns raw arguments or positionals into a selected command.
 
-- `parseArgv(args, schema?)` parses raw CLI arguments into positionals and raw
+- <a id="parseargv"></a>`parseArgv(args, schema?)` parses raw CLI arguments into positionals and raw
   option values;
-- `resolveCommand(registry, positionals)` resolves from already parsed
+- <a id="resolvecommand"></a>`resolveCommand(registry, positionals)` resolves from already parsed
   positionals;
-- `resolveCommandFromArgs(registry, args)` resolves from raw CLI arguments by
+- <a id="resolvecommandfromargs"></a>`resolveCommandFromArgs(registry, args)` resolves from raw CLI arguments by
   using registered command schemas.
 
 Use these methods when command selection is needed without validation or
@@ -275,9 +283,9 @@ execution.
 
 This group validates command input without runtime context.
 
-- `parseOptionsDetailed(schema, values)` validates raw option values and keeps
+- <a id="parseoptionsdetailed"></a>`parseOptionsDetailed(schema, values)` validates raw option values and keeps
   option presence metadata;
-- `prepareCommandFromArgs(registry, args, options?)` resolves and validates a
+- <a id="preparecommandfromargs"></a>`prepareCommandFromArgs(registry, args, options?)` resolves and validates a
   registered command;
 - `options.strict` rejects options before the command path.
 
@@ -288,10 +296,10 @@ selection is known.
 
 This group calls command handlers after command input is prepared.
 
-- `runPreparedCommand(prepared, context)` runs an already prepared command;
-- `runCommandFromRegistry(registry, args, context, options?)` prepares and runs
+- <a id="runpreparedcommand"></a>`runPreparedCommand(prepared, context)` runs an already prepared command;
+- <a id="runcommandfromregistry"></a>`runCommandFromRegistry(registry, args, context, options?)` prepares and runs
   a command from a registry;
-- `runCommand(command, args, context, options?)` runs a single command without a
+- <a id="runcommand"></a>`runCommand(command, args, context, options?)` runs a single command without a
   registry.
 
 Use execution primitives for custom boundaries. Regular CLI applications should
