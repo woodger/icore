@@ -397,7 +397,9 @@ source layout detail.
 
 ## Example
 
-More examples live in [examples/readme.md](examples/readme.md).
+More examples live in [examples/readme.md](examples/readme.md), including
+[option schema usage](examples/option-schemas.md) and
+[CLI argument syntax](examples/cli-argument-syntax.md).
 
 ```ts
 import { defineCommand, runCommand } from 'icore';
