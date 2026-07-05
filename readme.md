@@ -25,76 +25,51 @@ npm install icore
 ## Table of Contents
 
 - [Installation](#installation)
-- [Command API Reference](#command-api-reference)
-  - [Architecture Map](#architecture-map)
-  - [Terminal Application](#terminal-application)
-    - [`createTerminalApp()`](#createterminalapp)
-    - [Interface](#interface)
-    - [Application Methods](#application-methods)
-    - [Application Construction](#application-construction)
-    - [Runtime Arguments](#runtime-arguments)
-  - [Layer Toolkit](#layer-toolkit)
-    - [`createCommand()`](#createcommand)
+- [API Reference](#api-reference)
+  - [API Map](#api-map)
+  - [`createTerminalApp()`](#createterminalapp)
+  - [`createCommand()`](#createcommand)
+    - [`command.define(command)`](#commanddefinecommand)
+    - [`command.registry(commands)`](#commandregistrycommands)
+    - [`command.run(command, args, context)`](#commandruncommand-args-context)
     - [`createCommands(commands)`](#createcommandscommands)
-  - [Primitive Mechanics](#primitive-mechanics)
-    - [Parsing And Resolution](#parsing-and-resolution)
-    - [Preparation](#preparation)
-    - [Execution](#execution)
+    - [`commands.prepare(args, options?)`](#commandsprepareargs-options)
+    - [`commands.run(prepared, context)`](#commandsrunprepared-context)
+    - [`commands.runFromArgs(args, context, options?)`](#commandsrunfromargsargs-context-options)
+  - [`createPresentation()`](#createpresentation)
+  - [`createOutput()`](#createoutput)
+  - [Lower-Level Mechanics](#lower-level-mechanics)
 - [Internal Source Layout](#internal-source-layout)
 - [Project Boundary](#project-boundary)
 
-## Command API Reference
+## API Reference
 
-The command API is documented from the architectural map. Start at the top when
-building a regular terminal application, and move down only when custom
-composition needs lower-level mechanics.
+The API reference is documented from the application construction map. Start at
+`createTerminalApp()` for regular terminal applications, then move to the
+construction methods only when the app needs explicit command, presentation, or
+output wiring.
 
-### Architecture Map
+### API Map
 
 ```text
-Terminal Application
-└─ createTerminalApp()
-   ├─ app.prepare(args)
-   │  └─ commands.prepare(args)
-   │     └─ prepareCommandFromArgs(registry, args, options?)
-   │        ├─ resolveCommandFromArgs(registry, args)
-   │        │  ├─ parseArgv(args, schema?)
-   │        │  └─ resolveCommand(registry, positionals)
-   │        └─ parseOptionsDetailed(schema, values)
-   │
-   └─ app.run(args, context)
-      ├─ commands.prepare(args)
-      ├─ commands.run(prepared, context)
-      │  └─ runPreparedCommand(prepared, context)
-      └─ presentation and output boundary
-
-Layer Toolkit
+createTerminalApp()
 ├─ createCommand()
 │  ├─ command.define(command)
-│  │  └─ defineCommand(command)
 │  ├─ command.registry(commands)
-│  │  └─ createCommands(commands)
+│  │  └─ commands
+│  │     ├─ commands.prepare(args, options?)
+│  │     ├─ commands.run(prepared, context)
+│  │     └─ commands.runFromArgs(args, context, options?)
 │  └─ command.run(command, args, context)
-│     └─ runCommand(command, args, context, options?)
-│
-└─ createCommands(commands)
-   ├─ commands.resolve(positionals)
-   │  └─ resolveCommand(registry, positionals)
-   ├─ commands.resolveFromArgs(args)
-   │  └─ resolveCommandFromArgs(registry, args)
-   ├─ commands.prepare(args)
-   │  └─ prepareCommandFromArgs(registry, args, options?)
-   ├─ commands.run(prepared, context)
-   │  └─ runPreparedCommand(prepared, context)
-   └─ commands.runFromArgs(args, context)
-      └─ runCommandFromRegistry(registry, args, context, options?)
+├─ createPresentation()
+└─ createOutput()
 ```
 
-The map is a documentation route, not a complete internal call graph.
+The map is a documentation route, not a complete internal call graph. The
+`commands` object is produced by `command.registry(...)` or by
+`createCommands(...)`.
 
-### Terminal Application
-
-#### `createTerminalApp()`
+### `createTerminalApp()`
 
 `createTerminalApp()` is the top-level terminal application composition point.
 It wires command execution, presentation rendering, and stdout/stderr delivery
@@ -103,133 +78,47 @@ without taking ownership of application behavior.
 The checked TypeScript contract lives in [`src/terminal/app.ts`](src/terminal/app.ts).
 
 The method returns an application object with `prepare(args)` and
-`run(args, context)`, as shown in the architecture map.
+`run(args, context)`, as shown in the API map.
 
-#### Interface
+Construction inputs:
 
-Simplified shape:
+- `commands` is required; build it with [`createCommand()`](#createcommand) and
+  [`command.registry(commands)`](#commandregistrycommands), or directly with
+  [`createCommands(commands)`](#createcommandscommands);
+- `presentation` is optional; omit it to use [`createPresentation()`](#createpresentation);
+- `output` is optional; omit it to use [`createOutput()`](#createoutput);
+- `resolveFormat` is optional and customizes how a prepared command selects a
+  presentation format.
 
-```ts
-type CreateTerminalAppOptions = {
-  commands: Commands; // required
-  presentation?: Presentation; // optional, defaults to createPresentation()
-  output?: Output; // optional, defaults to createOutput()
-  resolveFormat?: (prepared: PreparedCommand) => PresentationFormat | undefined;
-};
-```
+Returned app methods:
 
-`commands` is the command mechanics object used by the terminal application.
-The terminal app cannot run without it, so this option is required.
+- `app.prepare(args, options?)` delegates to
+  [`commands.prepare(args, options?)`](#commandsprepareargs-options);
+- `app.run(args, context, options?)` prepares the command, delegates command
+  execution to [`commands.run(prepared, context)`](#commandsrunprepared-context),
+  then renders and writes terminal output.
 
-`presentation` controls how terminal-ready presentation results are rendered.
-Pass it when commands create presentation views with a shared presentation
-object, or omit it to use the default `createPresentation()`.
-
-`output` controls where rendered text is written. Omit it for regular
-`stdout`/`stderr`; pass it when tests or applications need custom sinks.
-
-`resolveFormat` customizes format selection. By default, the terminal app reads
-the prepared command option named `format` when it is present.
-
-#### Application Methods
-
-`app.prepare(args, options?)` resolves and validates a command before runtime
-context exists.
-
-- `args` are raw CLI arguments, usually `process.argv.slice(2)`;
-- `options` are command resolution options, such as `strict: true`;
-- the command handler is not called;
-- stdout and stderr are not used;
-- the result can be inspected before creating runtime resources.
+Minimal shape:
 
 ```ts
-const prepared = await app.prepare(args, {
-  strict: true
-});
-```
-
-`app.run(args, context, options?)` is the regular process path.
-
-- it prepares the command;
-- runs the selected command handler with application context;
-- renders supported terminal results;
-- writes regular output to stdout and command errors to stderr;
-- returns a process-style exit code.
-
-```ts
-process.exitCode = await app.run(args, context, {
-  strict: true
-});
-```
-
-#### Application Construction
-
-A complete application path starts with commands, then creates the terminal app,
-then runs it with process arguments and application context.
-
-```ts
-import {
-  createCommand,
-  createOutput,
-  createPresentation,
-  createTerminalApp,
-  presentationFormatOptions
-} from 'icore';
-
-type AppContext = {
-  currentUser: string;
-};
-
-const command = createCommand();
-const presentation = createPresentation();
-
-const commands = command.registry([
-  command.define({
-    path: ['hello'],
-    options: presentationFormatOptions,
-    handle({ context }: { context: AppContext }) {
-      return presentation.record({
-        message: `Hello, ${context.currentUser}!`
-      });
-    }
-  })
-] as const);
-
 const app = createTerminalApp({
   commands,
   presentation,
-  output: createOutput()
+  output
 });
 
 const args = process.argv.slice(2);
-const context: AppContext = {
-  currentUser: 'Alice'
-};
-
-process.exitCode = await app.run(args, context, {
+const exitCode = await app.run(args, context, {
   strict: true
 });
 ```
-
-`createTerminalApp({ commands })` is enough for the default presentation and
-regular `stdout`/`stderr` output. Passing `presentation` and `output` makes the
-composition explicit and is useful in tests or custom terminal environments.
-
-#### Runtime Arguments
-
-In Node.js applications, `args` usually comes from `process.argv.slice(2)`.
-`context` is owned by the consuming application and usually contains config,
-clients, or services needed by command handlers. If an application does not use
-context, pass `undefined` and define commands without a context dependency.
 
 Command handlers keep ownership of application work. The terminal app only
 accepts terminal-ready results: text, streaming text, presentation results, or
 no output. Application DTO mapping, config loading, network clients, and domain
 behavior stay in the consuming application.
 
-### Layer Toolkit
-
-#### `createCommand()`
+### `createCommand()`
 
 `createCommand()` returns the command mechanics entrypoint used to build
 `commands` for `createTerminalApp()`.
@@ -255,18 +144,18 @@ The command definition keeps the application-specific parts: command path,
 option schema, and handler behavior. The terminal app only needs the resulting
 registry object.
 
-##### `command.define(command)`
+#### `command.define(command)`
 
 Declares one command and preserves its literal path and option schema types.
 Use it when defining commands inline before adding them to a registry.
 
-##### `command.registry(commands)`
+#### `command.registry(commands)`
 
 Builds the `commands` object required by `createTerminalApp()`. It keeps the
 registered command definitions, derived command names, and command flow methods
 together.
 
-##### `command.run(command, args, context)`
+#### `command.run(command, args, context)`
 
 Runs a single command without a registry. Use it for focused command execution,
 small tests, or custom flows where command path resolution is not needed.
@@ -298,14 +187,68 @@ the same two-phase flow used by `createTerminalApp()`. Use
 `commands.runFromArgs(...)` for custom terminal boundaries that still want the
 registry-level command flow.
 
-### Primitive Mechanics
+#### `commands.prepare(args, options?)`
 
-Primitive mechanics are the lower-level functions shown at the leaves of the
-architecture map. Use them for custom composition, focused tests, or framework
-work inside `icore`.
+Resolves and validates a registered command without runtime context. This is
+the same preparation step used by `app.prepare(...)` and `app.run(...)`.
+
+#### `commands.run(prepared, context)`
+
+Runs an already prepared command with application context. Use it after
+`commands.prepare(...)` when the application needs a custom two-phase flow.
+
+#### `commands.runFromArgs(args, context, options?)`
+
+Resolves, prepares, and runs a registered command without the terminal
+application boundary. Use it when a custom boundary owns presentation or output.
+
+### `createPresentation()`
+
+`createPresentation()` creates the presentation object used by
+`createTerminalApp()` to render terminal-ready results.
+
+Simplified shape:
+
+```ts
+const presentation = createPresentation();
+
+presentation.record(value);
+presentation.records(values);
+presentation.table(rows);
+presentation.csv(rows);
+presentation.render(result, format);
+```
+
+The presentation object owns generic JSON, CSV, and table rendering mechanics.
+Application code still maps domain objects to presentation-ready values.
+
+### `createOutput()`
+
+`createOutput()` creates the output object used by `createTerminalApp()` to
+write rendered text.
+
+Simplified shape:
+
+```ts
+const output = createOutput();
+
+await output.write(chunk);
+await output.error(chunk);
+await output.stdout.write(chunk);
+await output.stderr.write(chunk);
+```
+
+The default output writes regular text to `stdout` and diagnostic text to
+`stderr`. Pass custom sinks when tests or applications need controlled output.
+
+### Lower-Level Mechanics
+
+Lower-level mechanics sit behind the construction methods in the API map. They
+are kept out of the main navigation to avoid turning README into a flat
+function reference.
 
 For application code, prefer `createTerminalApp()` first. Drop to this level
-only when the terminal application flow or the layer toolkit is too coarse.
+only when the terminal application flow or construction methods are too coarse.
 
 Source of truth:
 
