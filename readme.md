@@ -204,6 +204,8 @@ registry-level command flow.
 
 Resolves and validates a registered command without runtime context. This is
 the same preparation step used by `app.prepare(...)` and `app.run(...)`.
+Extra positionals after the matched command path are rejected during prepare
+unless the command declares `allowExtraPositionals: true`.
 
 #### `commands.run(prepared, context)`
 
