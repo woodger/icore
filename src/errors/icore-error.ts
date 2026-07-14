@@ -159,9 +159,6 @@ const icoreErrorCategoryByCode = {
   DUPLICATE_COMMAND: 'definition'
 } as const satisfies Record<IcoreErrorCode, IcoreErrorCategory>;
 
-type IcoreErrorCategoryFor<TCode extends IcoreErrorCode> =
-  typeof icoreErrorCategoryByCode[TCode];
-
 /**
  * Error thrown by `icore` for CLI parsing, option validation, command
  * resolution, and schema configuration failures.
@@ -172,7 +169,7 @@ export class IcoreError<
   /** Stable machine-readable code. */
   readonly code: TCode;
   /** Stable high-level error category. */
-  readonly category: IcoreErrorCategoryFor<TCode>;
+  readonly category: typeof icoreErrorCategoryByCode[TCode];
   /** Structured error context. */
   readonly details: IcoreErrorDetails<TCode>;
 
