@@ -26,6 +26,7 @@ npm install icore
 
 - [API Reference](#api-reference)
   - [`createTerminalApp()`](#createterminalapp)
+    - [`app.reportError(error, context?)`](#appreporterror)
   - [`createCommand()`](#createcommand)
     - [`command.define(command)`](#commanddefinecommand)
     - [`command.registry(commands)`](#commandregistrycommands)
@@ -81,8 +82,8 @@ without taking ownership of application behavior.
 The checked TypeScript contract lives in [`src/terminal/app.ts`](src/terminal/app.ts).
 
 The method returns an application object with `prepare(args)`,
-`writePreparedOutput(prepared, output)`, `runPrepared(prepared, context)`, and
-`run(args, context)`.
+`writePreparedOutput(prepared, output)`, `reportError(error, context?)`,
+`runPrepared(prepared, context)`, and `run(args, context)`.
 
 Construction inputs:
 
@@ -91,6 +92,7 @@ Construction inputs:
   [`createCommands(commands)`](#createcommandscommands);
 - `presentation` is optional; omit it to use [`createPresentation()`](#createpresentation);
 - `output` is optional; omit it to use [`createOutput()`](#createoutput);
+- `errorPolicy` is optional and customizes terminal error text and exit codes;
 - `resolveFormat` is optional and customizes how a prepared command selects a
   presentation format.
 
@@ -100,6 +102,8 @@ Returned app methods:
   [`commands.prepare(args, options?)`](#commandsprepareargs-options);
 - `app.writePreparedOutput(prepared, output)` renders and writes already
   obtained terminal output without running the command;
+- `app.reportError(error, context?)` renders an error to stderr and returns its
+  process-style exit code;
 - `app.runPrepared(prepared, context)` runs an already prepared command, then
   renders and writes terminal output;
 - `app.run(args, context, options?)` prepares the command, delegates command
@@ -130,6 +134,57 @@ loading, network clients, and domain behavior stay in the consuming application.
 
 String output is written exactly as provided. Return `\n` from the command when
 line output is desired.
+
+#### <a id="appreporterror"></a>`app.reportError(error, context?)`
+
+`reportError(...)` is the reusable error boundary for both the built-in
+terminal flow and applications that run prepared commands themselves. It calls
+the configured `errorPolicy.renderError(...)`, writes that exact string through
+`output.error(...)`, then returns `errorPolicy.resolveExitCode(...)`.
+
+When no policy is supplied, behavior stays compatible with the default terminal
+app contract:
+
+- `Error` becomes `error.message + "\n"`;
+- any other thrown value becomes `String(error) + "\n"`;
+- the returned exit code is `1`.
+
+The optional context defaults to `{ phase: 'external' }`. Supported phases are
+`prepare`, `execute`, `render`, `write`, and `external`. Prepared command data is
+always present for `execute`, `render`, and `write` contexts created by the
+terminal app.
+
+A custom lifecycle can reuse the same policy after catching its own error:
+
+```ts
+let result;
+
+try {
+  result = await app.commands.run(prepared, context);
+}
+catch (error) {
+  process.exitCode = await app.reportError(error, {
+    phase: 'execute',
+    prepared
+  });
+
+  return;
+}
+
+try {
+  await app.writePreparedOutput(prepared, result);
+}
+catch (error) {
+  process.exitCode = await app.reportError(error, {
+    phase: 'write',
+    prepared
+  });
+}
+```
+
+The caller chooses the phase because it owns the operation boundaries in a
+custom flow. Help text and other application-specific diagnostics belong in
+the configured policy rather than in `icore`.
 
 ### `createCommand()`
 
@@ -644,9 +699,10 @@ boolean options are rejected.
 
 ## Error Messages
 
-`icore` throws `IcoreError` objects for CLI parsing, option validation, and
-command resolution failures. `IcoreError` extends the regular `Error` class and
-adds a stable machine-readable `code` plus structured `details`.
+`icore` throws `IcoreError` objects for CLI parsing, option validation, command
+resolution, and invalid definition failures. `IcoreError` extends the regular
+`Error` class and adds a stable machine-readable `code`, a `category`, and
+structured `details`.
 
 Applications should treat `error.message` as **display text**. Use `error.code`
 for machine-readable handling:
@@ -684,6 +740,20 @@ type IcoreErrorCode =
   | 'DUPLICATE_COMMAND';
 ```
 
+The `usage` category covers invalid command-line input. The `definition`
+category covers invalid command registries, aliases, and option defaults. This
+prevents application policies from treating every `IcoreError` as user input:
+
+```ts
+const errorPolicy = {
+  resolveExitCode(error: unknown) {
+    return error instanceof IcoreError && error.category === 'usage'
+      ? 2
+      : 1;
+  }
+};
+```
+
 Applications can catch these errors and decide how to print them. For example,
 after printing `error.message`, terminal output can look like this:
 
@@ -698,8 +768,10 @@ $ node cli.js hello --name=
 Expected '--name' as string
 ```
 
-Errors thrown by command `prepare` and `handle` functions are application errors
-and pass through unchanged.
+Errors thrown by command `prepare` and `handle` functions are application
+errors. Lower-level command methods pass them through unchanged;
+`TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` report them through
+the configured terminal error policy.
 
 ## Project Boundary
 

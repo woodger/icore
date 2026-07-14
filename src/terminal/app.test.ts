@@ -370,4 +370,383 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'command failed\n');
   });
+
+  test('reports errors with the default text and exit code', async () => {
+    const memory = createMemoryOutput();
+    const commands = createCommands([
+      defineCommand({
+        path: ['status'],
+        options: {},
+        handle() {
+          return undefined;
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output
+    });
+
+    assert.equal(await app.reportError(new Error('failed')), 1);
+    assert.equal(await app.reportError('unknown failure'), 1);
+    assert.equal(memory.read().stdout, '');
+    assert.equal(memory.read().stderr, 'failed\nunknown failure\n');
+  });
+
+  test('uses the external phase when report context is omitted', async () => {
+    const memory = createMemoryOutput();
+    const commands = createCommands([
+      defineCommand({
+        path: ['status'],
+        options: {},
+        handle() {
+          return undefined;
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.equal(error, 'failed');
+          assert.deepEqual(context, {
+            phase: 'external'
+          });
+
+          return 'external failure';
+        },
+        resolveExitCode(error, context) {
+          assert.equal(error, 'failed');
+          assert.equal(context.phase, 'external');
+
+          return 70;
+        }
+      }
+    });
+
+    const exitCode = await app.reportError('failed');
+
+    assert.equal(exitCode, 70);
+    assert.equal(memory.read().stderr, 'external failure');
+  });
+
+  test('uses error policy for prepare failures', async () => {
+    const memory = createMemoryOutput();
+    const command = createCommand();
+    let handled = false;
+    const commands = command.registry([
+      command.define({
+        path: ['greet'],
+        options: {
+          name: {
+            type: 'string',
+            required: true
+          }
+        } as const,
+        handle() {
+          handled = true;
+        }
+      })
+    ] as const);
+    const phases: string[] = [];
+    const app = createTerminalApp({
+      commands,
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(context.phase, 'prepare');
+
+          if (context.phase === 'prepare') {
+            assert.deepEqual(context.args, ['greet']);
+          }
+
+          phases.push(`render:${context.phase}`);
+
+          return 'invalid input\n';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          phases.push(`exit:${context.phase}`);
+
+          return 2;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['greet'], undefined);
+
+    assert.equal(exitCode, 2);
+    assert.equal(handled, false);
+    assert.deepEqual(phases, [
+      'render:prepare',
+      'exit:prepare'
+    ]);
+    assert.equal(memory.read().stderr, 'invalid input\n');
+  });
+
+  test('uses error policy for execute failures', async () => {
+    const memory = createMemoryOutput();
+    const commands = createCommands([
+      defineCommand({
+        path: ['fail'],
+        options: {},
+        handle() {
+          throw new Error('execution failed');
+        }
+      })
+    ] as const);
+    const phases: string[] = [];
+    const app = createTerminalApp({
+      commands,
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(error.message, 'execution failed');
+          assert.equal(context.phase, 'execute');
+
+          if (context.phase === 'execute') {
+            assert.equal(context.prepared.name, 'fail');
+            assert.deepEqual(context.args, ['fail']);
+          }
+
+          phases.push(context.phase);
+
+          return 'execution error\n';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          phases.push(context.phase);
+
+          return 70;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['fail'], undefined);
+
+    assert.equal(exitCode, 70);
+    assert.deepEqual(phases, ['execute', 'execute']);
+    assert.equal(memory.read().stderr, 'execution error\n');
+  });
+
+  test('uses error policy for render failures', async () => {
+    const memory = createMemoryOutput();
+    const presentation = createPresentation();
+    const commands = createCommands([
+      defineCommand({
+        path: ['users'],
+        options: {},
+        handle() {
+          return presentation.record({
+            id: 'user-1'
+          });
+        }
+      })
+    ] as const);
+    const phases: string[] = [];
+    const app = createTerminalApp({
+      commands,
+      presentation: {
+        ...presentation,
+        render() {
+          throw new Error('render failed');
+        }
+      },
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(error.message, 'render failed');
+          phases.push(context.phase);
+
+          return 'render error\n';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          phases.push(context.phase);
+
+          return 70;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['users'], undefined);
+
+    assert.equal(exitCode, 70);
+    assert.deepEqual(phases, ['render', 'render']);
+    assert.equal(memory.read().stdout, '');
+    assert.equal(memory.read().stderr, 'render error\n');
+  });
+
+  test('uses error policy for write failures', async () => {
+    const stderr: string[] = [];
+    const output = createOutput({
+      stdout: {
+        write() {
+          throw new Error('write failed');
+        }
+      },
+      stderr: {
+        write(chunk) {
+          stderr.push(chunk);
+
+          return true;
+        }
+      }
+    });
+    const commands = createCommands([
+      defineCommand({
+        path: ['status'],
+        options: {},
+        handle() {
+          return 'ok\n';
+        }
+      })
+    ] as const);
+    const phases: string[] = [];
+    const app = createTerminalApp({
+      commands,
+      output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(error.message, 'write failed');
+          phases.push(context.phase);
+
+          return 'output error\n';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          phases.push(context.phase);
+
+          return 74;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['status'], undefined);
+
+    assert.equal(exitCode, 74);
+    assert.deepEqual(phases, ['write', 'write']);
+    assert.equal(stderr.join(''), 'output error\n');
+  });
+
+  test('uses the write phase for streaming output failures', async () => {
+    const memory = createMemoryOutput();
+    const commands = createCommands([
+      defineCommand({
+        path: ['stream'],
+        options: {},
+        handle() {
+          return (async function* streamOutput() {
+            yield 'first\n';
+            throw new Error('stream failed');
+          })();
+        }
+      })
+    ] as const);
+    const phases: string[] = [];
+    const app = createTerminalApp({
+      commands,
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(error.message, 'stream failed');
+          phases.push(context.phase);
+
+          return 'stream error\n';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          phases.push(context.phase);
+
+          return 74;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['stream'], undefined);
+
+    assert.equal(exitCode, 74);
+    assert.deepEqual(phases, ['write', 'write']);
+    assert.equal(memory.read().stdout, 'first\n');
+    assert.equal(memory.read().stderr, 'stream error\n');
+  });
+
+  test('reports externally handled output failures with caller context', async () => {
+    const events: string[] = [];
+    const output = createOutput({
+      stdout: {
+        write() {
+          throw new Error('external write failed');
+        }
+      },
+      stderr: {
+        write(chunk) {
+          events.push(`write:${chunk}`);
+
+          return true;
+        }
+      }
+    });
+    const commands = createCommands([
+      defineCommand({
+        path: ['status'],
+        options: {},
+        handle() {
+          return undefined;
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          assert.equal(error.message, 'external write failed');
+          assert.equal(context.phase, 'write');
+
+          if (context.phase === 'write') {
+            assert.equal(context.prepared.name, 'status');
+            assert.equal(context.args, undefined);
+          }
+
+          events.push(`render:${context.phase}`);
+
+          return 'external output error';
+        },
+        resolveExitCode(error, context) {
+          assert.ok(error instanceof Error);
+          events.push(`exit:${context.phase}`);
+
+          return 74;
+        }
+      }
+    });
+    const prepared = await app.prepare(['status']);
+    let exitCode: number | undefined;
+
+    try {
+      await app.writePreparedOutput(prepared, 'output');
+      assert.fail('expected output writing to fail');
+    }
+    catch (error) {
+      exitCode = await app.reportError(error, {
+        phase: 'write',
+        prepared
+      });
+    }
+
+    assert.equal(exitCode, 74);
+    assert.deepEqual(events, [
+      'render:write',
+      'write:external output error',
+      'exit:write'
+    ]);
+  });
 });

@@ -116,3 +116,70 @@ const appWithFormatPolicy = createTerminalApp({
 This is useful when one command has a different default output contract. It is
 also a point where the application can make a bad abstraction: avoid hiding
 format decisions here when a normal `--format` option would be clearer.
+
+## Reuse Error Reporting In A Custom Lifecycle
+
+Configure one error policy when the application sometimes uses `app.run(...)`
+and sometimes owns command execution itself. The built-in flow and explicit
+`app.reportError(...)` calls use the same policy.
+
+```ts
+import { IcoreError } from 'icore';
+
+const appWithErrorPolicy = createTerminalApp({
+  commands,
+  presentation,
+  output: createOutput(),
+  errorPolicy: {
+    renderError(error) {
+      const message = error instanceof Error
+        ? error.message
+        : String(error);
+
+      return `${message}\n`;
+    },
+    resolveExitCode(error) {
+      return error instanceof IcoreError && error.category === 'usage'
+        ? 2
+        : 1;
+    }
+  }
+});
+```
+
+When the application owns context creation and cleanup, it can prepare and run
+the command explicitly while keeping terminal diagnostics consistent:
+
+```ts
+const prepared = await appWithErrorPolicy.prepare(args, {
+  strict: true
+});
+let result;
+
+try {
+  result = await appWithErrorPolicy.commands.run(prepared, context);
+}
+catch (error) {
+  process.exitCode = await appWithErrorPolicy.reportError(error, {
+    phase: 'execute',
+    args,
+    prepared
+  });
+
+  return;
+}
+
+try {
+  await appWithErrorPolicy.writePreparedOutput(prepared, result);
+}
+catch (error) {
+  process.exitCode = await appWithErrorPolicy.reportError(error, {
+    phase: 'write',
+    args,
+    prepared
+  });
+}
+```
+
+The application still owns help text and lifecycle behavior. The policy only
+provides a shared terminal reporting boundary.

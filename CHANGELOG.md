@@ -14,10 +14,23 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Added
+
+- Added reusable terminal error rendering and exit-code policy with prepare,
+  execute, render, write, and external phase context.
+- Added `TerminalApp.reportError(...)` for caller-owned lifecycle flows that
+  need the same stderr and exit-code behavior as `run(...)` and
+  `runPrepared(...)`.
+- Added `IcoreError.category` to distinguish usage failures from invalid
+  command and option definitions.
+
 ### Changed
 
 - Clarified that extra positionals after a matched command path are rejected
   during prepare unless the command declares `allowExtraPositionals: true`.
+- Changed `TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` to share the
+  configured terminal error policy while preserving the default error text and
+  exit code.
 
 ## [1.0.19]
 

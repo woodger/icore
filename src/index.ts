@@ -44,6 +44,7 @@ export {
 } from './command/mechanics';
 export {
   IcoreError,
+  type IcoreErrorCategory,
   type IcoreErrorCode,
   type IcoreErrorDetails
 } from './errors/icore-error';
@@ -124,5 +125,8 @@ export {
   createTerminalApp,
   type TerminalApp,
   type TerminalAppOptions,
-  type TerminalCommandOutput
+  type TerminalCommandOutput,
+  type TerminalErrorContext,
+  type TerminalErrorPhase,
+  type TerminalErrorPolicy
 } from './terminal/app';

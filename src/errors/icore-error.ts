@@ -26,6 +26,26 @@ export type IcoreErrorCode =
   | 'DUPLICATE_COMMAND';
 
 /**
+ * Stable category for distinguishing user input failures from invalid command
+ * or option definitions.
+ */
+export type IcoreErrorCategory = 'usage' | 'definition';
+
+const icoreErrorCategoryByCode = {
+  UNKNOWN_COMMAND: 'usage',
+  UNEXPECTED_ARGUMENT: 'usage',
+  DUPLICATE_ARGUMENT: 'usage',
+  EXPECTED_REQUIRED_ARGUMENT: 'usage',
+  INVALID_OPTION_TYPE: 'usage',
+  INVALID_OPTION_CHOICE: 'usage',
+  UNEXPECTED_POSITIONAL: 'usage',
+  INVALID_OPTION_ALIAS: 'definition',
+  DUPLICATE_ALIAS: 'definition',
+  INVALID_OPTION_DEFAULT: 'definition',
+  DUPLICATE_COMMAND: 'definition'
+} as const satisfies Record<IcoreErrorCode, IcoreErrorCategory>;
+
+/**
  * Structured context for application-level error handling.
  */
 export type IcoreErrorDetails = Readonly<Record<string, unknown>>;
@@ -37,6 +57,8 @@ export type IcoreErrorDetails = Readonly<Record<string, unknown>>;
 export class IcoreError extends Error {
   /** Stable machine-readable code. */
   readonly code: IcoreErrorCode;
+  /** Stable high-level error category. */
+  readonly category: IcoreErrorCategory;
   /** Structured error context. */
   readonly details: IcoreErrorDetails;
 
@@ -49,6 +71,7 @@ export class IcoreError extends Error {
 
     this.name = 'IcoreError';
     this.code = code;
+    this.category = icoreErrorCategoryByCode[code];
     this.details = details;
     Object.setPrototypeOf(this, new.target.prototype);
   }
