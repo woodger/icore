@@ -23,6 +23,7 @@ describe('IcoreError', () => {
         option: 'format'
       }),
       new IcoreError('EXPECTED_REQUIRED_ARGUMENT', 'required argument', {
+        reason: 'option',
         argument: '--token',
         option: 'token'
       }),
@@ -118,6 +119,26 @@ describe('isIcoreError', () => {
     }
   });
 
+  test('narrows required positional details', () => {
+    const error: unknown = new IcoreError(
+      'EXPECTED_REQUIRED_ARGUMENT',
+      'Expected required argument <figi...>',
+      {
+        reason: 'positional',
+        argument: '<figi...>',
+        positional: 'figi'
+      }
+    );
+
+    assert.ok(isIcoreError(error, 'EXPECTED_REQUIRED_ARGUMENT'));
+    assert.equal(error.details.reason, 'positional');
+
+    if (error.details.reason === 'positional') {
+      assert.equal(error.details.argument, '<figi...>');
+      assert.equal(error.details.positional, 'figi');
+    }
+  });
+
   test('returns false for other errors and non-matching codes', () => {
     const error = new IcoreError('DUPLICATE_COMMAND', 'duplicate command', {
       command: 'users'
@@ -145,7 +166,14 @@ function assertStaticDetailsContract(): void {
     positionals: ['unknown']
   };
 
+  // @ts-expect-error Required arguments must identify their semantic variant.
+  const requiredDetails: IcoreErrorDetails<'EXPECTED_REQUIRED_ARGUMENT'> = {
+    argument: '--token',
+    option: 'token'
+  };
+
   void details;
+  void requiredDetails;
 }
 
 void assertStaticDetailsContract;

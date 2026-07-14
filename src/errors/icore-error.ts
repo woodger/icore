@@ -44,6 +44,18 @@ type UnexpectedArgumentDetails =
     argument: string;
   };
 
+type ExpectedRequiredArgumentDetails =
+  | {
+    reason: 'option';
+    argument: string;
+    option: string;
+  }
+  | {
+    reason: 'positional';
+    argument: string;
+    positional: string;
+  };
+
 type InvalidOptionTypeDetails = OptionIdentityDetails & (
   | {
     expected: 'string' | 'boolean flag' | 'number';
@@ -96,7 +108,7 @@ export type IcoreErrorDetailsMap = {
   UNKNOWN_COMMAND: UnknownCommandDetails;
   UNEXPECTED_ARGUMENT: UnexpectedArgumentDetails;
   DUPLICATE_ARGUMENT: OptionIdentityDetails;
-  EXPECTED_REQUIRED_ARGUMENT: OptionIdentityDetails;
+  EXPECTED_REQUIRED_ARGUMENT: ExpectedRequiredArgumentDetails;
   INVALID_OPTION_TYPE: InvalidOptionTypeDetails;
   INVALID_OPTION_CHOICE: OptionIdentityDetails & {
     choices: readonly (string | number)[];
@@ -133,20 +145,6 @@ export type IcoreErrorDetails<TCode extends IcoreErrorCode> =
  */
 export type IcoreErrorCategory = 'usage' | 'definition';
 
-type IcoreErrorCategoryMap = {
-  UNKNOWN_COMMAND: 'usage';
-  UNEXPECTED_ARGUMENT: 'usage';
-  DUPLICATE_ARGUMENT: 'usage';
-  EXPECTED_REQUIRED_ARGUMENT: 'usage';
-  INVALID_OPTION_TYPE: 'usage';
-  INVALID_OPTION_CHOICE: 'usage';
-  UNEXPECTED_POSITIONAL: 'usage';
-  INVALID_OPTION_ALIAS: 'definition';
-  DUPLICATE_ALIAS: 'definition';
-  INVALID_OPTION_DEFAULT: 'definition';
-  DUPLICATE_COMMAND: 'definition';
-};
-
 const icoreErrorCategoryByCode = {
   UNKNOWN_COMMAND: 'usage',
   UNEXPECTED_ARGUMENT: 'usage',
@@ -159,7 +157,10 @@ const icoreErrorCategoryByCode = {
   DUPLICATE_ALIAS: 'definition',
   INVALID_OPTION_DEFAULT: 'definition',
   DUPLICATE_COMMAND: 'definition'
-} as const satisfies IcoreErrorCategoryMap;
+} as const satisfies Record<IcoreErrorCode, IcoreErrorCategory>;
+
+type IcoreErrorCategoryFor<TCode extends IcoreErrorCode> =
+  typeof icoreErrorCategoryByCode[TCode];
 
 /**
  * Error thrown by `icore` for CLI parsing, option validation, command
@@ -171,7 +172,7 @@ export class IcoreError<
   /** Stable machine-readable code. */
   readonly code: TCode;
   /** Stable high-level error category. */
-  readonly category: IcoreErrorCategoryMap[TCode];
+  readonly category: IcoreErrorCategoryFor<TCode>;
   /** Structured error context. */
   readonly details: IcoreErrorDetails<TCode>;
 

@@ -38,7 +38,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - **Breaking:** changed the `IcoreError` constructor to require code-specific
   `details`; direct callers must now provide the third argument.
 - Added explicit variant discriminators to `UNKNOWN_COMMAND`,
-  `UNEXPECTED_ARGUMENT`, and `INVALID_OPTION_DEFAULT` details.
+  `UNEXPECTED_ARGUMENT`, `EXPECTED_REQUIRED_ARGUMENT`, and
+  `INVALID_OPTION_DEFAULT` details.
 
 ## [1.0.19]
 

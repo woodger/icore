@@ -75,6 +75,7 @@ describe('parseOptions', () => {
         code: 'EXPECTED_REQUIRED_ARGUMENT',
         message: "Expected required argument '--token'",
         details: {
+          reason: 'option',
           argument: '--token',
           option: 'token'
         }

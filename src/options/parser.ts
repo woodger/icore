@@ -379,6 +379,7 @@ function createExpectedRequiredArgumentError(
     'EXPECTED_REQUIRED_ARGUMENT',
     `Expected required argument '--${name}'`,
     {
+      reason: 'option',
       argument: `--${name}`,
       option: name
     }
