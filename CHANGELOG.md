@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-14
+
 ### Added
 
 - Added reusable terminal error rendering and exit-code policy with prepare,
