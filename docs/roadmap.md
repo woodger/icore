@@ -15,6 +15,11 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
   point used to render it.
 - `IcoreError` categories distinguish command-line usage failures from invalid
   command and option definitions.
+- `IcoreErrorDetailsMap` is the public source of truth for structured details;
+  semantic variants use explicit discriminators instead of unrelated optional
+  fields.
+- `isIcoreError(...)` is the supported narrowing boundary for keeping an error
+  code correlated with its details type.
 
 ## Not planned
 

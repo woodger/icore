@@ -44,9 +44,12 @@ export {
 } from './command/mechanics';
 export {
   IcoreError,
+  isIcoreError,
+  type AnyIcoreError,
   type IcoreErrorCategory,
   type IcoreErrorCode,
-  type IcoreErrorDetails
+  type IcoreErrorDetails,
+  type IcoreErrorDetailsMap
 } from './errors/icore-error';
 export {
   parseOptions,

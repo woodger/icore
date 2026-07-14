@@ -202,7 +202,9 @@ function isShortOptionToken(arg: string): boolean {
   return arg.length === 2 && arg.startsWith('-') && !arg.startsWith('--');
 }
 
-function createDuplicateArgumentError(name: string): IcoreError {
+function createDuplicateArgumentError(
+  name: string
+): IcoreError<'DUPLICATE_ARGUMENT'> {
   return new IcoreError(
     'DUPLICATE_ARGUMENT',
     `Unexpected duplicate argument '--${name}'`,
@@ -213,17 +215,20 @@ function createDuplicateArgumentError(name: string): IcoreError {
   );
 }
 
-function createUnexpectedArgumentError(argument: string): IcoreError {
+function createUnexpectedArgumentError(
+  argument: string
+): IcoreError<'UNEXPECTED_ARGUMENT'> {
   return new IcoreError(
     'UNEXPECTED_ARGUMENT',
     `Unexpected argument '${argument}'`,
     {
+      reason: 'malformed-option',
       argument
     }
   );
 }
 
-function createDuplicateAliasError(alias: string): IcoreError {
+function createDuplicateAliasError(alias: string): IcoreError<'DUPLICATE_ALIAS'> {
   return new IcoreError(
     'DUPLICATE_ALIAS',
     `Unexpected duplicate alias '-${alias}'`,
@@ -237,7 +242,7 @@ function createDuplicateAliasError(alias: string): IcoreError {
 function createInvalidOptionAliasError(
   name: string,
   alias: string
-): IcoreError {
+): IcoreError<'INVALID_OPTION_ALIAS'> {
   return new IcoreError(
     'INVALID_OPTION_ALIAS',
     `Expected alias for '--${name}' as single ASCII letter`,

@@ -23,6 +23,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   `runPrepared(...)`.
 - Added `IcoreError.category` to distinguish usage failures from invalid
   command and option definitions.
+- Added the public `IcoreErrorDetailsMap`, generic `IcoreErrorDetails<TCode>`,
+  and distributed `AnyIcoreError` contracts for code-specific error details.
+- Added `isIcoreError(...)` overloads for narrowing any `IcoreError` or one
+  exact error code while preserving its details type.
 
 ### Changed
 
@@ -31,6 +35,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Changed `TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` to share the
   configured terminal error policy while preserving the default error text and
   exit code.
+- **Breaking:** changed the `IcoreError` constructor to require code-specific
+  `details`; direct callers must now provide the third argument.
+- Added explicit variant discriminators to `UNKNOWN_COMMAND`,
+  `UNEXPECTED_ARGUMENT`, and `INVALID_OPTION_DEFAULT` details.
 
 ## [1.0.19]
 

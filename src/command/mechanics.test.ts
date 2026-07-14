@@ -351,6 +351,7 @@ describe('command registry', () => {
       assert.strictEqual(error.code, 'UNKNOWN_COMMAND');
       assert.strictEqual(error.message, 'Unknown command: unknown');
       assert.deepStrictEqual(error.details, {
+        reason: 'unresolved',
         command: 'unknown',
         positionals: ['unknown']
       });
@@ -458,6 +459,7 @@ describe('two-phase command execution', () => {
           assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
           assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
           assert.deepStrictEqual(error.details, {
+            reason: 'option-before-command',
             argument: args[0]
           });
 
@@ -489,6 +491,7 @@ describe('two-phase command execution', () => {
         assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
         assert.strictEqual(error.message, "Unexpected argument '-x'");
         assert.deepStrictEqual(error.details, {
+          reason: 'option-before-command',
           argument: '-x'
         });
 
@@ -1039,6 +1042,33 @@ describe('runCommand', () => {
     );
   });
 
+  test('throws machine-readable command path mismatch errors', async () => {
+    const command = defineCommand({
+      path: ['users', 'get-accounts'],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(command, ['users', 'unknown'], undefined),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNKNOWN_COMMAND');
+        assert.strictEqual(error.message, "Expected command 'users get-accounts'");
+        assert.deepStrictEqual(error.details, {
+          reason: 'path-mismatch',
+          command: 'users get-accounts',
+          path: ['users', 'get-accounts'],
+          positionals: ['users', 'unknown']
+        });
+
+        return true;
+      }
+    );
+  });
+
   test('rejects options before command path in strict mode', async () => {
     let handled = false;
     const command = defineCommand({
@@ -1068,6 +1098,7 @@ describe('runCommand', () => {
           assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
           assert.strictEqual(error.message, `Unexpected argument '${args[0] ?? ''}'`);
           assert.deepStrictEqual(error.details, {
+            reason: 'option-before-command',
             argument: args[0]
           });
 

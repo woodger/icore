@@ -60,6 +60,7 @@ describe('parseOptions', () => {
         code: 'UNEXPECTED_ARGUMENT',
         message: "Unexpected argument '--unknown'",
         details: {
+          reason: 'unknown-option',
           argument: '--unknown',
           option: 'unknown'
         }
@@ -274,6 +275,7 @@ describe('parseOptions', () => {
         details: {
           argument: '--format',
           option: 'format',
+          expected: 'choice',
           choices: ['json', 'table'],
           value: 'xml'
         }
