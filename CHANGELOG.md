@@ -14,16 +14,47 @@ verified against git tags.
 
 ## [Unreleased]
 
+### Changed
+
+- Clarified that extra positionals after a matched command path are rejected
+  during prepare unless the command declares `allowExtraPositionals: true`.
+
+## [1.0.19]
+
+### Added
+
+- Added `TerminalApp.writePreparedOutput(...)` for rendering and writing already obtained terminal output.
+- Added `docs/roadmap.md` for directional project decisions that are not release history.
+
+### Changed
+
+- Changed `createTerminalApp` typing to allow custom command results when consumers run prepared commands themselves.
+- Documented the caller-owned flow for command execution results that may be
+  lifecycle handles before terminal output is written.
+- Documented that terminal string output is written exactly as provided.
+
+## [1.0.18]
+
 ### Added
 
 - Added `TerminalApp.runPrepared(...)` for running prepared commands through terminal rendering and output.
-- Added `TerminalApp.writePreparedOutput(...)` for rendering and writing already obtained terminal output.
+
+### Changed
+
+- Documented the `app.prepare(...)` and `app.runPrepared(...)` flow for applications
+  that create and clean up runtime context themselves.
+
+## [1.0.17]
 
 ### Changed
 
 - Changed `createTerminalApp` typing to accept command registries with void and prepared payloads.
-- Changed `createTerminalApp` typing to allow custom command results when consumers run prepared commands themselves.
 - Updated testing instructions to use `yarn build` and `yarn test`.
+
+### Removed
+
+- Removed the legacy `git-flow.md` document.
+- Removed the `prepare` package script.
 
 ## [1.0.16]
 
@@ -268,6 +299,9 @@ verified against git tags.
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[1.0.19]: https://www.npmjs.com/package/icore/v/1.0.19
+[1.0.18]: https://www.npmjs.com/package/icore/v/1.0.18
+[1.0.17]: https://www.npmjs.com/package/icore/v/1.0.17
 [1.0.16]: https://www.npmjs.com/package/icore/v/1.0.16
 [1.0.15]: https://www.npmjs.com/package/icore/v/1.0.15
 [1.0.14]: https://www.npmjs.com/package/icore/v/1.0.14
