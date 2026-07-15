@@ -51,6 +51,23 @@ describe('parseArgv', () => {
     );
   });
 
+  test('throws machine-readable malformed option errors', () => {
+    assert.throws(
+      () => parseArgv(['--=value']),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '--=value'");
+        assert.deepStrictEqual(error.details, {
+          reason: 'malformed-option',
+          argument: '--=value'
+        });
+
+        return true;
+      }
+    );
+  });
+
   test('uses schema to keep boolean flags from consuming following positionals', () => {
     assert.deepStrictEqual(
       parseArgv([

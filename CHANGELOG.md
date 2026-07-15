@@ -9,42 +9,79 @@ Historical entries before this file was introduced were reconstructed from npm
 publish metadata and local git history. Older entries are intentionally
 conservative.
 
-Version boundaries between `1.0.12` and `1.0.15` are draft-level and should be
-verified against git tags.
+Version boundaries from `1.0.12` through `1.0.19` were checked against npm
+`gitHead` metadata and local git history.
 
 ## [Unreleased]
 
 ### Added
 
-- Added `TerminalApp.runPrepared(...)` for running prepared commands through terminal rendering and output.
-- Added `TerminalApp.writePreparedOutput(...)` for rendering and writing already obtained terminal output.
+- Added reusable terminal error rendering and exit-code policy with prepare,
+  execute, render, write, and external phase context.
+- Added `TerminalApp.reportError(...)` for caller-owned lifecycle flows that
+  need the same stderr and exit-code behavior as `run(...)` and
+  `runPrepared(...)`.
+- Added `IcoreError.category` to distinguish usage failures from invalid
+  command and option definitions.
+- Added the public `IcoreErrorDetailsMap`, generic `IcoreErrorDetails<TCode>`,
+  and distributed `AnyIcoreError` contracts for code-specific error details.
+- Added `isIcoreError(...)` overloads for narrowing any `IcoreError` or one
+  exact error code while preserving its details type.
 
 ### Changed
 
-- Changed `createTerminalApp` typing to accept command registries with void and prepared payloads.
+- Clarified that extra positionals after a matched command path are rejected
+  during prepare unless the command declares `allowExtraPositionals: true`.
+- Changed `TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` to share the
+  configured terminal error policy while preserving the default error text and
+  exit code.
+- **Breaking:** changed the `IcoreError` constructor to require code-specific
+  `details`; direct callers must now provide the third argument.
+- Added explicit variant discriminators to `UNKNOWN_COMMAND`,
+  `UNEXPECTED_ARGUMENT`, `EXPECTED_REQUIRED_ARGUMENT`, and
+  `INVALID_OPTION_DEFAULT` details.
+
+## [1.0.19]
+
+### Added
+
+- Added `TerminalApp.writePreparedOutput(...)` for rendering and writing already obtained terminal output.
+- Added `docs/roadmap.md` for directional project decisions that are not release history.
+
+### Changed
+
 - Changed `createTerminalApp` typing to allow custom command results when consumers run prepared commands themselves.
-- Updated testing instructions to use `yarn build` and `yarn test`.
+- Documented the caller-owned flow for command execution results that may be
+  lifecycle handles before terminal output is written.
+- Documented that terminal string output is written exactly as provided.
+
+## [1.0.18]
+
+### Added
+
+- Added `TerminalApp.runPrepared(...)` for running prepared commands through terminal rendering and output.
+
+### Changed
+
+- Documented the `app.prepare(...)` and `app.runPrepared(...)` flow for applications
+  that create and clean up runtime context themselves.
+
+## [1.0.17]
+
+### Changed
+
+- Relaxed `createTerminalApp` typing so command registries with commands
+  without `prepare()` hooks and with void payloads compile without adapter casts.
 
 ## [1.0.16]
 
 ### Added
 
 - Added `createTerminalApp()` as the top-level terminal application composition API.
+- Added command mechanics facade: `createCommand()`.
 - Added semantic presentation facade: `createPresentation()`.
 - Added semantic output facade: `createOutput()` with `output.write(...)` and `output.error(...)`.
 - Added terminal-ready command output support: text, async text streams, presentation results, and empty output.
-- Added guide-style examples for terminal app, command flow, option schemas, presentation, output, and lower-level mechanics.
-
-### Changed
-
-- Documentation was reorganized around `command`, `presentation`, and `output`.
-- Examples were grouped by usage level: Terminal Application, Layer Toolkit, Primitive Mechanics.
-- Public README now positions `icore` as terminal application mechanics, not only argv parsing.
-
-## [1.0.15]
-
-### Added
-
 - Added presentation primitives and renderers:
   - `renderJson`
   - `renderCsv`
@@ -56,67 +93,62 @@ verified against git tags.
   - `createStdoutWriter`
   - `createStderrWriter`
   - `createBackpressureTextWriter`
+- Added typed option subset parsing with `parseOptionsSubsetDetailed`.
+- Added guide-style examples for terminal app, command flow, option schemas, presentation, output, and lower-level mechanics.
 
 ### Changed
 
-- Extracted generic JSON/CSV/table rendering mechanics from project-specific CLI code.
+- Documentation was reorganized around `command`, `presentation`, and `output`.
+- Examples were grouped by usage level: Terminal Application, Layer Toolkit, Primitive Mechanics.
+- Public README now positions `icore` as terminal application mechanics, not only argv parsing.
+- Source files were reorganized by framework area: argv, command, options,
+  presentation, output, and terminal app.
+- Updated tests to run with `fwa --prune`.
+- Restored `CHANGELOG.md` to published package contents.
 
-## [1.0.14]
+### Removed
+
+- Removed the redundant CLI barrel module.
+- Removed the legacy `git-flow.md` document.
+- Removed the `prepare` package script.
+
+## [1.0.15]
 
 ### Added
 
-- Added command mechanics facade: `createCommand()`.
-- Added command registry flow:
-  - `command.define(...)`
-  - `command.registry(...)`
-  - `commands.prepare(...)`
-  - `commands.run(...)`
-  - `commands.runFromArgs(...)`
-- Added lower-level command primitives:
-  - `defineCommand`
-  - `defineCommandRegistry`
-  - `createCommands`
-  - `resolveCommand`
-  - `prepareCommandFromArgs`
-  - `runPreparedCommand`
-  - `runCommandFromRegistry`
-  - `runCommand`
+- Added `isPreparedCommandName` for narrowing prepared command unions by command name.
 
 ### Changed
 
-- CLI command execution became explicitly two-phase: prepare without runtime context, then run with context.
+- Temporarily excluded `CHANGELOG.md` from published package contents.
+
+## [1.0.14]
+
+### Changed
+
+- Preserved prepared command payload correlation when narrowing registry unions.
+- Reformatted `CHANGELOG.md` according to Keep a Changelog.
 
 ## [1.0.13]
 
 ### Added
 
-- Added typed option schema composition with `mergeOptionsSchema`.
-- Added option inference helpers for parsed values and provided metadata.
-- Added command-name guards:
-  - `isCommandName`
-  - `isPreparedCommandName`
-- Added detailed option parsing contracts for cases where caller needs explicit provided/not-provided metadata.
+- Added machine-readable `IcoreError` codes and details.
+- Added strict command resolution mode with `strict: true`.
+- Added strict mode support to direct `runCommand(...)` calls.
+- Added typed prepared command payloads.
+- Added `CHANGELOG.md`.
 
 ### Changed
 
-- Boolean option handling was tightened around flag syntax: `--flag` and `--no-flag`.
+- Boolean option handling was tightened to flag syntax only.
 
 ## [1.0.12]
 
-### Added
+### Changed
 
-- Added core typed CLI option mechanics based on literal schemas:
-  - `type: 'string'`
-  - `type: 'boolean'`
-  - `type: 'number'`
-- Added GNU-style argv parsing:
-  - `--name value`
-  - `--name=value`
-  - `--flag`
-  - short aliases
-  - `--` terminator
-- Added machine-readable `IcoreError`.
-- Added initial TypeScript-first public API for command-line mechanics.
+- Replaced the preliminary `flagOnly` boolean option setting with typed
+  `syntax: 'flag'`.
 
 ## [1.0.11] - 2026-07-02
 
@@ -268,6 +300,9 @@ verified against git tags.
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[1.0.19]: https://www.npmjs.com/package/icore/v/1.0.19
+[1.0.18]: https://www.npmjs.com/package/icore/v/1.0.18
+[1.0.17]: https://www.npmjs.com/package/icore/v/1.0.17
 [1.0.16]: https://www.npmjs.com/package/icore/v/1.0.16
 [1.0.15]: https://www.npmjs.com/package/icore/v/1.0.15
 [1.0.14]: https://www.npmjs.com/package/icore/v/1.0.14

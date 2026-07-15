@@ -5,6 +5,7 @@
  * - preparing and running command facades;
  * - rendering presentation results;
  * - writing command output through the output facade;
+ * - reporting terminal errors through caller-configured policy;
  *
  * This file must not contain argv tokenization, option validation internals,
  * domain behavior, or application-specific report mapping.
@@ -44,6 +45,49 @@ export type TerminalCommandOutput =
   | PresentationResult
   | undefined;
 
+/** Terminal operation in which an error was observed. */
+export type TerminalErrorPhase =
+  | 'prepare'
+  | 'execute'
+  | 'render'
+  | 'write'
+  | 'external';
+
+/**
+ * Context supplied to terminal error policy callbacks.
+ *
+ * Prepared command data is guaranteed for command execution and terminal
+ * output phases. Errors outside terminal app operations may provide either
+ * arguments, prepared command data, or neither.
+ */
+export type TerminalErrorContext<TPrepared> =
+  | {
+    phase: 'prepare';
+    args: readonly string[];
+  }
+  | {
+    phase: 'execute' | 'render' | 'write';
+    prepared: TPrepared;
+    args?: readonly string[];
+  }
+  | {
+    phase: 'external';
+    args?: readonly string[];
+    prepared?: TPrepared;
+  };
+
+/** Caller-owned terminal error rendering and process exit-code policy. */
+export type TerminalErrorPolicy<TPrepared> = {
+  renderError?(
+    error: unknown,
+    context: TerminalErrorContext<TPrepared>
+  ): string;
+  resolveExitCode?(
+    error: unknown,
+    context: TerminalErrorContext<TPrepared>
+  ): number;
+};
+
 type BivariantCallback<TInput, TOutput> = {
   bivarianceHack(input: TInput): TOutput;
 }['bivarianceHack'];
@@ -82,6 +126,8 @@ export type TerminalAppOptions<
   presentation?: Presentation;
   /** Custom output facade. */
   output?: Output;
+  /** Custom terminal error rendering and exit-code policy. */
+  errorPolicy?: TerminalErrorPolicy<PreparedCommand<TCommands[number]>>;
   /** Resolves output format. */
   resolveFormat?(
     prepared: PreparedCommand<TCommands[number]>
@@ -94,6 +140,11 @@ export type TerminalApp<
   commands: Commands<TCommands>;
   presentation: Presentation;
   output: Output;
+  /** Renders an error to stderr and returns its process-style exit code. */
+  reportError(
+    error: unknown,
+    context?: TerminalErrorContext<PreparedCommand<TCommands[number]>>
+  ): Promise<number>;
   /** No application context required. */
   prepare(
     args: readonly string[],
@@ -134,39 +185,95 @@ export function createTerminalApp<
 >(
   options: TerminalAppOptions<TCommands>
 ): TerminalApp<TCommands> {
+  type TPrepared = PreparedCommand<TCommands[number]>;
+
   const presentation = options.presentation ?? createPresentation();
   const output = options.output ?? createOutput();
   const resolveFormat = options.resolveFormat ?? resolvePreparedFormat;
 
+  async function reportError(
+    error: unknown,
+    context: TerminalErrorContext<TPrepared> = {
+      phase: 'external'
+    }
+  ): Promise<number> {
+    const renderedError = options.errorPolicy?.renderError === undefined
+      ? renderTerminalError(error)
+      : options.errorPolicy.renderError(error, context);
+
+    await output.error(renderedError);
+
+    return options.errorPolicy?.resolveExitCode === undefined
+      ? resolveTerminalExitCode()
+      : options.errorPolicy.resolveExitCode(error, context);
+  }
+
   async function writePreparedOutput(
-    prepared: PreparedCommand<TCommands[number]>,
+    prepared: TPrepared,
     terminalOutput: TerminalCommandOutput
   ): Promise<void> {
-    const format = resolveFormat(prepared);
+    const renderedOutput = renderTerminalOutput(
+      terminalOutput,
+      resolveFormat(prepared),
+      presentation
+    );
 
-    await writeTerminalOutput(terminalOutput, format, presentation, output);
+    await writeTerminalOutput(renderedOutput, output);
   }
 
   async function runPrepared(
-    prepared: PreparedCommand<TCommands[number]>,
+    prepared: TPrepared,
     context: CommandContext<TCommands[number]>
   ): Promise<number> {
-    try {
-      const result = await options.commands.run(prepared, context);
+    return runPreparedFromArgs(prepared, context);
+  }
 
-      await writeTerminalOutput(
+  async function runPreparedFromArgs(
+    prepared: TPrepared,
+    context: CommandContext<TCommands[number]>,
+    args?: readonly string[]
+  ): Promise<number> {
+    let result: unknown;
+
+    try {
+      result = await options.commands.run(prepared, context);
+    }
+    catch (error) {
+      return reportError(error, createPreparedErrorContext(
+        'execute',
+        prepared,
+        args
+      ));
+    }
+
+    let renderedOutput: RenderedTerminalOutput;
+
+    try {
+      renderedOutput = renderTerminalOutput(
         result,
         resolveFormat(prepared),
-        presentation,
-        output
+        presentation
       );
+    }
+    catch (error) {
+      return reportError(error, createPreparedErrorContext(
+        'render',
+        prepared,
+        args
+      ));
+    }
+
+    try {
+      await writeTerminalOutput(renderedOutput, output);
 
       return 0;
     }
     catch (error) {
-      await output.error(renderTerminalError(error));
-
-      return 1;
+      return reportError(error, createPreparedErrorContext(
+        'write',
+        prepared,
+        args
+      ));
     }
   }
 
@@ -174,36 +281,68 @@ export function createTerminalApp<
     commands: options.commands,
     presentation,
     output,
+    reportError,
     prepare(args, commandOptions) {
       return options.commands.prepare(args, commandOptions);
     },
     runPrepared,
     writePreparedOutput,
     async run(args, context, commandOptions) {
-      try {
-        const prepared = await options.commands.prepare(args, commandOptions);
+      let prepared: TPrepared;
 
-        return runPrepared(prepared, context);
+      try {
+        prepared = await options.commands.prepare(args, commandOptions);
       }
       catch (error) {
-        await output.error(renderTerminalError(error));
-
-        return 1;
+        return reportError(error, {
+          phase: 'prepare',
+          args
+        });
       }
+
+      return runPreparedFromArgs(prepared, context, args);
     }
   };
 }
 
 /**
- * Writes only terminal-supported command output shapes.
+ * Converts terminal-supported command output to text or a text stream.
  *
  * This keeps the terminal boundary explicit: application objects must be
  * mapped to text or presentation views before they reach stdout.
  */
-async function writeTerminalOutput(
+type RenderedTerminalOutput =
+  | string
+  | AsyncIterable<string>
+  | undefined;
+
+function renderTerminalOutput(
   result: unknown,
   format: PresentationFormat | undefined,
-  presentation: Presentation,
+  presentation: Presentation
+): RenderedTerminalOutput {
+  if (result === undefined) {
+    return undefined;
+  }
+
+  if (typeof result === 'string') {
+    return result;
+  }
+
+  if (isAsyncIterable(result)) {
+    return result;
+  }
+
+  if (isPresentationResult(result)) {
+    return presentation.render(result, format);
+  }
+
+  throw new Error('Expected terminal command output');
+}
+
+/** Writes already rendered terminal text while preserving stream backpressure. */
+async function writeTerminalOutput(
+  result: RenderedTerminalOutput,
   output: Output
 ): Promise<void> {
   if (result === undefined) {
@@ -216,21 +355,28 @@ async function writeTerminalOutput(
     return;
   }
 
-  if (isAsyncIterable(result)) {
-    for await (const chunk of result) {
-      await output.write(chunk);
-    }
+  for await (const chunk of result) {
+    await output.write(chunk);
+  }
+}
 
-    return;
+function createPreparedErrorContext<TPrepared>(
+  phase: 'execute' | 'render' | 'write',
+  prepared: TPrepared,
+  args: readonly string[] | undefined
+): TerminalErrorContext<TPrepared> {
+  if (args === undefined) {
+    return {
+      phase,
+      prepared
+    };
   }
 
-  if (isPresentationResult(result)) {
-    await output.write(presentation.render(result, format));
-
-    return;
-  }
-
-  throw new Error('Expected terminal command output');
+  return {
+    phase,
+    prepared,
+    args
+  };
 }
 
 /**
@@ -255,6 +401,10 @@ function renderTerminalError(error: unknown): string {
   }
 
   return `${String(error)}\n`;
+}
+
+function resolveTerminalExitCode(): number {
+  return 1;
 }
 
 function isAsyncIterable(value: unknown): value is AsyncIterable<string> {

@@ -587,6 +587,7 @@ function resolveCommandPositionals(
         'UNKNOWN_COMMAND',
         `Expected command '${command}'`,
         {
+          reason: 'path-mismatch',
           command,
           path: [...path],
           positionals: [...positionals]
@@ -716,30 +717,38 @@ function isOptionBeforeCommand(arg: string): boolean {
   return arg !== '-' && arg.startsWith('-');
 }
 
-function createUnknownCommandError(positionals: readonly string[]): IcoreError {
+function createUnknownCommandError(
+  positionals: readonly string[]
+): IcoreError<'UNKNOWN_COMMAND'> {
   const command = formatCommandPositionals(positionals);
 
   return new IcoreError(
     'UNKNOWN_COMMAND',
     `Unknown command: ${command}`,
     {
+      reason: 'unresolved',
       command,
       positionals: [...positionals]
     }
   );
 }
 
-function createUnexpectedArgumentError(argument: string): IcoreError {
+function createUnexpectedArgumentError(
+  argument: string
+): IcoreError<'UNEXPECTED_ARGUMENT'> {
   return new IcoreError(
     'UNEXPECTED_ARGUMENT',
     `Unexpected argument '${argument}'`,
     {
+      reason: 'option-before-command',
       argument
     }
   );
 }
 
-function createDuplicateCommandError(command: string): IcoreError {
+function createDuplicateCommandError(
+  command: string
+): IcoreError<'DUPLICATE_COMMAND'> {
   return new IcoreError(
     'DUPLICATE_COMMAND',
     `Unexpected duplicate command '${command}'`,

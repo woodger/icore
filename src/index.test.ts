@@ -7,10 +7,15 @@ import {
   createStdoutWriter,
   createTerminalApp,
   createPresentation,
+  IcoreError,
+  isIcoreError,
   presentationFormatOptions,
   renderCsvRow,
   renderJson,
-  renderTextTable
+  renderTextTable,
+  type IcoreErrorCategory,
+  type IcoreErrorDetailsMap,
+  type TerminalErrorPolicy
 } from './index';
 
 describe('package entrypoint', () => {
@@ -33,5 +38,36 @@ describe('package entrypoint', () => {
       'table',
       'csv'
     ]);
+
+    const category: IcoreErrorCategory = 'usage';
+    const errorPolicy: TerminalErrorPolicy<{ name: string }> = {
+      resolveExitCode(error, context) {
+        assert.equal(error, 'failed');
+        assert.equal(context.phase, 'external');
+
+        return 2;
+      }
+    };
+
+    assert.equal(category, 'usage');
+    assert.equal(errorPolicy.resolveExitCode?.('failed', {
+      phase: 'external'
+    }), 2);
+  });
+
+  test('exposes typed error contracts', () => {
+    const details: IcoreErrorDetailsMap['UNKNOWN_COMMAND'] = {
+      reason: 'unresolved',
+      command: 'unknown',
+      positionals: ['unknown']
+    };
+    const error: unknown = new IcoreError(
+      'UNKNOWN_COMMAND',
+      'Unknown command: unknown',
+      details
+    );
+
+    assert.ok(isIcoreError(error, 'UNKNOWN_COMMAND'));
+    assert.equal(error.details.command, 'unknown');
   });
 });

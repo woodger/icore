@@ -27,6 +27,10 @@ import type {
 
 type OptionValueSource = 'value' | 'default';
 
+type WithoutOptionIdentity<TDetails> = TDetails extends unknown
+  ? Omit<TDetails, 'argument' | 'option'>
+  : never;
+
 /**
  * Detailed option parsing result with values and user-provided metadata.
  */
@@ -262,7 +266,14 @@ function validateNumberConstraints(
       );
     }
 
-    throw createExpectedOptionTypeError(name, 'integer', parsed);
+    throw createInvalidOptionTypeError(
+      name,
+      `Expected '--${name}' as integer`,
+      {
+        expected: 'integer',
+        value: parsed
+      }
+    );
   }
 
   if (definition.min !== undefined && parsed < definition.min) {
@@ -337,6 +348,7 @@ function assertChoice<TValue extends string | number>(
       name,
       message,
       {
+        expected: 'choice',
         choices: [...choices],
         value
       }
@@ -346,22 +358,28 @@ function assertChoice<TValue extends string | number>(
   throw createInvalidOptionChoiceError(name, choices, value, message);
 }
 
-function createUnexpectedArgumentError(name: string): IcoreError {
+function createUnexpectedArgumentError(
+  name: string
+): IcoreError<'UNEXPECTED_ARGUMENT'> {
   return new IcoreError(
     'UNEXPECTED_ARGUMENT',
     `Unexpected argument '--${name}'`,
     {
+      reason: 'unknown-option',
       argument: `--${name}`,
       option: name
     }
   );
 }
 
-function createExpectedRequiredArgumentError(name: string): IcoreError {
+function createExpectedRequiredArgumentError(
+  name: string
+): IcoreError<'EXPECTED_REQUIRED_ARGUMENT'> {
   return new IcoreError(
     'EXPECTED_REQUIRED_ARGUMENT',
     `Expected required argument '--${name}'`,
     {
+      reason: 'option',
       argument: `--${name}`,
       option: name
     }
@@ -370,9 +388,9 @@ function createExpectedRequiredArgumentError(name: string): IcoreError {
 
 function createExpectedOptionTypeError(
   name: string,
-  expected: string,
+  expected: 'string' | 'boolean flag' | 'number',
   value: unknown
-): IcoreError {
+): IcoreError<'INVALID_OPTION_TYPE'> {
   return createInvalidOptionTypeError(
     name,
     `Expected '--${name}' as ${expected}`,
@@ -385,9 +403,9 @@ function createExpectedOptionTypeError(
 
 function createExpectedDefaultError(
   name: string,
-  expected: string,
+  expected: 'string' | 'boolean' | 'number',
   value: unknown
-): IcoreError {
+): IcoreError<'INVALID_OPTION_DEFAULT'> {
   return createInvalidOptionDefaultError(
     name,
     `Expected default for '--${name}' as ${expected}`,
@@ -401,8 +419,8 @@ function createExpectedDefaultError(
 function createInvalidOptionTypeError(
   name: string,
   message: string,
-  details: IcoreErrorDetails
-): IcoreError {
+  details: WithoutOptionIdentity<IcoreErrorDetails<'INVALID_OPTION_TYPE'>>
+): IcoreError<'INVALID_OPTION_TYPE'> {
   return new IcoreError(
     'INVALID_OPTION_TYPE',
     message,
@@ -419,7 +437,7 @@ function createInvalidOptionChoiceError<TValue extends string | number>(
   choices: readonly TValue[],
   value: TValue,
   message: string
-): IcoreError {
+): IcoreError<'INVALID_OPTION_CHOICE'> {
   return new IcoreError(
     'INVALID_OPTION_CHOICE',
     message,
@@ -435,8 +453,8 @@ function createInvalidOptionChoiceError<TValue extends string | number>(
 function createInvalidOptionDefaultError(
   name: string,
   message: string,
-  details: IcoreErrorDetails
-): IcoreError {
+  details: WithoutOptionIdentity<IcoreErrorDetails<'INVALID_OPTION_DEFAULT'>>
+): IcoreError<'INVALID_OPTION_DEFAULT'> {
   return new IcoreError(
     'INVALID_OPTION_DEFAULT',
     message,
