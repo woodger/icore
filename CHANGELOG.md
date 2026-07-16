@@ -22,6 +22,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Rejected malformed nested records, table rows, and CSV rows in presentation
   result guards.
 - Quoted CSV cells containing carriage returns.
+- Rejected backpressured writes when EventEmitter-compatible sinks error or
+  close before `drain`.
+- Rejected top-level values without a JSON representation instead of emitting
+  invalid JSON text.
 
 ## [2.0.0] - 2026-07-14
 

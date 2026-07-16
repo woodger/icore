@@ -21,4 +21,18 @@ describe('renderJson', () => {
       ''
     ].join('\n'));
   });
+
+  test('renders null as JSON', () => {
+    assert.equal(renderJson(null), 'null\n');
+  });
+
+  test('rejects top-level undefined values', () => {
+    assert.throws(
+      () => renderJson(undefined),
+      {
+        name: 'TypeError',
+        message: 'Expected a JSON-serializable value'
+      }
+    );
+  });
 });

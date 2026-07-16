@@ -10,7 +10,15 @@
 
 /**
  * Renders an already prepared value as pretty JSON with a trailing newline.
+ *
+ * Throws when the value has no top-level JSON representation.
  */
 export function renderJson(value: unknown): string {
-  return `${JSON.stringify(value, null, 2)}\n`;
+  const json = JSON.stringify(value, null, 2);
+
+  if (json === undefined) {
+    throw new TypeError('Expected a JSON-serializable value');
+  }
+
+  return `${json}\n`;
 }
