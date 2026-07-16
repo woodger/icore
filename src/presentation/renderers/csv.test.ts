@@ -6,17 +6,21 @@ import {
 } from '../../index';
 
 describe('renderCsvRow', () => {
-  test('escapes comma, quote and newline cells', () => {
+  test('escapes comma, quote, carriage return and newline cells', () => {
     const output = renderCsvRow([
       'plain',
       'with,comma',
       'with "quote"',
+      'carriage\rreturn',
       'line\nbreak',
       42,
       true
     ]);
 
-    assert.equal(output, 'plain,"with,comma","with ""quote""","line\nbreak",42,true');
+    assert.equal(
+      output,
+      'plain,"with,comma","with ""quote""","carriage\rreturn","line\nbreak",42,true'
+    );
   });
 });
 

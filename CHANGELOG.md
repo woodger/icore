@@ -14,6 +14,15 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Fixed
+
+- Built package output automatically before npm and Yarn packing.
+- Preserved option names that overlap properties inherited from
+  `Object.prototype`.
+- Rejected malformed nested records, table rows, and CSV rows in presentation
+  result guards.
+- Quoted CSV cells containing carriage returns.
+
 ## [2.0.0] - 2026-07-14
 
 ### Added

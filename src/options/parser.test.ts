@@ -390,6 +390,36 @@ describe('parseOptionsDetailed', () => {
       insecure: true
     });
   });
+
+  test('preserves option names that match object prototype keys', () => {
+    const schema = {
+      ['__proto__']: {
+        type: 'string'
+      }
+    } as const;
+    const result = parseOptionsDetailed(schema, {
+      ['__proto__']: 'value'
+    });
+
+    assert.deepStrictEqual(result, {
+      options: {
+        ['__proto__']: 'value'
+      },
+      provided: {
+        ['__proto__']: true
+      }
+    });
+    assert.strictEqual(Object.getPrototypeOf(result.options), Object.prototype);
+    assert.strictEqual(Object.getPrototypeOf(result.provided), Object.prototype);
+    assert.deepStrictEqual(parseOptionsDetailed(schema, {}), {
+      options: {
+        ['__proto__']: undefined
+      },
+      provided: {
+        ['__proto__']: false
+      }
+    });
+  });
 });
 
 describe('parseOptionsSubsetDetailed', () => {
@@ -445,6 +475,17 @@ describe('parseOptionsSubsetDetailed', () => {
         }
       }
     );
+  });
+
+  test('preserves unknown option names that match object prototype keys', () => {
+    const result = parseOptionsSubsetDetailed({}, {
+      ['__proto__']: 'value'
+    });
+
+    assert.deepStrictEqual(result.rest, {
+      ['__proto__']: 'value'
+    });
+    assert.strictEqual(Object.getPrototypeOf(result.rest), Object.prototype);
   });
 
   test('rejects invalid known subset options', () => {

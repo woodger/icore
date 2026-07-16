@@ -168,9 +168,11 @@ export function mergeOptionsSchema<
   schema: TSchema,
   ...schemas: TSchemas
 ): MergeOptionsSchemas<readonly [TSchema, ...TSchemas]> {
-  return Object.assign(
-    {},
+  const merged = Object.assign(
+    Object.create(null) as OptionsSchema,
     schema,
     ...schemas
-  ) as MergeOptionsSchemas<readonly [TSchema, ...TSchemas]>;
+  );
+
+  return { ...merged } as MergeOptionsSchemas<readonly [TSchema, ...TSchemas]>;
 }

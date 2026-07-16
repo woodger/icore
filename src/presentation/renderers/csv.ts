@@ -3,7 +3,7 @@
  *
  * Allowed here:
  * - CSV row joining;
- * - CSV cell escaping for comma, quote, and newline values;
+ * - CSV cell escaping for comma, quote, carriage return, and newline values;
  *
  * This file must not contain application report mapping.
  */
@@ -34,7 +34,7 @@ export function renderCsv(rows: readonly CsvRow[]): string {
 function renderCsvValue(value: CsvCell): string {
   const text = String(value);
 
-  if (!/[",\n]/.test(text)) {
+  if (!/[",\r\n]/.test(text)) {
     return text;
   }
 

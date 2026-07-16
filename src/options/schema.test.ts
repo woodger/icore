@@ -59,4 +59,20 @@ describe('mergeOptionsSchema', () => {
       format: 'table'
     });
   });
+
+  test('preserves option names that match object prototype keys', () => {
+    const schema = mergeOptionsSchema({}, {
+      ['__proto__']: {
+        type: 'string',
+        required: true
+      }
+    } as const);
+
+    assert.deepStrictEqual(parseOptions(schema, {
+      ['__proto__']: 'value'
+    }), {
+      ['__proto__']: 'value'
+    });
+    assert.strictEqual(Object.getPrototypeOf(schema), Object.prototype);
+  });
 });
