@@ -16,6 +16,7 @@ import { renderCsv } from './renderers/csv';
 import { renderJson } from './renderers/json';
 import { renderTextTable } from './renderers/table';
 import type {
+  CsvCell,
   CsvRow,
   PresentationRecord,
   PresentationResult,
@@ -90,11 +91,15 @@ export function isPresentationResult(value: unknown): value is PresentationResul
   }
 
   if (result['type'] === 'records') {
-    return Array.isArray(result['value']);
+    return isArrayOf(result['value'], isRecord);
   }
 
-  if (result['type'] === 'table' || result['type'] === 'csv') {
-    return Array.isArray(result['rows']);
+  if (result['type'] === 'table') {
+    return isArrayOf(result['rows'], isTextTableRow);
+  }
+
+  if (result['type'] === 'csv') {
+    return isArrayOf(result['rows'], isCsvRow);
   }
 
   return false;
@@ -239,4 +244,37 @@ function assertNever(value: never): never {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isTextTableRow(value: unknown): value is TextTableRow {
+  return isArrayOf(value, (cell): cell is string => typeof cell === 'string');
+}
+
+function isCsvRow(value: unknown): value is CsvRow {
+  return isArrayOf(value, isCsvCell);
+}
+
+function isCsvCell(value: unknown): value is CsvCell {
+  return (
+    typeof value === 'string'
+    || typeof value === 'number'
+    || typeof value === 'boolean'
+  );
+}
+
+function isArrayOf<TValue>(
+  value: unknown,
+  isValue: (value: unknown) => value is TValue
+): value is TValue[] {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  for (const element of value) {
+    if (!isValue(element)) {
+      return false;
+    }
+  }
+
+  return true;
 }

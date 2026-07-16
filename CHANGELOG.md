@@ -14,6 +14,21 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Fixed
+
+- Built package output automatically before npm and Yarn packing.
+- Preserved option names that overlap properties inherited from
+  `Object.prototype`.
+- Rejected malformed nested records, table rows, and CSV rows in presentation
+  result guards.
+- Quoted CSV cells containing carriage returns.
+- Rejected backpressured writes when EventEmitter-compatible sinks error or
+  close before `drain`.
+- Rejected top-level values without a JSON representation instead of emitting
+  invalid JSON text.
+
+## [2.0.0] - 2026-07-14
+
 ### Added
 
 - Added reusable terminal error rendering and exit-code policy with prepare,

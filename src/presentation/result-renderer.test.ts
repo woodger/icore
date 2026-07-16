@@ -82,4 +82,50 @@ describe('isPresentationResult', () => {
       value: []
     }), false);
   });
+
+  test('validates nested presentation result shapes', () => {
+    const sparseRecords: unknown[] = [];
+    sparseRecords.length = 1;
+
+    assert.equal(isPresentationResult({
+      type: 'records',
+      value: [{ id: 'account-1' }]
+    }), true);
+    assert.equal(isPresentationResult({
+      type: 'records',
+      value: [null]
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'records',
+      value: [[]]
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'records',
+      value: sparseRecords
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'table',
+      rows: [['id'], ['account-1']]
+    }), true);
+    assert.equal(isPresentationResult({
+      type: 'table',
+      rows: [['id'], [1]]
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'table',
+      rows: [null]
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'csv',
+      rows: [['id', 'active'], [1, true]]
+    }), true);
+    assert.equal(isPresentationResult({
+      type: 'csv',
+      rows: [['id'], [null]]
+    }), false);
+    assert.equal(isPresentationResult({
+      type: 'csv',
+      rows: [null]
+    }), false);
+  });
 });

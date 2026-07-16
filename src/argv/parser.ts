@@ -41,7 +41,7 @@ export function parseArgv(
   schema?: OptionsSchema
 ): ParsedArgv {
   const positionals: string[] = [];
-  const options: Record<string, RawOptionValue> = {};
+  const options = Object.create(null) as Record<string, RawOptionValue>;
   const aliases = buildShortAliasMap(schema);
   let parseOptions = true;
 
@@ -106,11 +106,11 @@ export function parseArgv(
       throw createUnexpectedArgumentError(arg);
     }
 
-    const definition = schema?.[name];
+    const definition = getOwnOptionDefinition(schema, name);
 
     if (separatorIndex === -1 && definition === undefined && name.startsWith('no-')) {
       const negatedName = name.slice(3);
-      const negatedDefinition = schema?.[negatedName];
+      const negatedDefinition = getOwnOptionDefinition(schema, negatedName);
 
       if (negatedDefinition?.type === 'boolean') {
         if (Object.hasOwn(options, negatedName)) {
@@ -155,8 +155,19 @@ export function parseArgv(
 
   return {
     positionals,
-    options
+    options: { ...options }
   };
+}
+
+function getOwnOptionDefinition(
+  schema: OptionsSchema | undefined,
+  name: string
+): OptionDefinition | undefined {
+  if (schema === undefined || !Object.hasOwn(schema, name)) {
+    return undefined;
+  }
+
+  return schema[name];
 }
 
 function buildShortAliasMap(

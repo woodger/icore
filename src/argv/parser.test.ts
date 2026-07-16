@@ -27,10 +27,48 @@ describe('parseArgv', () => {
     );
   });
 
+  test('preserves option names that match object prototype keys', () => {
+    const result = parseArgv([
+      '--__proto__',
+      'value'
+    ], {
+      ['__proto__']: {
+        type: 'string'
+      }
+    });
+
+    assert.deepStrictEqual(result, {
+      positionals: [],
+      options: {
+        ['__proto__']: 'value'
+      }
+    });
+    assert.strictEqual(Object.getPrototypeOf(result.options), Object.prototype);
+  });
+
+  test('does not treat inherited schema properties as option definitions', () => {
+    assert.deepStrictEqual(
+      parseArgv([
+        '--constructor',
+        '-value'
+      ], {}),
+      {
+        positionals: ['-value'],
+        options: {
+          constructor: true
+        }
+      }
+    );
+  });
+
   test('rejects duplicated options', () => {
     assert.throws(
       () => parseArgv(['--format', 'json', '--format', 'table']),
       /Unexpected duplicate argument '--format'/
+    );
+    assert.throws(
+      () => parseArgv(['--__proto__=first', '--__proto__=second']),
+      /Unexpected duplicate argument '--__proto__'/
     );
   });
 

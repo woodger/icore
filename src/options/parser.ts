@@ -69,8 +69,8 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
   schema: TSchema,
   values: Record<string, RawOptionValue>
 ): ParseOptionsResult<TSchema> {
-  const parsed: Partial<Record<keyof TSchema, unknown>> = {};
-  const provided: Partial<Record<keyof TSchema, boolean>> = {};
+  const parsed = Object.create(null) as Partial<Record<keyof TSchema, unknown>>;
+  const provided = Object.create(null) as Partial<Record<keyof TSchema, boolean>>;
 
   for (const name of Object.keys(values)) {
     if (!Object.hasOwn(schema, name)) {
@@ -80,7 +80,10 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
 
   for (const name of Object.keys(schema) as (keyof TSchema)[]) {
     const definition = schema[name];
-    const value = values[String(name)];
+    const optionName = String(name);
+    const value = Object.hasOwn(values, optionName)
+      ? values[optionName]
+      : undefined;
 
     if (definition === undefined) {
       continue;
@@ -90,24 +93,24 @@ export function parseOptionsDetailed<const TSchema extends OptionsSchema>(
 
     if (value === undefined) {
       if ('default' in definition) {
-        parsed[name] = parseDefaultOptionValue(String(name), definition);
+        parsed[name] = parseDefaultOptionValue(optionName, definition);
         continue;
       }
 
       if (definition.required === true) {
-        throw createExpectedRequiredArgumentError(String(name));
+        throw createExpectedRequiredArgumentError(optionName);
       }
 
       parsed[name] = undefined;
       continue;
     }
 
-    parsed[name] = parseOptionValue(String(name), definition, value);
+    parsed[name] = parseOptionValue(optionName, definition, value);
   }
 
   return {
-    options: parsed as InferOptions<TSchema>,
-    provided: provided as InferProvidedOptions<TSchema>
+    options: { ...parsed } as InferOptions<TSchema>,
+    provided: { ...provided } as InferProvidedOptions<TSchema>
   };
 }
 
@@ -119,8 +122,8 @@ export function parseOptionsSubsetDetailed<const TSchema extends OptionsSchema>(
   schema: TSchema,
   values: Record<string, RawOptionValue>
 ): ParseOptionsSubsetResult<TSchema> {
-  const subsetValues: Record<string, RawOptionValue> = {};
-  const rest: Record<string, RawOptionValue> = {};
+  const subsetValues = Object.create(null) as Record<string, RawOptionValue>;
+  const rest = Object.create(null) as Record<string, RawOptionValue>;
 
   for (const [name, value] of Object.entries(values)) {
     if (Object.hasOwn(schema, name)) {
@@ -133,7 +136,7 @@ export function parseOptionsSubsetDetailed<const TSchema extends OptionsSchema>(
 
   return {
     ...parseOptionsDetailed(schema, subsetValues),
-    rest
+    rest: { ...rest }
   };
 }
 
