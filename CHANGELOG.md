@@ -21,6 +21,13 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   `IcoreError` instances.
 - Added `isTerminalCommandOutput(...)` as the runtime guard corresponding to
   `TerminalCommandOutput` for caller-owned command lifecycles.
+- Added `createTerminalOutput()` with shared ordered stdout, independent stderr,
+  atomic interactive line operations, barrier flushing, and sticky failures.
+- Added generic `createTerminalProgress()` with throttled redraws, derived
+  percentage and ETA snapshots, replaceable rendering, width truncation, and
+  asynchronous idempotent close.
+- Added deterministic terminal count and duration formatters for progress and
+  final reports.
 
 ## [2.0.1] - 2026-07-16
 

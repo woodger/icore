@@ -24,6 +24,8 @@ expect, and why a particular shape is useful or intentionally limited.
   usage without the terminal app boundary.
 - [presentation-output.md](presentation-output.md) shows presentation rendering
   and output writing without command execution.
+- [interactive-output.md](interactive-output.md) shows shared output queues,
+  terminal line capabilities, generic progress, and error-lifecycle ordering.
 
 ## Primitive Mechanics
 

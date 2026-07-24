@@ -129,6 +129,14 @@ export {
   type TextWriter
 } from './output/text-writer';
 export {
+  createTerminalOutput,
+  type TerminalCapabilities,
+  type TerminalLineOutput,
+  type TerminalOutput,
+  type TerminalOutputOptions,
+  type TerminalTextSink
+} from './output/terminal-output';
+export {
   createTerminalApp,
   isTerminalCommandOutput,
   type TerminalApp,
@@ -138,3 +146,14 @@ export {
   type TerminalErrorPhase,
   type TerminalErrorPolicy
 } from './terminal/app';
+export {
+  createTerminalProgress,
+  formatTerminalCount,
+  formatTerminalDuration,
+  renderTerminalProgress,
+  type TerminalProgress,
+  type TerminalProgressOptions,
+  type TerminalProgressRenderer,
+  type TerminalProgressSnapshot,
+  type TerminalProgressState
+} from './terminal/progress';

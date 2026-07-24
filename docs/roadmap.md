@@ -24,6 +24,21 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
 - `isIcoreError(...)` is the supported narrowing boundary for keeping an error
   code correlated with its details type.
 
+## Interactive terminal output
+
+- One `createTerminalOutput()` instance owns stdout and stderr for a complete
+  CLI invocation.
+- Semantic output and interactive line operations share a serialized stdout
+  queue. Stderr has an independent queue.
+- `flush()` is a point-in-time barrier, and the first write failure is sticky.
+- Generic progress owns derived percentage and ETA values, redraw throttling,
+  plain-text rendering, line restoration, and asynchronous close.
+- Applications retain domain-event mapping, labels, non-TTY policy, process
+  signals, and resource lifecycle.
+- Progress must close before final stdout output or stderr diagnostics.
+- Terminal width adaptation intentionally supports single-line plain text only;
+  ANSI-styled and display-width-aware Unicode output are outside the contract.
+
 ## Not planned
 
 - Declarative positional schemas and `string-list` positional parsing are not
