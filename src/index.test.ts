@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  CliUsageError,
   createCommand,
   createCommands,
   createOutput,
@@ -9,6 +10,7 @@ import {
   createPresentation,
   IcoreError,
   isIcoreError,
+  isUsageError,
   presentationFormatOptions,
   renderCsvRow,
   renderJson,
@@ -69,5 +71,12 @@ describe('package entrypoint', () => {
 
     assert.ok(isIcoreError(error, 'UNKNOWN_COMMAND'));
     assert.equal(error.details.command, 'unknown');
+  });
+
+  test('exposes application usage error contracts', () => {
+    const error: unknown = new CliUsageError('Invalid date range');
+
+    assert.ok(isUsageError(error));
+    assert.equal(error.message, 'Invalid date range');
   });
 });

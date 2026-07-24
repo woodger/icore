@@ -43,6 +43,10 @@ export {
   type ResolvedCommand
 } from './command/mechanics';
 export {
+  CliUsageError,
+  isUsageError
+} from './errors/cli-usage-error';
+export {
   IcoreError,
   isIcoreError,
   type AnyIcoreError,

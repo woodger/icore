@@ -124,7 +124,7 @@ and sometimes owns command execution itself. The built-in flow and explicit
 `app.reportError(...)` calls use the same policy.
 
 ```ts
-import { isIcoreError } from 'icore';
+import { isUsageError } from 'icore';
 
 const appWithErrorPolicy = createTerminalApp({
   commands,
@@ -139,9 +139,7 @@ const appWithErrorPolicy = createTerminalApp({
       return `${message}\n`;
     },
     resolveExitCode(error) {
-      return isIcoreError(error) && error.category === 'usage'
-        ? 2
-        : 1;
+      return isUsageError(error) ? 2 : 1;
     }
   }
 });

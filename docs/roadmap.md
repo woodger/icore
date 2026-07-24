@@ -15,6 +15,9 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
   point used to render it.
 - `IcoreError` categories distinguish command-line usage failures from invalid
   command and option definitions.
+- Application-owned semantic validation uses `CliUsageError`;
+  `isUsageError(...)` recognizes it together with usage-category `IcoreError`
+  instances without moving validation rules or exit-code policy into `icore`.
 - `IcoreErrorDetailsMap` is the public source of truth for structured details;
   semantic variants use explicit discriminators instead of unrelated optional
   fields.

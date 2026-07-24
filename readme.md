@@ -171,7 +171,8 @@ the guard narrows the corresponding details shape:
 ```ts
 import {
   createTerminalApp,
-  isIcoreError
+  isIcoreError,
+  isUsageError
 } from 'icore';
 
 const help = 'Usage: cli hello [--name value]';
@@ -191,9 +192,7 @@ const app = createTerminalApp({
       return `${message}\n`;
     },
     resolveExitCode(error) {
-      return isIcoreError(error) && error.category === 'usage'
-        ? 2
-        : 1;
+      return isUsageError(error) ? 2 : 1;
     }
   }
 });
@@ -203,6 +202,21 @@ Inside the `UNKNOWN_COMMAND` branch, fields such as `error.details.command` and
 `error.details.positionals` are strongly typed. `IcoreErrorDetailsMap` is the
 public source of truth for every code. Direct `new IcoreError(...)` calls must
 provide a third argument matching the selected code.
+
+Application-owned semantic validation can throw `CliUsageError` without
+claiming one of the framework-owned `IcoreError` codes:
+
+```ts
+import { CliUsageError } from 'icore';
+
+throw new CliUsageError(
+  "Expected '--from' to be earlier than or equal to '--to'"
+);
+```
+
+`isUsageError(...)` recognizes both `CliUsageError` and `IcoreError` instances
+whose category is `usage`. Rendering, help text, and the choice of exit code
+remain application policy.
 
 Without a custom policy, terminal apps write `Error.message + "\n"` (or
 `String(error) + "\n"` for other thrown values) and return exit code `1`.
