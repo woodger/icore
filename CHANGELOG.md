@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-07-24
+
 ### Added
 
 - Added `CliUsageError` for application-owned semantic CLI validation and
