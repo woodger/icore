@@ -9,6 +9,10 @@ import {
   defineCommand,
   presentationFormatOptions
 } from '../index';
+import {
+  isTerminalCommandOutput,
+  type TerminalCommandOutput
+} from './app';
 
 function createMemoryOutput() {
   const stdout: string[] = [];
@@ -40,6 +44,51 @@ function createMemoryOutput() {
     }
   };
 }
+
+describe('isTerminalCommandOutput', () => {
+  test('recognizes every supported terminal output shape', () => {
+    const presentation = createPresentation();
+    const stream = (async function* createStream() {
+      yield 'ok\n';
+    })();
+    const callableStream = Object.assign(
+      () => undefined,
+      {
+        [Symbol.asyncIterator]: async function* createCallableStream() {
+          yield 'ok\n';
+        }
+      }
+    );
+
+    assert.equal(isTerminalCommandOutput(undefined), true);
+    assert.equal(isTerminalCommandOutput('ok\n'), true);
+    assert.equal(isTerminalCommandOutput(stream), true);
+    assert.equal(isTerminalCommandOutput(callableStream), true);
+    assert.equal(
+      isTerminalCommandOutput(presentation.text('ok\n')),
+      true
+    );
+  });
+
+  test('narrows unknown terminal output', () => {
+    const value: unknown = 'ok\n';
+
+    assert.ok(isTerminalCommandOutput(value));
+
+    const output: TerminalCommandOutput = value;
+
+    assert.equal(output, 'ok\n');
+  });
+
+  test('rejects unsupported values and malformed async iterables', () => {
+    assert.equal(isTerminalCommandOutput(null), false);
+    assert.equal(isTerminalCommandOutput({}), false);
+    assert.equal(isTerminalCommandOutput(Promise.resolve('ok\n')), false);
+    assert.equal(isTerminalCommandOutput({
+      [Symbol.asyncIterator]: true
+    }), false);
+  });
+});
 
 describe('createTerminalApp', () => {
   test('accepts commands with void and prepared payloads', async () => {
@@ -346,6 +395,44 @@ describe('createTerminalApp', () => {
     assert.equal(await app.run(['stream'], undefined), 0);
     assert.equal(memory.read().stdout, 'ok\none\ntwo\n');
     assert.equal(memory.read().stderr, '');
+  });
+
+  test('rejects malformed async iterables during rendering', async () => {
+    const memory = createMemoryOutput();
+    let phase: string | undefined;
+    const commands = createCommands([
+      defineCommand({
+        path: ['invalid'],
+        options: {},
+        handle() {
+          return {
+            [Symbol.asyncIterator]: true
+          };
+        }
+      })
+    ] as const);
+    const app = createTerminalApp({
+      commands,
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.ok(error instanceof Error);
+          phase = context.phase;
+
+          return `${error.message}\n`;
+        }
+      }
+    });
+
+    const exitCode = await app.run(['invalid'], undefined);
+
+    assert.equal(exitCode, 1);
+    assert.equal(phase, 'render');
+    assert.equal(memory.read().stdout, '');
+    assert.equal(
+      memory.read().stderr,
+      'Expected terminal command output\n'
+    );
   });
 
   test('writes command errors to stderr and returns a non-zero exit code', async () => {

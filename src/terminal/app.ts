@@ -45,6 +45,16 @@ export type TerminalCommandOutput =
   | PresentationResult
   | undefined;
 
+/** Checks whether an unknown value has a supported terminal output shape. */
+export function isTerminalCommandOutput(
+  value: unknown
+): value is TerminalCommandOutput {
+  return value === undefined
+    || typeof value === 'string'
+    || isAsyncIterable(value)
+    || isPresentationResult(value);
+}
+
 /** Terminal operation in which an error was observed. */
 export type TerminalErrorPhase =
   | 'prepare'
@@ -321,23 +331,19 @@ function renderTerminalOutput(
   format: PresentationFormat | undefined,
   presentation: Presentation
 ): RenderedTerminalOutput {
-  if (result === undefined) {
-    return undefined;
+  if (!isTerminalCommandOutput(result)) {
+    throw new Error('Expected terminal command output');
   }
 
-  if (typeof result === 'string') {
+  if (
+    result === undefined
+    || typeof result === 'string'
+    || isAsyncIterable(result)
+  ) {
     return result;
   }
 
-  if (isAsyncIterable(result)) {
-    return result;
-  }
-
-  if (isPresentationResult(result)) {
-    return presentation.render(result, format);
-  }
-
-  throw new Error('Expected terminal command output');
+  return presentation.render(result, format);
 }
 
 /** Writes already rendered terminal text while preserving stream backpressure. */
@@ -408,9 +414,14 @@ function resolveTerminalExitCode(): number {
 }
 
 function isAsyncIterable(value: unknown): value is AsyncIterable<string> {
-  return (
-    typeof value === 'object'
-    && value !== null
-    && Symbol.asyncIterator in value
-  );
+  if (
+    (typeof value !== 'object' || value === null)
+    && typeof value !== 'function'
+  ) {
+    return false;
+  }
+
+  return typeof (
+    value as { [Symbol.asyncIterator]?: unknown }
+  )[Symbol.asyncIterator] === 'function';
 }

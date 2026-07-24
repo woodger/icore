@@ -10,6 +10,7 @@ import {
   createPresentation,
   IcoreError,
   isIcoreError,
+  isTerminalCommandOutput,
   isUsageError,
   presentationFormatOptions,
   renderCsvRow,
@@ -31,6 +32,7 @@ describe('package entrypoint', () => {
     assert.equal(typeof createCommands, 'function');
     assert.equal(typeof createPresentation, 'function');
     assert.equal(typeof createTerminalApp, 'function');
+    assert.equal(typeof isTerminalCommandOutput, 'function');
     assert.deepStrictEqual(createPresentation().text('ok\n'), {
       type: 'text',
       value: 'ok\n'

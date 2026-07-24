@@ -130,6 +130,7 @@ export {
 } from './output/text-writer';
 export {
   createTerminalApp,
+  isTerminalCommandOutput,
   type TerminalApp,
   type TerminalAppOptions,
   type TerminalCommandOutput,

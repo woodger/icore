@@ -129,6 +129,9 @@ prepared `payload`.
 Supported terminal results are strings, async string streams, presentation
 results, and `undefined`:
 
+Use `isTerminalCommandOutput(...)` to narrow an unknown caller-owned result
+before passing it to `app.writePreparedOutput(...)`.
+
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```

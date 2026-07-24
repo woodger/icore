@@ -19,6 +19,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Added `CliUsageError` for application-owned semantic CLI validation and
   `isUsageError(...)` for recognizing it together with usage-category
   `IcoreError` instances.
+- Added `isTerminalCommandOutput(...)` as the runtime guard corresponding to
+  `TerminalCommandOutput` for caller-owned command lifecycles.
 
 ## [2.0.1] - 2026-07-16
 
