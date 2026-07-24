@@ -14,7 +14,8 @@ mechanics for [Node.js®](https://nodejs.org) applications.
 - multi-segment command resolution;
 - separate prepare and execute phases;
 - JSON, CSV, and text-table presentation;
-- stdout/stderr writers and reusable terminal error policy.
+- ordered stdout/stderr writers, interactive progress, and reusable terminal
+  error policy.
 
 Application-specific API calls, configuration, domain behavior, and help text
 remain in the consuming application.
@@ -34,6 +35,7 @@ of the package contract.
 
 - [Quick Start](#quick-start)
 - [Choose An API Level](#choose-an-api-level)
+- [Interactive Output And Progress](#interactive-output-and-progress)
 - [Supported Argument Syntax](#supported-argument-syntax)
 - [Error Handling](#error-handling)
 - [Guides](#guides)
@@ -111,6 +113,7 @@ Start with the highest-level API that fits the application:
 | Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](examples/custom-command-flow.md) |
 | Presentation without command execution | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
 | Explicit stdout/stderr writing | `createOutput()` | [Output Writers](examples/output-writers.md) |
+| Interactive lines and progress | `createTerminalOutput()` and `createTerminalProgress()` | [Interactive Output And Progress](examples/interactive-output.md) |
 | Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](examples/readme.md#primitive-mechanics) |
 
 The terminal application exposes the main lifecycle operations:
@@ -129,12 +132,55 @@ prepared `payload`.
 Supported terminal results are strings, async string streams, presentation
 results, and `undefined`:
 
+Use `isTerminalCommandOutput(...)` to narrow an unknown caller-owned result
+before passing it to `app.writePreparedOutput(...)`.
+
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
 
 Exact public exports live in [`src/index.ts`](src/index.ts) and in the bundled
 TypeScript declarations.
+
+## Interactive Output And Progress
+
+Create one `TerminalOutput` for each CLI invocation. Its semantic `output` and
+interactive `lines` share one ordered stdout queue:
+
+```ts
+import {
+  createTerminalApp,
+  createTerminalOutput,
+  createTerminalProgress
+} from 'icore';
+
+const terminal = createTerminalOutput();
+const app = createTerminalApp({
+  commands,
+  output: terminal.output
+});
+const progress = createTerminalProgress({
+  output: terminal.lines
+});
+```
+
+Pass this same instance to help, version, command output, and progress paths.
+Creating independent instances splits the queues and removes their ordering
+guarantee. Progress operations enqueue synchronously; `progress.close()` is an
+idempotent stdout barrier that finishes the active line and reports the first
+sticky write failure. Close progress before writing a final report or error.
+
+Interactive line and progress content supports single-line plain text only.
+ANSI escape sequences and control characters are not supported. Width
+calculation assumes that each JavaScript string code unit occupies one terminal
+column. Emoji, combining characters, tabs, and full-width Unicode characters
+may be measured or truncated incorrectly.
+
+The default progress renderer uses deterministic English `elapsed` and `eta`
+labels with `en-US` number grouping. Replace the whole renderer when an
+application needs different wording or layout. See
+[Interactive Output And Progress](examples/interactive-output.md) for queue,
+snapshot, renderer, non-TTY, and error-lifecycle details.
 
 ## Supported Argument Syntax
 
@@ -171,7 +217,8 @@ the guard narrows the corresponding details shape:
 ```ts
 import {
   createTerminalApp,
-  isIcoreError
+  isIcoreError,
+  isUsageError
 } from 'icore';
 
 const help = 'Usage: cli hello [--name value]';
@@ -191,9 +238,7 @@ const app = createTerminalApp({
       return `${message}\n`;
     },
     resolveExitCode(error) {
-      return isIcoreError(error) && error.category === 'usage'
-        ? 2
-        : 1;
+      return isUsageError(error) ? 2 : 1;
     }
   }
 });
@@ -203,6 +248,21 @@ Inside the `UNKNOWN_COMMAND` branch, fields such as `error.details.command` and
 `error.details.positionals` are strongly typed. `IcoreErrorDetailsMap` is the
 public source of truth for every code. Direct `new IcoreError(...)` calls must
 provide a third argument matching the selected code.
+
+Application-owned semantic validation can throw `CliUsageError` without
+claiming one of the framework-owned `IcoreError` codes:
+
+```ts
+import { CliUsageError } from 'icore';
+
+throw new CliUsageError(
+  "Expected '--from' to be earlier than or equal to '--to'"
+);
+```
+
+`isUsageError(...)` recognizes both `CliUsageError` and `IcoreError` instances
+whose category is `usage`. Rendering, help text, and the choice of exit code
+remain application policy.
 
 Without a custom policy, terminal apps write `Error.message + "\n"` (or
 `String(error) + "\n"` for other thrown values) and return exit code `1`.
@@ -230,6 +290,9 @@ lower-level mechanics. Useful starting points:
   payloads, execution, and provided-option metadata;
 - [Presentation Primitives](examples/presentation-primitives.md) — text, record,
   table, CSV, JSON, and direct renderers.
+- [Interactive Output And Progress](examples/interactive-output.md) — shared
+  output queues, terminal line capabilities, progress rendering, and lifecycle
+  ordering.
 
 Release history is recorded in [CHANGELOG.md](CHANGELOG.md). Directional
 decisions live in [docs/roadmap.md](docs/roadmap.md).

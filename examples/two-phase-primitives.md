@@ -12,7 +12,8 @@ The snippets below use this setup:
 ```ts
 import {
   createCommand,
-  createTerminalApp
+  createTerminalApp,
+  isTerminalCommandOutput
 } from 'icore';
 
 type AppContext = {
@@ -130,6 +131,10 @@ try {
     return;
   }
 
+  if (!isTerminalCommandOutput(result)) {
+    throw new Error('Expected terminal command output');
+  }
+
   await app.writePreparedOutput(prepared, result);
 }
 finally {
@@ -139,7 +144,8 @@ finally {
 
 Only terminal output belongs here: ready text, streaming text, presentation
 results, or no output. Strings are written exactly as provided; include `\n`
-when line output is desired.
+when line output is desired. If the raw result remains `unknown` at this
+boundary, narrow it with `isTerminalCommandOutput(...)` before writing.
 
 ## Prepare From A Registry
 

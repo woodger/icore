@@ -43,6 +43,10 @@ export {
   type ResolvedCommand
 } from './command/mechanics';
 export {
+  CliUsageError,
+  isUsageError
+} from './errors/cli-usage-error';
+export {
   IcoreError,
   isIcoreError,
   type AnyIcoreError,
@@ -125,7 +129,16 @@ export {
   type TextWriter
 } from './output/text-writer';
 export {
+  createTerminalOutput,
+  type TerminalCapabilities,
+  type TerminalLineOutput,
+  type TerminalOutput,
+  type TerminalOutputOptions,
+  type TerminalTextSink
+} from './output/terminal-output';
+export {
   createTerminalApp,
+  isTerminalCommandOutput,
   type TerminalApp,
   type TerminalAppOptions,
   type TerminalCommandOutput,
@@ -133,3 +146,14 @@ export {
   type TerminalErrorPhase,
   type TerminalErrorPolicy
 } from './terminal/app';
+export {
+  createTerminalProgress,
+  formatTerminalCount,
+  formatTerminalDuration,
+  renderTerminalProgress,
+  type TerminalProgress,
+  type TerminalProgressOptions,
+  type TerminalProgressRenderer,
+  type TerminalProgressSnapshot,
+  type TerminalProgressState
+} from './terminal/progress';

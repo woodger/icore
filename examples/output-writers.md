@@ -7,6 +7,10 @@ available for lower-level integrations.
 Prefer semantic methods first. Direct writer primitives are useful in tests,
 streaming adapters, and custom terminal boundaries.
 
+For interactive lines or progress, use `createTerminalOutput()` instead. Its
+semantic output and line operations share one ordered stdout queue; see
+[Interactive Output And Progress](interactive-output.md).
+
 ## Use Semantic Output
 
 ```ts
@@ -125,4 +129,3 @@ await writer.write('forwarded output\n');
 
 This shape is useful when output is not a Node stream. The tradeoff is that the
 application owns the reliability and ordering guarantees of that sink.
-

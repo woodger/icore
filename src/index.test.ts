@@ -1,20 +1,29 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
+  CliUsageError,
   createCommand,
   createCommands,
   createOutput,
   createStdoutWriter,
   createTerminalApp,
+  createTerminalOutput,
+  createTerminalProgress,
   createPresentation,
+  formatTerminalCount,
+  formatTerminalDuration,
   IcoreError,
   isIcoreError,
+  isTerminalCommandOutput,
+  isUsageError,
   presentationFormatOptions,
   renderCsvRow,
   renderJson,
+  renderTerminalProgress,
   renderTextTable,
   type IcoreErrorCategory,
   type IcoreErrorDetailsMap,
+  type TerminalProgressRenderer,
   type TerminalErrorPolicy
 } from './index';
 
@@ -29,6 +38,12 @@ describe('package entrypoint', () => {
     assert.equal(typeof createCommands, 'function');
     assert.equal(typeof createPresentation, 'function');
     assert.equal(typeof createTerminalApp, 'function');
+    assert.equal(typeof createTerminalOutput, 'function');
+    assert.equal(typeof createTerminalProgress, 'function');
+    assert.equal(typeof formatTerminalCount, 'function');
+    assert.equal(typeof formatTerminalDuration, 'function');
+    assert.equal(typeof isTerminalCommandOutput, 'function');
+    assert.equal(typeof renderTerminalProgress, 'function');
     assert.deepStrictEqual(createPresentation().text('ok\n'), {
       type: 'text',
       value: 'ok\n'
@@ -48,8 +63,18 @@ describe('package entrypoint', () => {
         return 2;
       }
     };
+    const progressRenderer: TerminalProgressRenderer = (progress) => {
+      return `${progress.percentage.toFixed(1)}%`;
+    };
 
     assert.equal(category, 'usage');
+    assert.equal(progressRenderer({
+      label: 'Syncing',
+      current: 1,
+      total: 2,
+      details: [],
+      percentage: 50
+    }), '50.0%');
     assert.equal(errorPolicy.resolveExitCode?.('failed', {
       phase: 'external'
     }), 2);
@@ -69,5 +94,12 @@ describe('package entrypoint', () => {
 
     assert.ok(isIcoreError(error, 'UNKNOWN_COMMAND'));
     assert.equal(error.details.command, 'unknown');
+  });
+
+  test('exposes application usage error contracts', () => {
+    const error: unknown = new CliUsageError('Invalid date range');
+
+    assert.ok(isUsageError(error));
+    assert.equal(error.message, 'Invalid date range');
   });
 });
