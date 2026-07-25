@@ -11,7 +11,7 @@ mechanics for [Node.js®](https://nodejs.org) applications.
 `icore` owns the path from `process.argv` to terminal output:
 
 - declarative, type-inferred option schemas;
-- multi-segment command resolution;
+- multi-segment command resolution with canonical command aliases;
 - separate prepare and execute phases;
 - JSON, CSV, and text-table presentation;
 - ordered stdout/stderr writers, interactive progress, and reusable terminal
@@ -101,6 +101,9 @@ with defaults are always present; optional options are returned as
 
 `strict: true` rejects options placed before the command path. String output is
 written exactly as returned, so include `\n` when line output is intended.
+Default resolution continues to accept option-first input. Parsing bootstrap
+options does not reorder argv, so enable strict mode only when command-first
+syntax is part of the application's public CLI contract.
 
 ## Choose An API Level
 
@@ -284,8 +287,8 @@ lower-level mechanics. Useful starting points:
   choices, defaults, aliases, and inferred types;
 - [Practical CLI Patterns](examples/practical-cli-patterns.md) — help/version
   shortcuts, shared options, and compatibility aliases;
-- [Command Resolution](examples/command-resolution.md) — registries, explicit
-  resolution, and command-name guards;
+- [Command Resolution](examples/command-resolution.md) — registries, canonical
+  command aliases, matched paths, explicit resolution, and command-name guards;
 - [Two-Phase Primitives](examples/two-phase-primitives.md) — preparation,
   payloads, execution, and provided-option metadata;
 - [Presentation Primitives](examples/presentation-primitives.md) — text, record,

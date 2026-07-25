@@ -12,6 +12,7 @@
  */
 
 import type {
+  CommandPath,
   CommandContext,
   CommandResolutionOptions,
   Commands,
@@ -103,7 +104,8 @@ type BivariantCallback<TInput, TOutput> = {
 }['bivarianceHack'];
 
 type TerminalCommandDefinition = {
-  path: readonly [string, ...string[]];
+  path: CommandPath;
+  aliases?: readonly CommandPath[];
   options: OptionsSchema;
   metadata?: unknown;
   allowExtraPositionals?: boolean;

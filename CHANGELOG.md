@@ -14,10 +14,25 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Added
+
+- Added first-class command path aliases with canonical command identity and
+  literal `matchedPath` values on resolved and prepared commands.
+- Added collision validation and longest-path resolution across canonical and
+  alias paths without duplicating command definitions.
+
+### Changed
+
+- `ResolvedCommand` and `PreparedCommand` now require `matchedPath`; callers
+  constructing these public values directly must provide the path used for
+  resolution.
+
 ### Fixed
 
 - Rejected options placed between segments of a multi-segment command path when
   direct `runCommand(...)` execution uses strict mode.
+- Parsed each canonical command definition at most once per non-strict
+  resolution, regardless of its number of aliases.
 
 ## [2.0.2] - 2026-07-24
 

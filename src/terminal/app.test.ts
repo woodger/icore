@@ -147,7 +147,10 @@ describe('createTerminalApp', () => {
     const presentation = createPresentation();
     const commands = createCommands([
       defineCommand({
-        path: ['users', 'get-accounts'],
+        path: ['account', 'list'],
+        aliases: [
+          ['users', 'get-accounts']
+        ],
         options: presentationFormatOptions,
         handle() {
           return presentation.records([
@@ -182,7 +185,10 @@ describe('createTerminalApp', () => {
     const command = createCommand();
     const commands = command.registry([
       command.define({
-        path: ['users', 'current'],
+        path: ['account', 'current'],
+        aliases: [
+          ['users', 'current']
+        ],
         options: presentationFormatOptions,
         handle({ context }: {
           context: {
@@ -208,6 +214,10 @@ describe('createTerminalApp', () => {
     ], {
       strict: true
     });
+
+    assert.equal(prepared.name, 'account current');
+    assert.deepEqual(prepared.path, ['account', 'current']);
+    assert.deepEqual(prepared.matchedPath, ['users', 'current']);
 
     const exitCode = await app.runPrepared(prepared, {
       currentUser: 'Alice'

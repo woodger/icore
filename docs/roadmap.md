@@ -39,6 +39,20 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
 - Terminal width adaptation intentionally supports single-line plain text only;
   ANSI-styled and display-width-aware Unicode output are outside the contract.
 
+## Command path aliases
+
+- Command definitions own one canonical `path` and may declare alternative
+  `aliases`.
+- `name` and `path` preserve canonical command identity; `matchedPath` records
+  the canonical or alias path used for one resolution.
+- Canonical and alias paths share collision validation and longest-path
+  resolution.
+- Non-strict raw resolution parses each canonical definition at most once,
+  even when that definition owns multiple accepted paths.
+- Strict mode matches canonical and alias paths before parsing, but continues
+  to require command-first argv. Bootstrap parsing does not make option-first
+  argv strict-compatible unless the application also reorders or rejects it.
+
 ## Not planned
 
 - Declarative positional schemas and `string-list` positional parsing are not

@@ -14,8 +14,10 @@ import {
   runCommand,
   runPreparedCommand,
   runCommandFromRegistry,
+  type CommandAcceptedPath,
   type CommandName,
   type CommandContext,
+  type CommandPath,
   type CommandPayload,
   type CommandResult,
   type PreparedCommand,
@@ -157,6 +159,45 @@ describe('command registry', () => {
     assert.strictEqual(isCommandName(commandRegistry, 'unknown'), false);
   });
 
+  test('keeps aliases out of canonical command names and definitions', () => {
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts'],
+        ['accounts']
+      ],
+      options: {},
+      handle() {
+        return 'accounts';
+      }
+    });
+    const commands = createCommands([
+      command
+    ] as const);
+    const aliasPath: CommandAcceptedPath<typeof command> = [
+      'users',
+      'get-accounts'
+    ];
+
+    assert.deepStrictEqual(commands.names, [
+      'account list'
+    ]);
+    assert.deepStrictEqual(commands.registry.commandNames, [
+      'account list'
+    ]);
+    assert.deepStrictEqual(commands.definitions, [
+      command
+    ]);
+    assert.strictEqual(
+      isCommandName(commands.registry, 'users get-accounts'),
+      false
+    );
+    assert.deepStrictEqual(aliasPath, [
+      'users',
+      'get-accounts'
+    ]);
+  });
+
   test('rejects duplicate command paths', () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
@@ -173,6 +214,61 @@ describe('command registry', () => {
       ] as const),
       /Unexpected duplicate command 'users get-accounts'/
     );
+  });
+
+  test('rejects collisions between canonical and alias paths', () => {
+    const defineTestCommand = (
+      path: CommandPath,
+      aliases: readonly CommandPath[] = []
+    ) => defineCommand({
+      path,
+      aliases,
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+    const duplicatePath: CommandPath = ['users', 'get-accounts'];
+    const scenarios = [
+      {
+        definitions: [
+          defineTestCommand(['account', 'list'], [duplicatePath]),
+          defineTestCommand(duplicatePath)
+        ],
+        duplicateName: 'users get-accounts'
+      },
+      {
+        definitions: [
+          defineTestCommand(['account', 'list'], [duplicatePath]),
+          defineTestCommand(['portfolio', 'list'], [duplicatePath])
+        ],
+        duplicateName: 'users get-accounts'
+      },
+      {
+        definitions: [
+          defineTestCommand(['account', 'list'], [
+            ['account', 'list']
+          ])
+        ],
+        duplicateName: 'account list'
+      }
+    ];
+
+    for (const { definitions, duplicateName } of scenarios) {
+      assert.throws(
+        () => defineCommandRegistry(definitions),
+        (error) => {
+          assert.ok(error instanceof IcoreError);
+          assert.strictEqual(error.code, 'DUPLICATE_COMMAND');
+          assert.strictEqual(
+            error.message,
+            `Unexpected duplicate command '${duplicateName}'`
+          );
+
+          return true;
+        }
+      );
+    }
   });
 
   test('throws machine-readable duplicate command errors', () => {
@@ -232,6 +328,86 @@ describe('command registry', () => {
     assert.strictEqual(resolved.name, 'users get-accounts');
     assert.strictEqual(resolved.command, specificCommand);
     assert.deepStrictEqual(resolved.path, ['users', 'get-accounts']);
+    assert.strictEqual(resolved.matchedPath, resolved.path);
+    assert.deepStrictEqual(resolved.positionals, ['extra']);
+  });
+
+  test('resolves aliases with canonical identity and matched paths', () => {
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts'],
+        ['accounts']
+      ],
+      options: {},
+      allowExtraPositionals: true,
+      handle() {
+        return 'accounts';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+    const canonical = resolveCommand(commandRegistry, [
+      'account',
+      'list'
+    ]);
+    const aliased = resolveCommand(commandRegistry, [
+      'users',
+      'get-accounts',
+      'extra'
+    ]);
+    const matchedPath: CommandAcceptedPath<typeof command> = aliased.matchedPath;
+
+    assert.strictEqual(canonical.name, 'account list');
+    assert.strictEqual(canonical.path, command.path);
+    assert.strictEqual(canonical.matchedPath, canonical.path);
+    assert.strictEqual(aliased.name, 'account list');
+    assert.strictEqual(aliased.path, command.path);
+    assert.strictEqual(aliased.matchedPath, command.aliases?.[0]);
+    assert.deepStrictEqual(aliased.positionals, ['extra']);
+    assert.deepStrictEqual(matchedPath, [
+      'users',
+      'get-accounts'
+    ]);
+  });
+
+  test('uses longest-path resolution across canonical and alias paths', () => {
+    const genericCommand = defineCommand({
+      path: ['users'],
+      options: {},
+      allowExtraPositionals: true,
+      handle() {
+        return 'users';
+      }
+    });
+    const aliasedCommand = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {},
+      allowExtraPositionals: true,
+      handle() {
+        return 'accounts';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      genericCommand,
+      aliasedCommand
+    ] as const);
+    const resolved = resolveCommand(commandRegistry, [
+      'users',
+      'get-accounts',
+      'extra'
+    ]);
+
+    assert.strictEqual(resolved.command, aliasedCommand);
+    assert.strictEqual(resolved.name, 'account list');
+    assert.deepStrictEqual(resolved.matchedPath, [
+      'users',
+      'get-accounts'
+    ]);
     assert.deepStrictEqual(resolved.positionals, ['extra']);
   });
 
@@ -261,7 +437,38 @@ describe('command registry', () => {
 
     assert.strictEqual(resolved.name, 'users get-accounts');
     assert.strictEqual(resolved.command, command);
+    assert.strictEqual(resolved.matchedPath, resolved.path);
     assert.deepStrictEqual(resolved.positionals, ['extra']);
+  });
+
+  test('resolves option-first aliases from raw args', () => {
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {
+        format: {
+          type: 'string'
+        }
+      },
+      handle() {
+        return 'accounts';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+    const resolved = resolveCommandFromArgs(commandRegistry, [
+      '--format=json',
+      'users',
+      'get-accounts'
+    ]);
+
+    assert.strictEqual(resolved.command, command);
+    assert.strictEqual(resolved.name, 'account list');
+    assert.strictEqual(resolved.path, command.path);
+    assert.strictEqual(resolved.matchedPath, command.aliases?.[0]);
   });
 
   test('runs resolved command from registry', async () => {
@@ -525,6 +732,98 @@ describe('two-phase command execution', () => {
     assert.deepStrictEqual(prepared.options, {
       verbose: true
     });
+    assert.strictEqual(prepared.matchedPath, prepared.path);
+  });
+
+  test('supports alias paths in strict mode without accepting option-first syntax', async () => {
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {
+        format: {
+          type: 'string'
+        }
+      },
+      handle() {
+        return 'ok';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      'users',
+      'get-accounts',
+      '--format=json'
+    ], {
+      strict: true
+    });
+
+    assert.strictEqual(prepared.name, 'account list');
+    assert.strictEqual(prepared.path, command.path);
+    assert.strictEqual(prepared.matchedPath, command.aliases?.[0]);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, [
+        '--format=json',
+        'users',
+        'get-accounts'
+      ], {
+        strict: true
+      }),
+      /Unexpected argument '--format=json'/
+    );
+  });
+
+  test('prepares option-first aliases and runs canonical hooks once', async () => {
+    let prepareCalls = 0;
+    let handleCalls = 0;
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {
+        format: {
+          type: 'string',
+          required: true
+        }
+      },
+      prepare({ options }) {
+        prepareCalls += 1;
+
+        return {
+          format: options.format
+        };
+      },
+      handle({ payload }) {
+        handleCalls += 1;
+
+        return payload.format;
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+    const prepared = await prepareCommandFromArgs(commandRegistry, [
+      '--format=json',
+      'users',
+      'get-accounts'
+    ]);
+
+    assert.strictEqual(prepared.name, 'account list');
+    assert.strictEqual(prepared.path, command.path);
+    assert.strictEqual(prepared.matchedPath, command.aliases?.[0]);
+    assert.strictEqual(prepareCalls, 1);
+    assert.strictEqual(handleCalls, 0);
+    assert.strictEqual(
+      await runPreparedCommand(prepared, undefined),
+      'json'
+    );
+    assert.strictEqual(prepareCalls, 1);
+    assert.strictEqual(handleCalls, 1);
   });
 
   test('rejects missing required options during prepare', async () => {
@@ -620,6 +919,46 @@ describe('two-phase command execution', () => {
       /Unexpected positional argument for 'users': extra/
     );
     assert.strictEqual(handled, false);
+  });
+
+  test('reports canonical and matched paths for unexpected alias positionals', async () => {
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {},
+      handle() {
+        return 'ok';
+      }
+    });
+    const commandRegistry = defineCommandRegistry([
+      command
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, [
+        'users',
+        'get-accounts',
+        'extra'
+      ]),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_POSITIONAL');
+        assert.strictEqual(
+          error.message,
+          "Unexpected positional argument for 'users get-accounts': extra"
+        );
+        assert.deepStrictEqual(error.details, {
+          command: 'account list',
+          positional: 'extra',
+          positionals: ['extra'],
+          matchedPath: ['users', 'get-accounts']
+        });
+
+        return true;
+      }
+    );
   });
 
   test('rejects prepare hook errors before calling handlers', async () => {
@@ -1025,6 +1364,48 @@ describe('runCommand', () => {
         'account-id:json'
       );
     });
+  });
+
+  test('runs direct commands through alias paths in default and strict modes', async () => {
+    let handleCalls = 0;
+    const command = defineCommand({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {
+        format: {
+          type: 'string',
+          required: true
+        }
+      },
+      handle({ options }) {
+        handleCalls += 1;
+
+        return options.format;
+      }
+    });
+
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['--format=json', 'users', 'get-accounts'],
+        undefined
+      ),
+      'json'
+    );
+    assert.strictEqual(
+      await runCommand(
+        command,
+        ['users', 'get-accounts', '--format=table'],
+        undefined,
+        {
+          strict: true
+        }
+      ),
+      'table'
+    );
+    assert.strictEqual(handleCalls, 2);
   });
 
   test('keeps legacy before-command option handling by default', async () => {

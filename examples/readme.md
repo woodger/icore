@@ -30,7 +30,8 @@ expect, and why a particular shape is useful or intentionally limited.
 ## Primitive Mechanics
 
 - [command-resolution.md](command-resolution.md) shows command registries,
-  explicit resolution, command-name guards, and standalone command definitions.
+  canonical aliases, matched paths, explicit resolution, command-name guards,
+  and standalone command definitions.
 - [two-phase-primitives.md](two-phase-primitives.md) shows lower-level
   preparation and execution primitives used behind command facades.
 - [presentation-primitives.md](presentation-primitives.md) shows explicit

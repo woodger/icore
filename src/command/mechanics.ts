@@ -11,7 +11,10 @@
  * domain behavior, SDK calls, or output formatting.
  */
 
-import { parseArgv } from '../argv/parser';
+import {
+  parseArgv,
+  type ParsedArgv
+} from '../argv/parser';
 import { IcoreError } from '../errors/icore-error';
 import { parseOptionsDetailed } from '../options/parser';
 import type {
@@ -20,6 +23,9 @@ import type {
   OptionsSchema,
   RawOptionValue
 } from '../options/schema';
+
+/** Non-empty command path accepted by command resolution. */
+export type CommandPath = readonly [string, ...string[]];
 
 /**
  * Input produced after command path and option validation, before runtime
@@ -67,12 +73,15 @@ export type CommandDefinition<
   TSchema extends OptionsSchema,
   TContext,
   TResult,
-  TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
+  TPath extends CommandPath = CommandPath,
   TMetadata = unknown,
-  TPayload = void
+  TPayload = void,
+  TAliases extends readonly CommandPath[] = readonly CommandPath[]
 > = {
-  /** Command path segments. */
+  /** Preferred command path segments. */
   path: TPath;
+  /** Alternative command paths resolving to this command. */
+  aliases?: TAliases;
   /** Command option schema. */
   options: TSchema;
   /** Caller-owned static metadata. */
@@ -91,7 +100,8 @@ type AnyCommandInput = PreparedCommandInput<OptionsSchema> & {
 };
 
 type AnyCommandDefinition = {
-  path: readonly [string, ...string[]];
+  path: CommandPath;
+  aliases?: readonly CommandPath[];
   options: OptionsSchema;
   metadata?: unknown;
   allowExtraPositionals?: boolean;
@@ -118,7 +128,8 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
     infer TResult,
     infer TPath,
     infer TMetadata,
-    infer TPayload
+    infer TPayload,
+    infer TAliases
   >
     ? {
       schema: TSchema;
@@ -127,6 +138,7 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
       path: TPath;
       metadata: TMetadata;
       payload: TPayload;
+      aliases: TAliases;
     }
     : {
       schema: TCommand['options'];
@@ -135,6 +147,7 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
       path: TCommand['path'];
       metadata: TCommand['metadata'];
       payload: unknown;
+      aliases: NonNullable<TCommand['aliases']>;
     };
 
 /**
@@ -165,12 +178,20 @@ export type CommandName<TCommand extends AnyCommandDefinition> =
   CommandPathName<TCommand['path']>;
 
 /**
+ * Infers every canonical or alias path accepted for a command.
+ */
+export type CommandAcceptedPath<TCommand extends AnyCommandDefinition> =
+  TCommand extends AnyCommandDefinition
+    ? TCommand['path'] | CommandDefinitionParts<TCommand>['aliases'][number]
+    : never;
+
+/**
  * Declarative command registry used to resolve command paths.
  */
 export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> = {
   /** Registered command definitions. */
   commands: TCommands;
-  /** Derived public command names. */
+  /** Derived canonical command names. */
   commandNames: readonly CommandName<TCommands[number]>[];
 };
 
@@ -180,7 +201,7 @@ export type CommandRegistry<TCommands extends readonly AnyCommandDefinition[]> =
 export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
   /** Original command definitions. */
   definitions: TCommands;
-  /** Public command names. */
+  /** Canonical public command names. */
   names: readonly CommandName<TCommands[number]>[];
   /** Lower-level command registry. */
   registry: CommandRegistry<TCommands>;
@@ -223,14 +244,31 @@ export type CommandResolutionOptions = {
   strict?: boolean;
 };
 
+type CommandRoute<TCommand extends AnyCommandDefinition> = {
+  command: TCommand;
+  matchedPath: CommandAcceptedPath<TCommand>;
+};
+
+type AnyCommandRoute = {
+  command: AnyCommandDefinition;
+  matchedPath: CommandPath;
+};
+
+const commandRoutesByRegistry = new WeakMap<
+  object,
+  readonly AnyCommandRoute[]
+>();
+
 /**
  * Result of resolving a command from user positionals.
  */
 export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
-  /** Space-joined command name. */
+  /** Space-joined canonical command name. */
   name: CommandName<TCommand>;
-  /** Literal command path. */
+  /** Canonical command path. */
   path: TCommand['path'];
+  /** Canonical or alias path matched for this invocation. */
+  matchedPath: CommandAcceptedPath<TCommand>;
   /** Selected command definition. */
   command: TCommand;
   /** Positionals after the command path. */
@@ -243,10 +281,12 @@ export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
 export type PreparedCommand<TCommand extends AnyCommandDefinition> =
   TCommand extends AnyCommandDefinition
     ? {
-      /** Space-joined command name. */
+      /** Space-joined canonical command name. */
       name: CommandName<TCommand>;
-      /** Literal command path. */
+      /** Canonical command path. */
       path: TCommand['path'];
+      /** Canonical or alias path matched for this invocation. */
+      matchedPath: CommandAcceptedPath<TCommand>;
       /** Selected command definition. */
       command: TCommand;
       /** Parsed option values. */
@@ -269,10 +309,27 @@ export function defineCommand<
   TContext = undefined,
   TResult = unknown,
   TMetadata = unknown,
-  TPayload = void
+  TPayload = void,
+  const TAliases extends readonly CommandPath[] = readonly []
 >(
-  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>
-): CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload> {
+  command: CommandDefinition<
+    TSchema,
+    TContext,
+    TResult,
+    TPath,
+    TMetadata,
+    TPayload,
+    TAliases
+  >
+): CommandDefinition<
+  TSchema,
+  TContext,
+  TResult,
+  TPath,
+  TMetadata,
+  TPayload,
+  TAliases
+> {
   return command;
 }
 
@@ -285,13 +342,18 @@ export function defineCommandRegistry<
   commands: TCommands
 ): CommandRegistry<TCommands> {
   const commandNames = commands.map((command) => commandPathToName(command.path));
-
-  assertNoDuplicateCommandNames(commandNames);
-
-  return {
+  const routes = createCommandRoutes(commands);
+  const registry = {
     commands,
     commandNames: commandNames as unknown as readonly CommandName<TCommands[number]>[]
   };
+
+  commandRoutesByRegistry.set(
+    registry,
+    routes as readonly AnyCommandRoute[]
+  );
+
+  return registry;
 }
 
 /**
@@ -372,8 +434,8 @@ export function resolveCommand<
   registry: CommandRegistry<TCommands>,
   positionals: readonly string[]
 ): ResolvedCommand<TCommands[number]> {
-  for (const command of commandsBySpecificity(registry.commands)) {
-    const resolved = resolveCommandCandidate(command, positionals);
+  for (const route of commandRoutes(registry)) {
+    const resolved = resolveCommandRoute(route, positionals);
 
     if (resolved !== undefined) {
       return resolved;
@@ -392,9 +454,15 @@ export function resolveCommandFromArgs<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): ResolvedCommand<TCommands[number]> {
-  for (const command of commandsBySpecificity(registry.commands)) {
-    const argv = parseArgv(args, command.options);
-    const resolved = resolveCommandCandidate(command, argv.positionals);
+  const parsedByCommand = new Map<TCommands[number], ParsedArgv>();
+
+  for (const route of commandRoutes(registry)) {
+    const argv = parseCommandArgs(
+      route.command,
+      args,
+      parsedByCommand
+    );
+    const resolved = resolveCommandRoute(route, argv.positionals);
 
     if (resolved !== undefined) {
       return resolved;
@@ -418,9 +486,15 @@ export async function prepareCommandFromArgs<
     return prepareCommandFromArgsStrict(registry, args);
   }
 
-  for (const command of commandsBySpecificity(registry.commands)) {
-    const argv = parseArgv(args, command.options);
-    const resolved = resolveCommandCandidate(command, argv.positionals);
+  const parsedByCommand = new Map<TCommands[number], ParsedArgv>();
+
+  for (const route of commandRoutes(registry)) {
+    const argv = parseCommandArgs(
+      route.command,
+      args,
+      parsedByCommand
+    );
+    const resolved = resolveCommandRoute(route, argv.positionals);
 
     if (resolved !== undefined) {
       return prepareResolvedCommand(
@@ -477,9 +551,18 @@ export async function runCommand<
   TResult,
   const TPath extends readonly [string, ...string[]] = readonly [string, ...string[]],
   TMetadata = unknown,
-  TPayload = void
+  TPayload = void,
+  const TAliases extends readonly CommandPath[] = readonly CommandPath[]
 >(
-  command: CommandDefinition<TSchema, TContext, TResult, TPath, TMetadata, TPayload>,
+  command: CommandDefinition<
+    TSchema,
+    TContext,
+    TResult,
+    TPath,
+    TMetadata,
+    TPayload,
+    TAliases
+  >,
   args: readonly string[],
   context: TContext,
   options: CommandResolutionOptions = {}
@@ -497,18 +580,32 @@ async function prepareCommand<TCommand extends AnyCommandDefinition>(
   args: readonly string[],
   options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommand>> {
+  const routes = createCommandRoutes([
+    command
+  ]);
+  let matchedRoute: CommandRoute<TCommand> | undefined;
+
   if (options.strict === true) {
-    assertNoOptionBeforeCommand(args, command.path.length);
+    matchedRoute = findMatchingRawCommandRoute(routes, args);
+
+    if (matchedRoute === undefined) {
+      assertNoOptionBeforeCommand(args, longestCommandPathLength(routes));
+    }
   }
 
   const argv = parseArgv(args, command.options);
-  const extraPositionals = resolveCommandPositionals(command.path, argv.positionals);
-  const resolved = {
-    name: commandPathToName(command.path) as CommandName<TCommand>,
-    path: command.path,
-    command,
-    positionals: extraPositionals
-  };
+
+  matchedRoute ??= findMatchingCommandRoute(routes, argv.positionals);
+
+  if (matchedRoute === undefined) {
+    throw createCommandPathMismatchError(command.path, argv.positionals);
+  }
+
+  const resolved = resolveCommandRoute(matchedRoute, argv.positionals);
+
+  if (resolved === undefined) {
+    throw createCommandPathMismatchError(command.path, argv.positionals);
+  }
 
   return prepareResolvedCommand(resolved, argv.options);
 }
@@ -519,14 +616,14 @@ async function prepareCommandFromArgsStrict<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): Promise<PreparedCommand<TCommands[number]>> {
-  const command = findStrictCommand(registry, args);
+  const route = findStrictCommandRoute(registry, args);
 
-  if (command === undefined) {
+  if (route === undefined) {
     throw createUnknownCommandError(commandPositionalsBeforeOptions(args));
   }
 
-  const argv = parseArgv(args, command.options);
-  const resolved = resolveCommandCandidate(command, argv.positionals);
+  const argv = parseArgv(args, route.command.options);
+  const resolved = resolveCommandRoute(route, argv.positionals);
 
   if (resolved === undefined) {
     throw createUnknownCommandError(argv.positionals);
@@ -543,14 +640,21 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
 
   if (resolved.positionals.length > 0 && command.allowExtraPositionals !== true) {
     const positional = resolved.positionals[0] ?? '';
+    const matchedCommand = commandPathToName(resolved.matchedPath);
+    const aliasDetails = resolved.matchedPath === command.path
+      ? {}
+      : {
+        matchedPath: [...resolved.matchedPath]
+      };
 
     throw new IcoreError(
       'UNEXPECTED_POSITIONAL',
-      `Unexpected positional argument for '${command.path.join(' ')}': ${positional}`,
+      `Unexpected positional argument for '${matchedCommand}': ${positional}`,
       {
-        command: command.path.join(' '),
+        command: commandPathToName(command.path),
         positional,
-        positionals: [...resolved.positionals]
+        positionals: [...resolved.positionals],
+        ...aliasDetails
       }
     );
   }
@@ -567,6 +671,7 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
   return {
     name: resolved.name,
     path: resolved.path,
+    matchedPath: resolved.matchedPath,
     command,
     options: parsed.options,
     provided: parsed.provided,
@@ -575,69 +680,96 @@ async function prepareResolvedCommand<TCommand extends AnyCommandDefinition>(
   } as PreparedCommand<TCommand>;
 }
 
-function resolveCommandPositionals(
-  path: readonly string[],
-  positionals: readonly string[]
-): string[] {
-  for (let index = 0; index < path.length; index += 1) {
-    if (positionals[index] !== path[index]) {
-      const command = path.join(' ');
-
-      throw new IcoreError(
-        'UNKNOWN_COMMAND',
-        `Expected command '${command}'`,
-        {
-          reason: 'path-mismatch',
-          command,
-          path: [...path],
-          positionals: [...positionals]
-        }
-      );
-    }
-  }
-
-  return positionals.slice(path.length);
-}
-
 function commandPathToName(path: readonly string[]): string {
   return path.join(' ');
 }
 
-function assertNoDuplicateCommandNames(commandNames: readonly string[]): void {
-  const seen = new Set<string>();
-
-  for (const name of commandNames) {
-    if (seen.has(name)) {
-      throw createDuplicateCommandError(name);
-    }
-
-    seen.add(name);
-  }
-}
-
-function commandsBySpecificity<TCommand extends AnyCommandDefinition>(
+function createCommandRoutes<TCommand extends AnyCommandDefinition>(
   commands: readonly TCommand[]
-): TCommand[] {
-  return [...commands].sort(
-    (left, right) => right.path.length - left.path.length
+): CommandRoute<TCommand>[] {
+  const routes: CommandRoute<TCommand>[] = [];
+  const commandNames = new Set<string>();
+
+  for (const command of commands) {
+    appendCommandRoute(routes, commandNames, command, command.path);
+
+    for (const alias of command.aliases ?? []) {
+      appendCommandRoute(routes, commandNames, command, alias);
+    }
+  }
+
+  return routes.sort(
+    (left, right) => right.matchedPath.length - left.matchedPath.length
   );
 }
 
-function findStrictCommand<
+function appendCommandRoute<TCommand extends AnyCommandDefinition>(
+  routes: CommandRoute<TCommand>[],
+  commandNames: Set<string>,
+  command: TCommand,
+  matchedPath: CommandPath
+): void {
+  const name = commandPathToName(matchedPath);
+
+  if (commandNames.has(name)) {
+    throw createDuplicateCommandError(name);
+  }
+
+  commandNames.add(name);
+  routes.push({
+    command,
+    matchedPath: matchedPath as CommandAcceptedPath<TCommand>
+  });
+}
+
+function commandRoutes<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+): readonly CommandRoute<TCommands[number]>[] {
+  const cached = commandRoutesByRegistry.get(registry);
+
+  if (cached !== undefined) {
+    return cached as readonly CommandRoute<TCommands[number]>[];
+  }
+
+  const routes = createCommandRoutes(registry.commands);
+
+  commandRoutesByRegistry.set(
+    registry,
+    routes as readonly AnyCommandRoute[]
+  );
+
+  return routes;
+}
+
+function parseCommandArgs<TCommand extends AnyCommandDefinition>(
+  command: TCommand,
+  args: readonly string[],
+  parsedByCommand: Map<TCommand, ParsedArgv>
+): ParsedArgv {
+  const cached = parsedByCommand.get(command);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const argv = parseArgv(args, command.options);
+
+  parsedByCommand.set(command, argv);
+
+  return argv;
+}
+
+function findStrictCommandRoute<
   const TCommands extends readonly AnyCommandDefinition[]
 >(
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
-): TCommands[number] | undefined {
+): CommandRoute<TCommands[number]> | undefined {
   assertNoOptionBeforeCommand(args, 1);
 
-  for (const command of commandsBySpecificity(registry.commands)) {
-    if (commandPathMatchesArgs(command.path, args)) {
-      return command;
-    }
-  }
-
-  return undefined;
+  return findMatchingRawCommandRoute(commandRoutes(registry), args);
 }
 
 function assertNoOptionBeforeCommand(
@@ -653,12 +785,47 @@ function assertNoOptionBeforeCommand(
   }
 }
 
-function resolveCommandCandidate<TCommand extends AnyCommandDefinition>(
-  command: TCommand,
+function findMatchingCommandRoute<TCommand extends AnyCommandDefinition>(
+  routes: readonly CommandRoute<TCommand>[],
+  positionals: readonly string[]
+): CommandRoute<TCommand> | undefined {
+  for (const route of routes) {
+    if (
+      resolveMatchingCommandPositionals(route.matchedPath, positionals)
+      !== undefined
+    ) {
+      return route;
+    }
+  }
+
+  return undefined;
+}
+
+function findMatchingRawCommandRoute<TCommand extends AnyCommandDefinition>(
+  routes: readonly CommandRoute<TCommand>[],
+  args: readonly string[]
+): CommandRoute<TCommand> | undefined {
+  for (const route of routes) {
+    if (commandPathMatchesArgs(route.matchedPath, args)) {
+      return route;
+    }
+  }
+
+  return undefined;
+}
+
+function longestCommandPathLength<TCommand extends AnyCommandDefinition>(
+  routes: readonly CommandRoute<TCommand>[]
+): number {
+  return routes[0]?.matchedPath.length ?? 1;
+}
+
+function resolveCommandRoute<TCommand extends AnyCommandDefinition>(
+  route: CommandRoute<TCommand>,
   positionals: readonly string[]
 ): ResolvedCommand<TCommand> | undefined {
   const extraPositionals = resolveMatchingCommandPositionals(
-    command.path,
+    route.matchedPath,
     positionals
   );
 
@@ -667,9 +834,10 @@ function resolveCommandCandidate<TCommand extends AnyCommandDefinition>(
   }
 
   return {
-    name: commandPathToName(command.path) as CommandName<TCommand>,
-    path: command.path,
-    command,
+    name: commandPathToName(route.command.path) as CommandName<TCommand>,
+    path: route.command.path,
+    matchedPath: route.matchedPath,
+    command: route.command,
     positionals: extraPositionals
   };
 }
@@ -720,6 +888,24 @@ function commandPositionalsBeforeOptions(args: readonly string[]): string[] {
 
 function isOptionBeforeCommand(arg: string): boolean {
   return arg !== '-' && arg.startsWith('-');
+}
+
+function createCommandPathMismatchError(
+  path: CommandPath,
+  positionals: readonly string[]
+): IcoreError<'UNKNOWN_COMMAND'> {
+  const command = commandPathToName(path);
+
+  return new IcoreError(
+    'UNKNOWN_COMMAND',
+    `Expected command '${command}'`,
+    {
+      reason: 'path-mismatch',
+      command,
+      path: [...path],
+      positionals: [...positionals]
+    }
+  );
 }
 
 function createUnknownCommandError(
