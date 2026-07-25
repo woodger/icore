@@ -237,6 +237,89 @@ export type Command = {
 };
 
 /**
+ * Application-level command types fixed by a bound command builder.
+ */
+export type CommandTypeBindings = {
+  /** Runtime context shared by the application's commands. */
+  context: unknown;
+  /** Result type accepted from application command handlers. */
+  result: unknown;
+  /** Static metadata shared by the application's command definitions. */
+  metadata: unknown;
+  /** Makes metadata mandatory for definitions created by this builder. */
+  metadataRequired?: boolean;
+};
+
+type BoundCommandMetadata<
+  TMetadata,
+  TRequired extends boolean
+> = TRequired extends true
+  ? {
+    metadata: TMetadata;
+  }
+  : {
+    metadata?: TMetadata;
+  };
+
+type BoundCommandDefinition<
+  TSchema extends OptionsSchema,
+  TContext,
+  TResult,
+  TPath extends CommandPath,
+  TMetadata,
+  TPayload,
+  TAliases extends readonly CommandPath[],
+  TMetadataRequired extends boolean
+> = Omit<
+  CommandDefinition<
+    TSchema,
+    TContext,
+    TResult,
+    TPath,
+    TMetadata,
+    TPayload,
+    TAliases
+  >,
+  'metadata'
+> & BoundCommandMetadata<TMetadata, TMetadataRequired>;
+
+type BoundDefineCommand<TBindings extends CommandTypeBindings> = <
+  const TSchema extends OptionsSchema,
+  const TPath extends CommandPath,
+  TResult extends TBindings['result'],
+  TPayload = void,
+  const TAliases extends readonly CommandPath[] = readonly []
+>(
+  command: BoundCommandDefinition<
+    TSchema,
+    TBindings['context'],
+    TResult,
+    TPath,
+    TBindings['metadata'],
+    TPayload,
+    TAliases,
+    TBindings['metadataRequired'] extends true ? true : false
+  >
+) => BoundCommandDefinition<
+  TSchema,
+  TBindings['context'],
+  TResult,
+  TPath,
+  TBindings['metadata'],
+  TPayload,
+  TAliases,
+  TBindings['metadataRequired'] extends true ? true : false
+>;
+
+/**
+ * Command mechanics facade with application-level command types fixed once.
+ */
+export type BoundCommand<TBindings extends CommandTypeBindings> =
+  Omit<Command, 'define'> & {
+    define: BoundDefineCommand<TBindings>;
+  };
+
+/**
  * Options for command resolution from raw CLI arguments.
  */
 export type CommandResolutionOptions = {
@@ -390,6 +473,9 @@ export function createCommands<
 
 /**
  * Creates a semantic command mechanics facade.
+ *
+ * Use `createCommand.withTypes<...>()` to fix application-level context,
+ * result, and metadata types while preserving per-command inference.
  */
 export function createCommand(): Command {
   return {
@@ -398,6 +484,14 @@ export function createCommand(): Command {
     run: runCommand
   };
 }
+
+function createCommandWithTypes<
+  TBindings extends CommandTypeBindings
+>(): BoundCommand<TBindings> {
+  return createCommand() as BoundCommand<TBindings>;
+}
+
+createCommand.withTypes = createCommandWithTypes;
 
 /**
  * Checks whether a value is a command name registered in the given registry.

@@ -69,6 +69,71 @@ The `as const` is important because it preserves literal choices for TypeScript
 inference. Without it, the handler would still work at runtime, but the inferred
 type would be wider and less useful.
 
+## Bind application command types once
+
+Use `createCommand.withTypes<...>()` when every command in an application shares
+the same context, result, and metadata contracts:
+
+```ts
+import { createCommand } from 'icore';
+
+type CliCommandContext = {
+  requestId: string;
+};
+
+type CliCommandResult = string | void;
+
+type CliCommandMetadata = {
+  description: string;
+};
+
+const command = createCommand.withTypes<{
+  context: CliCommandContext;
+  result: CliCommandResult;
+  metadata: CliCommandMetadata;
+  metadataRequired: true;
+}>();
+
+const statusCommand = command.define({
+  path: ['system', 'status'],
+  aliases: [
+    ['health']
+  ],
+  options: {
+    verbose: {
+      type: 'boolean',
+      default: false
+    }
+  },
+  metadata: {
+    description: 'Show system status'
+  },
+  prepare({ options }) {
+    return {
+      prefix: options.verbose ? 'System status' : 'Status'
+    };
+  },
+  handle({ context, payload }) {
+    return `${payload.prefix} (${context.requestId})\n`;
+  }
+});
+```
+
+The result binding is an upper bound: the example handler is still inferred to
+return `string`, rather than the wider `string | void`. The schema, literal
+canonical and alias paths, and prepared payload also remain specific to
+`statusCommand`.
+
+Omit `metadataRequired` when commands may leave out metadata. The setting only
+changes the definitions created by that bound builder; ordinary
+`createCommand()` and other builders keep their existing contracts.
+
+Bindings describe independent application-level types. If metadata depends on
+the exact option schema, validate that relationship per command with
+`satisfies`, or keep a small application-owned wrapper. The bound builder does
+not create context, resources, clients, signals, or long-running handles; their
+lifecycle remains application-owned.
+
 ## Run it from the terminal
 
 The user can pass long options:

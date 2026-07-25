@@ -14,6 +14,14 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Added
+
+- Added `createCommand.withTypes<...>()` for fixing application-level command
+  context, result, and metadata types while retaining per-command schema, path,
+  alias, payload, and result inference.
+- Added opt-in required command metadata through the bound builder's
+  `metadataRequired: true` type binding.
+
 ## [2.0.4] - 2026-07-25
 
 ### Fixed

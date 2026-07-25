@@ -97,6 +97,11 @@ The schema determines the handler's option types. Required options and options
 with defaults are always present; optional options are returned as
 `T | undefined`.
 
+Applications that share command context, result, and metadata contracts can
+bind those types once with `createCommand.withTypes<...>()`. Per-command schema,
+path, aliases, prepared payload, and concrete result types remain inferred.
+See [Bind application command types once](examples/option-schemas.md#bind-application-command-types-once).
+
 `strict: true` rejects options placed before the command path. String output is
 written exactly as returned, so include `\n` when line output is intended.
 Default resolution continues to accept option-first input. Parsing bootstrap
@@ -110,7 +115,7 @@ Start with the highest-level API that fits the application:
 | Need | Start with | Detailed guide |
 | --- | --- | --- |
 | Complete terminal application | `createTerminalApp()` | [Terminal App](examples/terminal-app.md) |
-| Commands and option schemas | `createCommand()` or `createCommands()` | [Option Schemas](examples/option-schemas.md) |
+| Commands and option schemas | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Option Schemas](examples/option-schemas.md) |
 | Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](examples/custom-command-flow.md) |
 | Presentation without command execution | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
 | Explicit stdout/stderr writing | `createOutput()` | [Output Writers](examples/output-writers.md) |
