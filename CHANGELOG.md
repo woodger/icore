@@ -22,6 +22,16 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Added opt-in required command metadata through the bound builder's
   `metadataRequired: true` type binding.
 
+### Changed
+
+- Reorganized the primary documentation route around a production CLI
+  lifecycle with global shortcuts, preparation, metadata-driven resources,
+  execution, output, cleanup, and shared error reporting.
+- Replaced the global help/version example's manual alias normalization and
+  option filtering with schema aliases and `parseOptionsSubsetDetailed(...)`.
+- Clarified metadata-driven help, presentation projection choices, and the
+  non-serializing boundary of backpressure-aware output writers.
+
 ## [2.0.4] - 2026-07-25
 
 ### Fixed

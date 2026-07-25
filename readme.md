@@ -14,7 +14,7 @@ mechanics for [Node.js®](https://nodejs.org) applications.
 - multi-segment command resolution with canonical command aliases;
 - separate prepare and execute phases;
 - JSON, CSV, and text-table presentation;
-- ordered stdout/stderr writers and reusable terminal error policy.
+- backpressure-aware stdout/stderr writers and reusable terminal error policy.
 
 Application-specific API calls, configuration, domain behavior, and help text
 remain in the consuming application.
@@ -102,6 +102,10 @@ bind those types once with `createCommand.withTypes<...>()`. Per-command schema,
 path, aliases, prepared payload, and concrete result types remain inferred.
 See [Bind application command types once](examples/option-schemas.md#bind-application-command-types-once).
 
+`app.run(...)` is the compact path. Applications that handle global shortcuts,
+select runtime resources after preparation, or own cleanup should continue with
+the [production terminal lifecycle](examples/terminal-app.md).
+
 `strict: true` rejects options placed before the command path. String output is
 written exactly as returned, so include `\n` when line output is intended.
 Default resolution continues to accept option-first input. Parsing bootstrap
@@ -114,16 +118,20 @@ Start with the highest-level API that fits the application:
 
 | Need | Start with | Detailed guide |
 | --- | --- | --- |
-| Complete terminal application | `createTerminalApp()` | [Terminal App](examples/terminal-app.md) |
+| Simple terminal application | `app.run(...)` | [Quick Start](#quick-start) |
+| Production shortcuts and resource lifecycle | `app.prepare(...)` and `app.commands.run(...)` | [Production Terminal Application](examples/terminal-app.md) |
 | Commands and option schemas | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Option Schemas](examples/option-schemas.md) |
 | Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](examples/custom-command-flow.md) |
-| Presentation without command execution | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
+| One flat projection for every format | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
+| Different JSON, table, or CSV projections | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Presentation And Output](examples/presentation-output.md) |
 | Explicit stdout/stderr writing | `createOutput()` | [Output Writers](examples/output-writers.md) |
 | Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](examples/readme.md#primitive-mechanics) |
 
 `createTerminalOutput()` and `createTerminalProgress()` remain available as
 deprecated `2.x` compatibility exports. Do not use them in new Consumers;
 keep interactive output and progress rendering in the consuming application.
+`createOutput()` preserves sink backpressure but does not serialize
+application-owned progress with regular output.
 The [application-owned output guide](examples/output-writers.md#application-owned-interactive-output)
 describes the recommended boundary. The retained
 [migration guide](examples/interactive-output.md) documents the legacy
@@ -250,15 +258,16 @@ Application-specific help remains application policy.
 Custom lifecycles can call `app.reportError(...)` to reuse the same rendering
 and exit-code policy. The complete prepare, execute, write, and external phase
 flow is shown in the
-[Terminal App guide](examples/terminal-app.md#reuse-error-reporting-in-a-custom-lifecycle).
+[production terminal lifecycle](examples/terminal-app.md#own-resources-cleanup-and-error-ordering).
 
 ## Guides
 
 The [examples index](examples/readme.md) routes from regular terminal apps to
 lower-level mechanics. Useful starting points:
 
-- [Terminal App](examples/terminal-app.md) — regular application composition,
-  format resolution, and reusable error reporting;
+- [Production Terminal Application](examples/terminal-app.md) — global
+  shortcuts, preparation, metadata-driven resource selection, execution,
+  output, cleanup, and reusable error reporting;
 - [Option Schemas](examples/option-schemas.md) — strings, booleans, numbers,
   choices, defaults, aliases, and inferred types;
 - [Practical CLI Patterns](examples/practical-cli-patterns.md) — help/version

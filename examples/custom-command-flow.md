@@ -10,6 +10,10 @@ command, and only then open a database connection or create an API client. The
 tradeoff is that the application must own output rendering and error handling
 itself.
 
+If the application wants the same explicit resource lifecycle while retaining
+`TerminalApp` output and error policy, use the
+[production terminal lifecycle](terminal-app.md) instead.
+
 Put the command registry close to the code that owns the command contract:
 
 ```ts

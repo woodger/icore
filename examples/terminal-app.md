@@ -1,16 +1,39 @@
-# Terminal App
+# Production Terminal Application
 
-Use this shape when your package owns a command-line entrypoint and wants icore
-to connect command parsing, presentation rendering, and stdout/stderr writing.
+The [README quick start](../readme.md#quick-start) uses `app.run(...)` because
+that is the clearest entrypoint for a small CLI with an already available
+context.
 
-This is the default shape for a regular terminal application because it keeps
-the CLI boundary in one place: commands return text or presentation views, while
-`createTerminalApp()` owns rendering, stdout/stderr delivery, and exit codes.
-The tradeoff is that command handlers must return terminal-supported values,
-not arbitrary application objects.
+Use the explicit lifecycle in this guide when the application:
 
-Create the file that becomes your CLI entrypoint, for example `src/cli.ts`, and
-put the terminal app composition there:
+- handles global help or version shortcuts before command validation;
+- chooses runtime resources from prepared command metadata or payload;
+- owns resource cleanup, progress, or long-running handles;
+- still wants `TerminalApp` rendering, output, and error policy.
+
+The production route is:
+
+```text
+parse global shortcuts
+→ app.prepare()
+→ inspect metadata and payload
+→ create selected resources
+→ app.commands.run()
+→ finish application-owned interactive output
+→ app.writePreparedOutput()
+→ cleanup
+→ app.reportError() when a failure was captured
+```
+
+Cleanup precedes error reporting so progress and resources are settled before
+stderr diagnostics are written. Runtime resources remain open through
+`writePreparedOutput(...)` because terminal output may be an async stream that
+still depends on them.
+
+## Compose Commands And Terminal Services Once
+
+Bind shared application contracts once and keep command-specific schema, path,
+payload, aliases, and result inference:
 
 ```ts
 import {
@@ -18,115 +41,63 @@ import {
   createOutput,
   createPresentation,
   createTerminalApp,
-  presentationFormatOptions
+  isUsageError,
+  mergeOptionsSchema,
+  presentationFormatOptions,
+  type TerminalCommandOutput
 } from 'icore';
+
+type ResourceName = 'database' | 'remote-api';
 
 type AppContext = {
   currentUser: string;
 };
 
-const command = createCommand();
+type CommandMetadata = {
+  description: string;
+  resources:
+    | readonly ResourceName[]
+    | ((payload: unknown) => readonly ResourceName[]);
+};
+
+const runtimeOptions = {
+  insecure: {
+    type: 'boolean',
+    syntax: 'flag'
+  }
+} as const;
+
+const command = createCommand.withTypes<{
+  context: AppContext;
+  result: TerminalCommandOutput;
+  metadata: CommandMetadata;
+  metadataRequired: true;
+}>();
+
 const presentation = createPresentation();
 
+const currentUserCommand = command.define({
+  path: ['users', 'current'],
+  options: mergeOptionsSchema(
+    presentationFormatOptions,
+    runtimeOptions
+  ),
+  metadata: {
+    description: 'Show the current user',
+    resources: ['database']
+  },
+  handle({ context }) {
+    return presentation.record({
+      user: context.currentUser
+    });
+  }
+});
+
 const commands = command.registry([
-  command.define({
-    path: ['users', 'current'],
-    options: presentationFormatOptions,
-    handle({ context }: {
-      context: AppContext;
-    }) {
-      return presentation.record({
-        user: context.currentUser
-      });
-    }
-  })
+  currentUserCommand
 ] as const);
 
 const app = createTerminalApp({
-  commands,
-  presentation,
-  output: createOutput()
-});
-
-async function main(args: readonly string[]): Promise<void> {
-  process.exitCode = await app.run(args, {
-    currentUser: 'Alice'
-  }, {
-    strict: true
-  });
-}
-
-void main(process.argv.slice(2));
-```
-
-Create `command`, `presentation`, and `output` once near the entrypoint. That is
-slightly more explicit than hiding them behind defaults, but it keeps stdout,
-stderr, and format behavior visible at the terminal boundary. `strict: true`
-keeps the public command form predictable by rejecting option placement that the
-application does not intentionally support.
-
-After compiling the consuming project, run the generated entrypoint:
-
-```bash
-node dist/cli.js users current
-```
-
-The terminal prints the default table view:
-
-```text
-field  value
-user   Alice
-```
-
-Ask for JSON when the command should be consumed by another process:
-
-```bash
-node dist/cli.js users current --format json
-```
-
-The terminal prints:
-
-```json
-{
-  "user": "Alice"
-}
-```
-
-## Override Format Resolution
-
-By default, `createTerminalApp()` looks for a parsed `format` option and uses it
-when it is one of the supported presentation formats. Override `resolveFormat`
-when format policy is application-specific.
-
-```ts
-const appWithFormatPolicy = createTerminalApp({
-  commands,
-  presentation,
-  output: createOutput(),
-  resolveFormat(prepared) {
-    if (prepared.name === 'users export') {
-      return 'csv';
-    }
-
-    return undefined;
-  }
-});
-```
-
-This is useful when one command has a different default output contract. It is
-also a point where the application can make a bad abstraction: avoid hiding
-format decisions here when a normal `--format` option would be clearer.
-
-## Reuse Error Reporting In A Custom Lifecycle
-
-Configure one error policy when the application sometimes uses `app.run(...)`
-and sometimes owns command execution itself. The built-in flow and explicit
-`app.reportError(...)` calls use the same policy.
-
-```ts
-import { isUsageError } from 'icore';
-
-const appWithErrorPolicy = createTerminalApp({
   commands,
   presentation,
   output: createOutput(),
@@ -145,39 +116,309 @@ const appWithErrorPolicy = createTerminalApp({
 });
 ```
 
-When the application owns context creation and cleanup, it can prepare and run
-the command explicitly while keeping terminal diagnostics consistent:
+Create `command`, `commands`, `presentation`, `output`, and `app` once for one
+CLI invocation. Resource instances are not part of this composition; create
+them only after `app.prepare(...)` identifies the selected command.
+
+## Parse Global Shortcuts Without Rewriting Argv
+
+Declare short aliases in the bootstrap option schema. `parseArgv(...)` maps
+`-h` and `-v` to their canonical names, while
+`parseOptionsSubsetDetailed(...)` validates only bootstrap-owned options:
 
 ```ts
-const prepared = await appWithErrorPolicy.prepare(args, {
-  strict: true
-});
-let result;
+import {
+  parseArgv,
+  parseOptionsSubsetDetailed
+} from 'icore';
 
-try {
-  result = await appWithErrorPolicy.commands.run(prepared, context);
-}
-catch (error) {
-  process.exitCode = await appWithErrorPolicy.reportError(error, {
-    phase: 'execute',
-    args,
-    prepared
-  });
+const globalOptionsSchema = {
+  help: {
+    type: 'boolean',
+    alias: 'h',
+    syntax: 'flag'
+  },
+  version: {
+    type: 'boolean',
+    alias: 'v',
+    syntax: 'flag'
+  },
+  ...runtimeOptions
+} as const;
 
-  return;
-}
+function parseGlobalInput(args: readonly string[]) {
+  const argv = parseArgv(args, globalOptionsSchema);
+  const parsed = parseOptionsSubsetDetailed(
+    globalOptionsSchema,
+    argv.options
+  );
 
-try {
-  await appWithErrorPolicy.writePreparedOutput(prepared, result);
-}
-catch (error) {
-  process.exitCode = await appWithErrorPolicy.reportError(error, {
-    phase: 'write',
-    args,
-    prepared
-  });
+  return {
+    positionals: argv.positionals,
+    options: parsed.options
+  };
 }
 ```
 
-The application still owns help text and lifecycle behavior. The policy only
-provides a shared terminal reporting boundary.
+Pass the original `args` to `app.prepare(...)`; do not rebuild argv from the
+subset result. Command-specific options remain available to the selected
+command schema.
+
+Include every bootstrap option whose type affects token ownership. For example,
+declaring boolean `--insecure` prevents a following command segment from being
+mistaken for its value during shortcut parsing.
+
+## Own Resources, Cleanup, And Error Ordering
+
+The application supplies its own help renderer and resource scope:
+
+```ts
+type InvocationScope = {
+  context: AppContext;
+  /**
+   * Idempotently closes progress or another interactive stdout line.
+   * `close()` also calls this when execution fails before final output.
+   */
+  finishInteractiveOutput(): Promise<void>;
+  /** Closes interactive output first, then runtime resources. */
+  close(): Promise<void>;
+};
+
+declare function createInvocationScope(
+  resources: readonly ResourceName[],
+  options: {
+    insecure: boolean;
+  }
+): Promise<InvocationScope>;
+
+declare function renderHelp(
+  definitions: typeof commands.definitions,
+  positionals: readonly string[]
+): string;
+
+declare function renderVersion(): string;
+```
+
+`createInvocationScope(...)` should register cleanup immediately after each
+resource is created and roll back partially created resources if initialization
+fails.
+
+The [metadata-driven help recipe](practical-cli-patterns.md#build-help-from-command-metadata)
+shows how `renderHelp(...)` can derive its canonical command inventory from
+`commands.definitions` without duplicating aliases.
+
+The runner keeps the phase of the primary failure, merges a cleanup failure,
+and reports only after cleanup:
+
+```ts
+type Prepared = Awaited<ReturnType<typeof app.prepare>>;
+type FailurePhase = 'execute' | 'write' | 'external';
+
+type InvocationFailure = {
+  error: unknown;
+  phase: FailurePhase;
+};
+
+function selectResources(prepared: Prepared): readonly ResourceName[] {
+  const selection = prepared.command.metadata.resources;
+
+  return typeof selection === 'function'
+    ? selection(prepared.payload)
+    : selection;
+}
+
+function mergeCleanupFailure(
+  primary: InvocationFailure | undefined,
+  cleanupError: unknown
+): InvocationFailure {
+  if (primary === undefined) {
+    return {
+      error: cleanupError,
+      phase: 'external'
+    };
+  }
+
+  return {
+    error: new AggregateError(
+      [primary.error, cleanupError],
+      'Command execution and cleanup both failed'
+    ),
+    phase: primary.phase
+  };
+}
+
+async function reportPreparedFailure(
+  failure: InvocationFailure,
+  args: readonly string[],
+  prepared: Prepared
+): Promise<number> {
+  if (failure.phase === 'execute') {
+    return app.reportError(failure.error, {
+      phase: 'execute',
+      args,
+      prepared
+    });
+  }
+
+  if (failure.phase === 'write') {
+    return app.reportError(failure.error, {
+      phase: 'write',
+      args,
+      prepared
+    });
+  }
+
+  return app.reportError(failure.error, {
+    phase: 'external',
+    args,
+    prepared
+  });
+}
+
+async function writeBootstrapOutput(
+  render: () => string,
+  args: readonly string[]
+): Promise<number> {
+  try {
+    await app.output.write(render());
+
+    return 0;
+  }
+  catch (error) {
+    return app.reportError(error, {
+      phase: 'external',
+      args
+    });
+  }
+}
+
+async function runCli(args: readonly string[]): Promise<number> {
+  let globalInput: ReturnType<typeof parseGlobalInput>;
+
+  try {
+    globalInput = parseGlobalInput(args);
+  }
+  catch (error) {
+    return app.reportError(error, {
+      phase: 'prepare',
+      args
+    });
+  }
+
+  if (globalInput.options.help === true) {
+    return writeBootstrapOutput(
+      () => renderHelp(commands.definitions, globalInput.positionals),
+      args
+    );
+  }
+
+  if (globalInput.options.version === true) {
+    return writeBootstrapOutput(renderVersion, args);
+  }
+
+  let prepared: Prepared;
+
+  try {
+    prepared = await app.prepare(args, {
+      strict: true
+    });
+  }
+  catch (error) {
+    return app.reportError(error, {
+      phase: 'prepare',
+      args
+    });
+  }
+
+  let scope: InvocationScope | undefined;
+  let failure: InvocationFailure | undefined;
+  let phase: FailurePhase = 'external';
+
+  try {
+    scope = await createInvocationScope(
+      selectResources(prepared),
+      {
+        insecure: prepared.options.insecure ?? false
+      }
+    );
+
+    phase = 'execute';
+    const result = await app.commands.run(prepared, scope.context);
+
+    phase = 'external';
+    await scope.finishInteractiveOutput();
+
+    phase = 'write';
+    await app.writePreparedOutput(prepared, result);
+  }
+  catch (error) {
+    failure = {
+      error,
+      phase
+    };
+  }
+  finally {
+    try {
+      await scope?.close();
+    }
+    catch (cleanupError) {
+      failure = mergeCleanupFailure(failure, cleanupError);
+    }
+  }
+
+  if (failure !== undefined) {
+    return reportPreparedFailure(failure, args, prepared);
+  }
+
+  return 0;
+}
+
+void runCli(process.argv.slice(2))
+  .then((exitCode) => {
+    process.exitCode = exitCode;
+  })
+  .catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+```
+
+`writePreparedOutput(...)` performs both rendering and writing. An external
+caller cannot distinguish those failures, so this recipe reports its rejection
+as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths can
+distinguish `render` from `write` internally.
+
+If a command result may contain a long-running handle, branch on that
+application-specific result before `writePreparedOutput(...)`. Transfer the
+handle and resource scope to the SIGINT/SIGTERM lifecycle instead of closing
+them in the invocation `finally`. When the result type is not already limited
+to `TerminalCommandOutput`, narrow it with `isTerminalCommandOutput(...)`
+before writing.
+
+## Choose Presentation Ownership
+
+Use one of two presentation routes:
+
+- When one flat projection is correct for JSON, table, and CSV, return a view
+  from `createPresentation()`.
+- When JSON needs a complete nested report while table or CSV needs selected
+  columns and domain formatting, select `renderJson(...)`,
+  `renderTextTable(...)`, or `renderCsv(...)` directly in the Consumer.
+
+See [Presentation And Output](presentation-output.md) for the format decision
+and [Presentation Primitives](presentation-primitives.md) for the lower-level
+contracts.
+
+## Keep The Compact Path For Simple Applications
+
+When context already exists and handlers return terminal-supported output,
+prefer the compact path:
+
+```ts
+process.exitCode = await app.run(args, context, {
+  strict: true
+});
+```
+
+The explicit recipe is for application-owned lifecycle work. It is not required
+ceremony for every CLI.

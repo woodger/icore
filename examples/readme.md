@@ -6,11 +6,13 @@ expect, and why a particular shape is useful or intentionally limited.
 
 ## Terminal Application
 
-- [terminal-app.md](terminal-app.md) shows the regular `createTerminalApp()`
-  path with commands, presentation, and output.
+- [terminal-app.md](terminal-app.md) is the main production recipe for global
+  shortcuts, preparation, metadata-driven resources, execution, output,
+  cleanup, and error reporting. The compact `app.run(...)` path remains in the
+  [README quick start](../readme.md#quick-start).
 - [practical-cli-patterns.md](practical-cli-patterns.md) shows application-level
-  patterns for global help/version shortcuts, command help, deprecated options,
-  and edge-case argument handling.
+  patterns for schema-aware global help/version shortcuts, metadata-driven
+  command help, deprecated options, and edge-case argument handling.
 
 ## Layer Toolkit
 
@@ -21,7 +23,7 @@ expect, and why a particular shape is useful or intentionally limited.
   argument syntax with terminal input examples.
 - [custom-command-flow.md](custom-command-flow.md) shows explicit
   `commands.prepare(...)`, `commands.run(...)`, and `commands.runFromArgs(...)`
-  usage without the terminal app boundary.
+  usage without the terminal app output and error-policy boundary.
 - [presentation-output.md](presentation-output.md) shows presentation rendering
   and output writing without command execution.
 
