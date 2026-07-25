@@ -24,20 +24,19 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
 - `isIcoreError(...)` is the supported narrowing boundary for keeping an error
   code correlated with its details type.
 
-## Interactive terminal output
+## Legacy interactive terminal output and progress
 
-- One `createTerminalOutput()` instance owns stdout and stderr for a complete
-  CLI invocation.
-- Semantic output and interactive line operations share a serialized stdout
-  queue. Stderr has an independent queue.
-- `flush()` is a point-in-time barrier, and the first write failure is sticky.
-- Generic progress owns derived percentage and ETA values, redraw throttling,
-  plain-text rendering, line restoration, and asynchronous close.
-- Applications retain domain-event mapping, labels, non-TTY policy, process
-  signals, and resource lifecycle.
-- Progress must close before final stdout output or stderr diagnostics.
-- Terminal width adaptation intentionally supports single-line plain text only;
-  ANSI-styled and display-width-aware Unicode output are outside the contract.
+- `createOutput()` is the supported output boundary. Interactive line output,
+  progress state, rendering, non-TTY policy, process signals, and resource
+  lifecycle belong to the consuming application.
+- `createTerminalOutput()` and `createTerminalProgress()` are frozen `2.x`
+  compatibility exports. They are not used by the ecosystem Consumers and
+  receive no new capabilities.
+- The next major release removes the legacy root exports and adds an explicit
+  package `exports` map so internal terminal modules are not a replacement
+  public API.
+- A separate `icore-terminal` package is not planned until at least two
+  Consumers require the same stable interactive contract.
 
 ## Command path aliases
 

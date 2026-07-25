@@ -5,7 +5,7 @@
  * - re-exporting public argv parser contracts;
  * - re-exporting public option schema contracts;
  * - re-exporting public command registry contracts;
- * - re-exporting public presentation and output contracts;
+ * - re-exporting public presentation and semantic output contracts;
  * - re-exporting public terminal app composition contracts;
  *
  * This file must not contain parser, validator, or command runtime logic.
@@ -130,6 +130,13 @@ export {
   type BackpressureTextSink,
   type TextWriter
 } from './output/text-writer';
+
+/**
+ * Legacy interactive terminal output compatibility surface.
+ *
+ * @deprecated Keep interactive line output in the consuming application. These
+ * exports remain available during `2.x` and will be removed in the next major.
+ */
 export {
   createTerminalOutput,
   type TerminalCapabilities,
@@ -148,6 +155,14 @@ export {
   type TerminalErrorPhase,
   type TerminalErrorPolicy
 } from './terminal/app';
+
+/**
+ * Legacy terminal progress compatibility surface.
+ *
+ * @deprecated Keep progress state, rendering, and lifecycle in the consuming
+ * application. These exports remain available during `2.x` and will be
+ * removed in the next major.
+ */
 export {
   createTerminalProgress,
   formatTerminalCount,

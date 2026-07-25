@@ -1,5 +1,6 @@
 /**
- * Terminal output composes semantic output and interactive line mechanics.
+ * Legacy terminal output composes semantic output and interactive line
+ * mechanics.
  *
  * Allowed here:
  * - creating one shared stdout queue for regular and interactive output;
@@ -7,6 +8,8 @@
  * - serializing atomic terminal line operations;
  *
  * This file must not contain progress rendering or process lifecycle policy.
+ * The module remains only as a `2.x` compatibility implementation; new
+ * consumers should own interactive line output in their terminal boundary.
  */
 
 import {
@@ -26,13 +29,21 @@ import type {
 const moveCursorToLineStart = '\u001B[1G';
 const clearTerminalLine = '\u001B[2K';
 
-/** Writable stdout shape used to discover interactive terminal capabilities. */
+/**
+ * Writable stdout shape used to discover interactive terminal capabilities.
+ *
+ * @deprecated Use an application-owned terminal sink.
+ */
 export type TerminalTextSink = BackpressureTextSink & {
   readonly isTTY?: boolean;
   readonly columns?: number;
 };
 
-/** Interactive terminal capabilities exposed to line-oriented consumers. */
+/**
+ * Interactive terminal capabilities exposed to line-oriented consumers.
+ *
+ * @deprecated Use an application-owned terminal capability contract.
+ */
 export type TerminalCapabilities = {
   readonly isInteractive: boolean;
   readonly columns: number | undefined;
@@ -43,6 +54,8 @@ export type TerminalCapabilities = {
  *
  * Line methods enqueue work synchronously. Write failures are retained and
  * reported by `flush()`.
+ *
+ * @deprecated Use an application-owned line output contract.
  */
 export type TerminalLineOutput = TerminalCapabilities & {
   /** Writes one line and appends a newline. */
@@ -55,6 +68,10 @@ export type TerminalLineOutput = TerminalCapabilities & {
   flush(): Promise<void>;
 };
 
+/**
+ * @deprecated Use `createOutput()` together with application-owned terminal
+ * output composition.
+ */
 export type TerminalOutput = {
   /** Semantic stdout/stderr output sharing the terminal queues. */
   output: Output;
@@ -62,6 +79,10 @@ export type TerminalOutput = {
   lines: TerminalLineOutput;
 };
 
+/**
+ * @deprecated Use `createOutput()` options and an application-owned terminal
+ * sink.
+ */
 export type TerminalOutputOptions = {
   stdout?: TerminalTextSink;
   stderr?: BackpressureTextSink;
@@ -73,6 +94,10 @@ export type TerminalOutputOptions = {
  * Regular stdout writes and interactive line operations share one queue.
  * Stderr uses a separate queue so diagnostics are not blocked by stdout
  * backpressure.
+ *
+ * @deprecated Use `createOutput()` and keep interactive terminal output in
+ * the consuming application. This compatibility export will be removed in
+ * the next major.
  */
 export function createTerminalOutput(
   options: TerminalOutputOptions = {}

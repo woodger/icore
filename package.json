@@ -10,7 +10,6 @@
     "command-registry",
     "command-router",
     "terminal-app",
-    "terminal-output",
     "presentation",
     "table-renderer",
     "csv-renderer",

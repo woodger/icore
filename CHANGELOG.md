@@ -27,6 +27,14 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   constructing these public values directly must provide the path used for
   resolution.
 
+### Deprecated
+
+- Deprecated `createTerminalOutput`, its interactive line contracts, and the
+  terminal progress contracts. They remain available as `2.x` compatibility
+  exports, but new consumers should use `createOutput()` and own interactive
+  output and progress rendering in the application. The deprecated exports
+  will be removed in the next major release.
+
 ### Fixed
 
 - Rejected options placed between segments of a multi-segment command path when

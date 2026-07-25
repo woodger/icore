@@ -7,9 +7,11 @@ available for lower-level integrations.
 Prefer semantic methods first. Direct writer primitives are useful in tests,
 streaming adapters, and custom terminal boundaries.
 
-For interactive lines or progress, use `createTerminalOutput()` instead. Its
-semantic output and line operations share one ordered stdout queue; see
-[Interactive Output And Progress](interactive-output.md).
+Interactive lines and progress are application-owned. The formerly exported
+`createTerminalOutput()` and `createTerminalProgress()` contracts are retained
+only for `2.x` compatibility; see the
+[legacy migration guide](interactive-output.md) when maintaining existing
+code.
 
 ## Use Semantic Output
 
