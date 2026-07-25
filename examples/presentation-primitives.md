@@ -4,8 +4,10 @@
 primitives below are useful when a command needs explicit view types or when an
 adapter wants to use a renderer directly.
 
-Prefer `presentation.render(...)` first. Direct renderers are lower-level and
-make the caller responsible for choosing the right input shape.
+Prefer `presentation.render(...)` when one view has the same meaning in every
+format. Direct renderers are lower-level and make the caller responsible for
+choosing the right input shape, which is useful when JSON, table, and CSV need
+different projections of the same report.
 
 ## Empty And Text Views
 
@@ -26,8 +28,8 @@ does not invent structure.
 
 ## Record And Records Views
 
-Use `record(...)` and `records(...)` when application data can be represented as
-generic key/value objects.
+Use `record(...)` and `records(...)` when the same flat key/value shape is the
+intended JSON model and the intended source of table and CSV columns.
 
 ```ts
 const oneJob = presentation.record({
@@ -50,9 +52,20 @@ presentation.render(oneJob, 'table');
 presentation.render(manyJobs, 'json');
 ```
 
-This is the most convenient view for regular reports. The tradeoff is that
-field selection has to happen before the view is created; generic presentation
-code should not inspect domain objects.
+This is the most convenient view when:
+
+- every format should expose the same fields;
+- generic conversion of values to table and CSV cells is sufficient;
+- table and CSV headers can be inferred from non-empty data.
+
+The view does not support per-format field selection or cell formatting.
+Nested values that are useful in JSON therefore do not automatically make a
+useful table. Select fields before creating the view; generic presentation code
+should not inspect domain objects.
+
+For an empty `records([])` view, JSON renders as an empty array while table and
+CSV render as empty text. Use an explicit table or CSV view, or a direct
+renderer, when an empty report must retain its headers.
 
 ## Explicit Table And CSV Views
 
@@ -74,7 +87,10 @@ const csv = presentation.csv([
 ```
 
 These forms are less convenient than `records(...)`, but they are useful when
-the application needs full control over column sequence and cell values.
+the application needs full control over column sequence and cell values. A
+single table or CSV view still has one format-independent shape; use direct
+renderers when the application needs different projections for different
+formats.
 
 ## Supported Formats
 
@@ -185,6 +201,24 @@ renderCsv([
 ]);
 ```
 
-Direct renderers are sharp tools. They are good for adapters and tests, but
-regular commands should usually return presentation views and let
-`presentation.render(...)` choose the renderer.
+Direct renderers make format selection an application responsibility. They are
+useful for adapters and tests, and they are the recommended path for reports
+whose formats intentionally have different shapes. For example, JSON can
+preserve a complete nested report while a table exposes only selected columns
+with domain-specific cell formatting:
+
+```ts
+const jsonText = renderJson(report);
+const tableText = renderTextTable([
+  ['id', 'status'],
+  ...report.orders.map((order) => [
+    order.id,
+    order.status
+  ])
+]);
+```
+
+The application remains responsible for selecting the renderer after resolving
+the requested format. icore does not infer a curated table from a JSON model.
+When all formats share one generic record shape, returning a presentation view
+and letting `presentation.render(...)` choose the renderer remains simpler.
