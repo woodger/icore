@@ -1,5 +1,6 @@
 /**
- * Terminal progress builds generic progress presentation on line output.
+ * Legacy terminal progress builds generic progress presentation on line
+ * output.
  *
  * Allowed here:
  * - progress snapshots and derived values;
@@ -9,6 +10,8 @@
  *
  * This file must not contain domain events, process signals, or application
  * lifecycle policy.
+ * The module remains only as a `2.x` compatibility implementation; new
+ * consumers should own progress state and rendering in their application.
  */
 
 import type { TerminalLineOutput } from '../output/terminal-output';
@@ -17,7 +20,11 @@ const defaultRefreshIntervalMs = 250;
 const defaultTerminalColumns = 120;
 const countFormatter = new Intl.NumberFormat('en-US');
 
-/** Application-provided progress state. */
+/**
+ * Application-provided progress state.
+ *
+ * @deprecated Keep progress state in the consuming application.
+ */
 export type TerminalProgressState = {
   label: string;
   current: number;
@@ -26,7 +33,11 @@ export type TerminalProgressState = {
   elapsedMs?: number;
 };
 
-/** Readonly state with values derived by the progress layer. */
+/**
+ * Readonly state with values derived by the progress layer.
+ *
+ * @deprecated Keep progress snapshots in the consuming application.
+ */
 export type TerminalProgressSnapshot = {
   readonly label: string;
   readonly current: number;
@@ -37,11 +48,18 @@ export type TerminalProgressSnapshot = {
   readonly etaMs?: number;
 };
 
-/** Converts a derived progress snapshot to one plain-text terminal line. */
+/**
+ * Converts a derived progress snapshot to one plain-text terminal line.
+ *
+ * @deprecated Keep progress rendering in the consuming application.
+ */
 export type TerminalProgressRenderer = (
   progress: TerminalProgressSnapshot
 ) => string;
 
+/**
+ * @deprecated Keep progress lifecycle in the consuming application.
+ */
 export type TerminalProgress = {
   start(progress: TerminalProgressState): void;
   update(progress: TerminalProgressState): void;
@@ -50,6 +68,9 @@ export type TerminalProgress = {
   close(): Promise<void>;
 };
 
+/**
+ * @deprecated Keep progress composition in the consuming application.
+ */
 export type TerminalProgressOptions = {
   output: TerminalLineOutput;
   render?: TerminalProgressRenderer;
@@ -63,6 +84,9 @@ export type TerminalProgressOptions = {
  *
  * Progress operations enqueue output synchronously. `close()` finishes an
  * active line and waits for the stdout barrier.
+ *
+ * @deprecated Keep progress rendering and lifecycle in the consuming
+ * application. This compatibility export will be removed in the next major.
  */
 export function createTerminalProgress({
   output,
@@ -211,7 +235,11 @@ export function createTerminalProgress({
   };
 }
 
-/** Deterministic default renderer used by `createTerminalProgress()`. */
+/**
+ * Deterministic default renderer used by `createTerminalProgress()`.
+ *
+ * @deprecated Keep progress rendering in the consuming application.
+ */
 export function renderTerminalProgress(
   progress: TerminalProgressSnapshot
 ): string {
@@ -231,12 +259,20 @@ export function renderTerminalProgress(
   return `${prefix}${details}${elapsed}${eta}`;
 }
 
-/** Formats a terminal count with deterministic `en-US` grouping. */
+/**
+ * Formats a terminal count with deterministic `en-US` grouping.
+ *
+ * @deprecated Keep progress formatting in the consuming application.
+ */
 export function formatTerminalCount(value: number): string {
   return countFormatter.format(value);
 }
 
-/** Formats milliseconds as a compact, two-unit terminal duration. */
+/**
+ * Formats milliseconds as a compact, two-unit terminal duration.
+ *
+ * @deprecated Keep progress formatting in the consuming application.
+ */
 export function formatTerminalDuration(milliseconds: number): string {
   assertNonNegativeFinite('milliseconds', milliseconds);
 

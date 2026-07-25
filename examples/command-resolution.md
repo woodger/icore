@@ -14,8 +14,10 @@ but it makes command selection explicit and testable.
 
 ```ts
 import {
+  createCommands,
   defineCommand,
   defineCommandRegistry,
+  type CommandAcceptedPath,
   type CommandName
 } from 'icore';
 
@@ -63,14 +65,80 @@ The inferred `PublicCommandName` is:
 type PublicCommandName = 'jobs run';
 ```
 
+## Declare Canonical Command Aliases
+
+Put compatibility paths on the canonical command definition. Aliases select the
+same option schema, prepare hook, metadata, and handler; they do not create
+additional command definitions.
+
+```ts
+const listAccountsCommand = defineCommand({
+  path: ['account', 'list'],
+  aliases: [
+    ['users', 'get-accounts'],
+    ['accounts']
+  ],
+  options: {
+    format: {
+      type: 'string',
+      choices: ['table', 'json'],
+      default: 'table'
+    }
+  } as const,
+  handle({ options }) {
+    return `format=${options.format}\n`;
+  }
+});
+
+const accountCommands = createCommands([
+  listAccountsCommand
+] as const);
+
+const canonical = accountCommands.resolve([
+  'account',
+  'list'
+]);
+const aliased = accountCommands.resolve([
+  'users',
+  'get-accounts'
+]);
+
+type AcceptedAccountPath =
+  CommandAcceptedPath<typeof listAccountsCommand>;
+```
+
+`name` and `path` always describe the canonical command. `matchedPath` records
+the path used for this invocation:
+
+```ts
+canonical.name;        // 'account list'
+canonical.path;        // ['account', 'list']
+canonical.matchedPath; // ['account', 'list']
+
+aliased.name;           // 'account list'
+aliased.path;           // ['account', 'list']
+aliased.matchedPath;    // ['users', 'get-accounts']
+```
+
+For a canonical invocation, `matchedPath === path`. The inferred
+`AcceptedAccountPath` is the literal union of the canonical path and both alias
+paths.
+
+`accountCommands.names` contains only `'account list'`, and
+`accountCommands.definitions` contains one definition. Canonical and alias
+paths participate in the same collision validation and longest-path
+resolution; an exact collision is rejected as `DUPLICATE_COMMAND`.
+
+When an alias invocation has an unexpected positional, the human-readable
+message uses the matched alias. Structured `UNEXPECTED_POSITIONAL` details keep
+`command` canonical and add `matchedPath` for that alias invocation.
+
 ## Create A Commands Object Directly
 
 `createCommands(...)` is the direct alternative to
 `createCommand().registry(...)`.
 
 ```ts
-import { createCommands } from 'icore';
-
 const commands = createCommands([
   listJobsCommand,
   runJobCommand
@@ -96,6 +164,8 @@ const resolved = commands.resolve([
 ]);
 
 resolved.name;
+resolved.path;
+resolved.matchedPath;
 resolved.positionals;
 ```
 
@@ -133,7 +203,36 @@ const sameResolved = resolveCommandFromArgs(commands.registry, [
 ```
 
 This form asks each command schema how to split options from command tokens. It
-is a better fit for real argv input than `resolve(...)`.
+is a better fit for real argv input than `resolve(...)`. During one non-strict
+resolution, each canonical command definition is parsed at most once,
+regardless of how many alias paths it owns.
+
+Default resolution preserves option-first input:
+
+```ts
+await accountCommands.prepare([
+  '--format=json',
+  'users',
+  'get-accounts'
+]);
+```
+
+Strict resolution searches canonical and alias paths before parsing, so the
+path must begin with the first argument:
+
+```ts
+await accountCommands.prepare([
+  'users',
+  'get-accounts',
+  '--format=json'
+], {
+  strict: true
+});
+```
+
+The option-first form is rejected with `strict: true`. Parsing global or
+bootstrap options does not itself reorder argv; an application should enable
+strict mode only when command-first syntax is its public contract.
 
 ## Use The Standalone Resolver
 
@@ -169,6 +268,6 @@ function renderHelpPage(name: unknown): string {
 ```
 
 This is safer than comparing against string literals in several places. The
-cost is that the guard only checks registered command names; it does not
+cost is that the guard checks only canonical command names. Alias paths remain
+available on command definitions and through `matchedPath`; the guard does not
 validate options or execute anything.
-

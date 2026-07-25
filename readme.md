@@ -11,11 +11,10 @@ mechanics for [Node.js®](https://nodejs.org) applications.
 `icore` owns the path from `process.argv` to terminal output:
 
 - declarative, type-inferred option schemas;
-- multi-segment command resolution;
+- multi-segment command resolution with canonical command aliases;
 - separate prepare and execute phases;
 - JSON, CSV, and text-table presentation;
-- ordered stdout/stderr writers, interactive progress, and reusable terminal
-  error policy.
+- ordered stdout/stderr writers and reusable terminal error policy.
 
 Application-specific API calls, configuration, domain behavior, and help text
 remain in the consuming application.
@@ -35,7 +34,6 @@ of the package contract.
 
 - [Quick Start](#quick-start)
 - [Choose An API Level](#choose-an-api-level)
-- [Interactive Output And Progress](#interactive-output-and-progress)
 - [Supported Argument Syntax](#supported-argument-syntax)
 - [Error Handling](#error-handling)
 - [Guides](#guides)
@@ -101,6 +99,9 @@ with defaults are always present; optional options are returned as
 
 `strict: true` rejects options placed before the command path. String output is
 written exactly as returned, so include `\n` when line output is intended.
+Default resolution continues to accept option-first input. Parsing bootstrap
+options does not reorder argv, so enable strict mode only when command-first
+syntax is part of the application's public CLI contract.
 
 ## Choose An API Level
 
@@ -113,8 +114,15 @@ Start with the highest-level API that fits the application:
 | Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](examples/custom-command-flow.md) |
 | Presentation without command execution | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
 | Explicit stdout/stderr writing | `createOutput()` | [Output Writers](examples/output-writers.md) |
-| Interactive lines and progress | `createTerminalOutput()` and `createTerminalProgress()` | [Interactive Output And Progress](examples/interactive-output.md) |
 | Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](examples/readme.md#primitive-mechanics) |
+
+`createTerminalOutput()` and `createTerminalProgress()` remain available as
+deprecated `2.x` compatibility exports. Do not use them in new Consumers;
+keep interactive output and progress rendering in the consuming application.
+The [application-owned output guide](examples/output-writers.md#application-owned-interactive-output)
+describes the recommended boundary. The retained
+[migration guide](examples/interactive-output.md) documents the legacy
+contract.
 
 The terminal application exposes the main lifecycle operations:
 
@@ -141,46 +149,6 @@ argv → resolve → validate/prepare → execute → render → stdout/stderr
 
 Exact public exports live in [`src/index.ts`](src/index.ts) and in the bundled
 TypeScript declarations.
-
-## Interactive Output And Progress
-
-Create one `TerminalOutput` for each CLI invocation. Its semantic `output` and
-interactive `lines` share one ordered stdout queue:
-
-```ts
-import {
-  createTerminalApp,
-  createTerminalOutput,
-  createTerminalProgress
-} from 'icore';
-
-const terminal = createTerminalOutput();
-const app = createTerminalApp({
-  commands,
-  output: terminal.output
-});
-const progress = createTerminalProgress({
-  output: terminal.lines
-});
-```
-
-Pass this same instance to help, version, command output, and progress paths.
-Creating independent instances splits the queues and removes their ordering
-guarantee. Progress operations enqueue synchronously; `progress.close()` is an
-idempotent stdout barrier that finishes the active line and reports the first
-sticky write failure. Close progress before writing a final report or error.
-
-Interactive line and progress content supports single-line plain text only.
-ANSI escape sequences and control characters are not supported. Width
-calculation assumes that each JavaScript string code unit occupies one terminal
-column. Emoji, combining characters, tabs, and full-width Unicode characters
-may be measured or truncated incorrectly.
-
-The default progress renderer uses deterministic English `elapsed` and `eta`
-labels with `en-US` number grouping. Replace the whole renderer when an
-application needs different wording or layout. See
-[Interactive Output And Progress](examples/interactive-output.md) for queue,
-snapshot, renderer, non-TTY, and error-lifecycle details.
 
 ## Supported Argument Syntax
 
@@ -284,15 +252,12 @@ lower-level mechanics. Useful starting points:
   choices, defaults, aliases, and inferred types;
 - [Practical CLI Patterns](examples/practical-cli-patterns.md) — help/version
   shortcuts, shared options, and compatibility aliases;
-- [Command Resolution](examples/command-resolution.md) — registries, explicit
-  resolution, and command-name guards;
+- [Command Resolution](examples/command-resolution.md) — registries, canonical
+  command aliases, matched paths, explicit resolution, and command-name guards;
 - [Two-Phase Primitives](examples/two-phase-primitives.md) — preparation,
   payloads, execution, and provided-option metadata;
 - [Presentation Primitives](examples/presentation-primitives.md) — text, record,
   table, CSV, JSON, and direct renderers.
-- [Interactive Output And Progress](examples/interactive-output.md) — shared
-  output queues, terminal line capabilities, progress rendering, and lifecycle
-  ordering.
 
 Release history is recorded in [CHANGELOG.md](CHANGELOG.md). Directional
 decisions live in [docs/roadmap.md](docs/roadmap.md).
@@ -305,6 +270,8 @@ rendering, error contracts, and stdout/stderr delivery.
 
 It does not own application DTO mapping, API calls, configuration loading,
 domain-specific validation, lifecycle resources, or help content. Keep those
-responsibilities in the consuming application.
+responsibilities in the consuming application. Interactive line rendering and
+progress reporting are also application-owned; the legacy compatibility
+exports are not a foundation for new code.
 
 Licensed under the [MIT License](LICENSE).

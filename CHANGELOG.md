@@ -14,6 +14,36 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-07-25
+
+### Added
+
+- Added first-class command path aliases with canonical command identity and
+  literal `matchedPath` values on resolved and prepared commands.
+- Added collision validation and longest-path resolution across canonical and
+  alias paths without duplicating command definitions.
+
+### Changed
+
+- `ResolvedCommand` and `PreparedCommand` now require `matchedPath`; callers
+  constructing these public values directly must provide the path used for
+  resolution.
+
+### Deprecated
+
+- Deprecated `createTerminalOutput`, its interactive line contracts, and the
+  terminal progress contracts. They remain available as `2.x` compatibility
+  exports, but new consumers should use `createOutput()` and own interactive
+  output and progress rendering in the application. The deprecated exports
+  will be removed in the next major release.
+
+### Fixed
+
+- Rejected options placed between segments of a multi-segment command path when
+  direct `runCommand(...)` execution uses strict mode.
+- Parsed each canonical command definition at most once per non-strict
+  resolution, regardless of its number of aliases.
+
 ## [2.0.2] - 2026-07-24
 
 ### Added

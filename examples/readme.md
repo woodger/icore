@@ -24,19 +24,24 @@ expect, and why a particular shape is useful or intentionally limited.
   usage without the terminal app boundary.
 - [presentation-output.md](presentation-output.md) shows presentation rendering
   and output writing without command execution.
-- [interactive-output.md](interactive-output.md) shows shared output queues,
-  terminal line capabilities, generic progress, and error-lifecycle ordering.
 
 ## Primitive Mechanics
 
 - [command-resolution.md](command-resolution.md) shows command registries,
-  explicit resolution, command-name guards, and standalone command definitions.
+  canonical aliases, matched paths, explicit resolution, command-name guards,
+  and standalone command definitions.
 - [two-phase-primitives.md](two-phase-primitives.md) shows lower-level
   preparation and execution primitives used behind command facades.
 - [presentation-primitives.md](presentation-primitives.md) shows explicit
   presentation views, renderers, and format guards.
-- [output-writers.md](output-writers.md) shows stdout/stderr writer primitives
-  and custom sink wiring.
+- [output-writers.md](output-writers.md) shows stdout/stderr writer primitives,
+  custom sink wiring, and the application-owned interactive output boundary.
+
+## Legacy Compatibility
+
+- [interactive-output.md](interactive-output.md) documents the deprecated
+  `2.x` terminal output and progress contracts for migration only. New code
+  should follow the application-owned pattern in `output-writers.md`.
 
 ## Compatibility And Rework Candidates
 

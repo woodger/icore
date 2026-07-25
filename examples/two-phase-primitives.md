@@ -68,6 +68,8 @@ const prepared = await app.prepare([
 });
 
 prepared.name;
+prepared.path;
+prepared.matchedPath;
 prepared.options;
 prepared.provided;
 ```
@@ -75,6 +77,10 @@ prepared.provided;
 This is useful when the selected command decides which runtime resources to
 create. If preparation fails, the application can print an argument error
 without opening connections or starting background work.
+
+`name` and `path` preserve canonical command identity. When the definition has
+command aliases, `matchedPath` records the canonical or alias path that selected
+the command.
 
 ## Run Prepared Through A Terminal App
 

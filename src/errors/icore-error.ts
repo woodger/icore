@@ -118,6 +118,7 @@ export type IcoreErrorDetailsMap = {
     command: string;
     positional: string;
     positionals: readonly string[];
+    matchedPath?: readonly string[];
   };
   INVALID_OPTION_ALIAS: OptionIdentityDetails & {
     alias: unknown;
