@@ -21,68 +21,55 @@ business command:
 ```ts
 import {
   parseArgv,
-  parseOptions,
-  type OptionsSchema,
-  type RawOptionValue
+  parseOptionsSubsetDetailed,
+  type OptionsSchema
 } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
-    type: 'boolean'
-  },
-  h: {
-    type: 'boolean'
+    type: 'boolean',
+    alias: 'h',
+    syntax: 'flag'
   },
   version: {
-    type: 'boolean'
-  },
-  v: {
-    type: 'boolean'
+    type: 'boolean',
+    alias: 'v',
+    syntax: 'flag'
   },
   offline: {
-    type: 'boolean'
+    type: 'boolean',
+    syntax: 'flag'
   }
 } as const satisfies OptionsSchema;
 
-const bootstrapOptionNames = Object.keys(bootstrapOptionsSchema);
-
-function normalizeGlobalAliases(args: readonly string[]): string[] {
-  return args.map((arg) => {
-    if (arg === '-h') {
-      return '--h';
-    }
-
-    if (arg === '-v') {
-      return '--v';
-    }
-
-    return arg;
-  });
-}
-
 function parseBootstrapInput(args: readonly string[]) {
-  const parsed = parseArgv(normalizeGlobalAliases(args), bootstrapOptionsSchema);
-  const bootstrapOptions: Record<string, RawOptionValue> = {};
+  const argv = parseArgv(args, bootstrapOptionsSchema);
+  const parsed = parseOptionsSubsetDetailed(
+    bootstrapOptionsSchema,
+    argv.options
+  );
 
-  for (const name of bootstrapOptionNames) {
-    if (Object.hasOwn(parsed.options, name)) {
-      bootstrapOptions[name] = parsed.options[name] as RawOptionValue;
-    }
-  }
-
-  parseOptions(bootstrapOptionsSchema, bootstrapOptions);
-
-  return parsed;
+  return {
+    positionals: argv.positionals,
+    options: parsed.options,
+    rest: parsed.rest
+  };
 }
 ```
 
-This example normalizes `-h` and `-v` before parsing. It is a small compatibility
-layer, but it should stay close to bootstrap code because it changes the public
-CLI surface.
+Short aliases are schema behavior: `parseArgv(...)` maps `-h` to `help` and
+`-v` to `version`. The application does not need to normalize argv or declare
+separate `h` and `v` options.
 
 Only bootstrap-owned options are validated here. Command-specific options are
-left for the selected command schema. That avoids a common mistake where global
-parsing rejects valid command options before the command is even resolved.
+returned in `rest` for inspection but should normally remain in the original
+argv passed to `app.prepare(...)`. Do not reconstruct command argv from the
+subset result. That avoids a common mistake where global parsing rejects,
+reorders, or drops valid command options before the command is resolved.
+
+Include every bootstrap option whose type affects token ownership. In this
+example `offline` is declared as boolean, so shortcut parsing will not consume
+the following command segment as its value.
 
 The user can ask for top-level help:
 
@@ -194,6 +181,70 @@ const versionCommand = command.define({
 
 This keeps utility command routing explicit. The application still owns the
 actual help text and version text.
+
+## Build Help From Command Metadata
+
+Keep help text with each command definition, then build the help inventory from
+`commands.definitions`. Definitions contain canonical commands only, so aliases
+do not create duplicate entries:
+
+```ts
+import { createCommand } from 'icore';
+
+type CliCommandMetadata = {
+  description: string;
+  usage: readonly string[];
+};
+
+const documentedCommand = createCommand.withTypes<{
+  context: undefined;
+  result: string;
+  metadata: CliCommandMetadata;
+  metadataRequired: true;
+}>();
+
+const listJobsCommand = documentedCommand.define({
+  path: ['jobs', 'list'],
+  aliases: [
+    ['job', 'ls']
+  ],
+  options: {
+    status: {
+      type: 'string',
+      choices: ['queued', 'running', 'done', 'failed']
+    }
+  },
+  metadata: {
+    description: 'List jobs',
+    usage: [
+      'workspace-cli jobs list [--status=STATUS]'
+    ]
+  },
+  handle() {
+    return 'No jobs\n';
+  }
+});
+
+const documentedCommands = documentedCommand.registry([
+  listJobsCommand
+] as const);
+
+const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
+  name: definition.path.join(' '),
+  aliases: (definition.aliases ?? []).map((path) => path.join(' ')),
+  description: definition.metadata.description,
+  usage: definition.metadata.usage,
+  optionNames: Object.keys(definition.options)
+}));
+```
+
+Use `commandHelpEntries` for top-level and group help. For command-specific
+help, match the requested path against `definition.path` and
+`definition.aliases`, but render the canonical path from `definition.path`.
+
+`icore` exposes definitions and typed metadata but deliberately does not choose
+help layout, wording, grouping, or whether aliases should be visible. Those
+remain application policy.
 
 ## Shared Application Options
 

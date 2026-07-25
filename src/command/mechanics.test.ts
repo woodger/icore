@@ -14,6 +14,7 @@ import {
   runCommand,
   runPreparedCommand,
   runCommandFromRegistry,
+  type BoundCommand,
   type CommandAcceptedPath,
   type CommandName,
   type CommandContext,
@@ -73,6 +74,159 @@ describe('createCommand', () => {
       }),
       'fallback-id:table'
     );
+  });
+
+  test('pre-binds application types while preserving command inference', async () => {
+    type CliCommandContext = {
+      accountId: string;
+    };
+    type CliCommandResult =
+      | {
+        kind: 'empty';
+      }
+      | {
+        kind: 'text';
+        output: string;
+      };
+    type CliCommandMetadata = {
+      description: string;
+    };
+    type CliCommandTypes = {
+      context: CliCommandContext;
+      result: CliCommandResult;
+      metadata: CliCommandMetadata;
+      metadataRequired: true;
+    };
+
+    const command: BoundCommand<CliCommandTypes> =
+      createCommand.withTypes<CliCommandTypes>();
+    const getAccounts = command.define({
+      path: ['account', 'list'],
+      aliases: [
+        ['users', 'get-accounts']
+      ],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table'],
+          default: 'table'
+        }
+      },
+      metadata: {
+        description: 'List accounts'
+      },
+      prepare({ options }) {
+        return {
+          requestedFormat: options.format,
+          state: 'prepared' as const
+        };
+      },
+      handle({ context, options, payload }) {
+        const format: 'json' | 'table' = options.format;
+        const state: 'prepared' = payload.state;
+
+        return {
+          kind: 'text',
+          output: [
+            context.accountId,
+            format,
+            payload.requestedFormat,
+            state
+          ].join(':')
+        };
+      }
+    });
+    const commands = command.registry([
+      getAccounts
+    ] as const);
+    const prepared = await commands.prepare([
+      'users',
+      'get-accounts',
+      '--format=json'
+    ]);
+    const canonicalPath: typeof getAccounts.path = ['account', 'list'];
+    const acceptedAlias: CommandAcceptedPath<typeof getAccounts> = [
+      'users',
+      'get-accounts'
+    ];
+    const payload: CommandPayload<typeof getAccounts> = {
+      requestedFormat: 'table',
+      state: 'prepared'
+    };
+    const result: CommandResult<typeof getAccounts> = {
+      kind: 'text',
+      output: 'accounts'
+    };
+    const context: CommandContext<typeof getAccounts> = {
+      accountId: 'account-id'
+    };
+    const acceptConcreteResult = (
+      concreteResult: CommandResult<typeof getAccounts>
+    ): CommandResult<typeof getAccounts> => concreteResult;
+
+    acceptConcreteResult({
+      // @ts-expect-error The concrete handler result excludes other bound variants.
+      kind: 'empty'
+    });
+    // @ts-expect-error This bound builder requires metadata.
+    command.define({
+      path: ['account', 'missing-metadata'],
+      options: {},
+      handle() {
+        return {
+          kind: 'empty'
+        } as const;
+      }
+    });
+    command.define({
+      path: ['account', 'invalid-result'],
+      options: {},
+      metadata: {
+        description: 'Invalid result'
+      },
+      // @ts-expect-error Command results must satisfy the bound result type.
+      handle() {
+        return 42;
+      }
+    });
+
+    assert.deepStrictEqual(canonicalPath, ['account', 'list']);
+    assert.deepStrictEqual(acceptedAlias, ['users', 'get-accounts']);
+    assert.deepStrictEqual(payload, {
+      requestedFormat: 'table',
+      state: 'prepared'
+    });
+    assert.deepStrictEqual(result, {
+      kind: 'text',
+      output: 'accounts'
+    });
+    assert.strictEqual(prepared.command.metadata.description, 'List accounts');
+    assert.deepStrictEqual(
+      await commands.run(prepared, context),
+      {
+        kind: 'text',
+        output: 'account-id:json:json:prepared'
+      }
+    );
+  });
+
+  test('keeps metadata optional unless the bound builder requires it', () => {
+    const command = createCommand.withTypes<{
+      context: undefined;
+      result: string;
+      metadata: {
+        description: string;
+      };
+    }>();
+    const versionCommand = command.define({
+      path: ['version'],
+      options: {},
+      handle() {
+        return '1.0.0';
+      }
+    });
+
+    assert.strictEqual(versionCommand.metadata, undefined);
   });
 });
 
