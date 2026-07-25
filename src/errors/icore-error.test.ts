@@ -6,6 +6,37 @@ import {
   type IcoreErrorDetails
 } from './icore-error';
 
+class ForeignBrandedIcoreError extends Error {
+  constructor(
+    readonly code: unknown,
+    readonly category: unknown,
+    readonly details: unknown
+  ) {
+    super('Foreign icore error');
+
+    this.name = 'IcoreError';
+    Object.defineProperty(
+      this,
+      Symbol.for('icore.error.IcoreError.v1'),
+      {
+        value: true
+      }
+    );
+  }
+}
+
+const LegacyIcoreError = class IcoreError extends Error {
+  constructor(
+    readonly code: unknown,
+    readonly category: unknown,
+    readonly details: unknown
+  ) {
+    super('Legacy icore error');
+
+    this.name = 'IcoreError';
+  }
+};
+
 describe('IcoreError', () => {
   test('categorizes usage errors', () => {
     const errors = [
@@ -48,6 +79,7 @@ describe('IcoreError', () => {
 
     for (const error of errors) {
       assert.equal(error.category, 'usage');
+      assert.equal(isIcoreError(error), true);
     }
   });
 
@@ -76,11 +108,49 @@ describe('IcoreError', () => {
 
     for (const error of errors) {
       assert.equal(error.category, 'definition');
+      assert.equal(isIcoreError(error), true);
     }
   });
 });
 
 describe('isIcoreError', () => {
+  test('recognizes a branded error from another physical copy', () => {
+    const foreignError = new ForeignBrandedIcoreError(
+      'UNKNOWN_COMMAND',
+      'usage',
+      {
+        reason: 'unresolved',
+        command: 'missing',
+        positionals: ['missing']
+      }
+    );
+    const error: unknown = foreignError;
+
+    assert.equal(foreignError instanceof IcoreError, false);
+    assert.ok(isIcoreError(error, 'UNKNOWN_COMMAND'));
+    assert.equal(error.details.command, 'missing');
+    assert.deepStrictEqual(error.details.positionals, ['missing']);
+  });
+
+  test('recognizes a compatible unbranded 2.x error', () => {
+    const legacyError = new LegacyIcoreError(
+      'UNEXPECTED_POSITIONAL',
+      'usage',
+      {
+        command: 'users current',
+        positional: 'extra',
+        positionals: ['extra'],
+        matchedPath: ['users', 'current']
+      }
+    );
+    const error: unknown = legacyError;
+
+    assert.equal(legacyError instanceof IcoreError, false);
+    assert.ok(isIcoreError(error, 'UNEXPECTED_POSITIONAL'));
+    assert.equal(error.details.command, 'users current');
+    assert.deepStrictEqual(error.details.matchedPath, ['users', 'current']);
+  });
+
   test('narrows an error to an exact code', () => {
     const error: unknown = new IcoreError(
       'UNKNOWN_COMMAND',
@@ -146,6 +216,32 @@ describe('isIcoreError', () => {
 
     assert.equal(isIcoreError(new Error('failed')), false);
     assert.equal(isIcoreError(error, 'UNKNOWN_COMMAND'), false);
+  });
+
+  test('rejects foreign errors with an invalid protocol shape', () => {
+    const malformedDetails = new ForeignBrandedIcoreError(
+      'UNKNOWN_COMMAND',
+      'usage',
+      []
+    );
+    const wrongCategory = new ForeignBrandedIcoreError(
+      'UNKNOWN_COMMAND',
+      'definition',
+      {
+        reason: 'unresolved',
+        command: 'missing',
+        positionals: ['missing']
+      }
+    );
+    const unknownCode = new ForeignBrandedIcoreError(
+      'UNKNOWN_CODE',
+      'usage',
+      {}
+    );
+
+    assert.equal(isIcoreError(malformedDetails), false);
+    assert.equal(isIcoreError(wrongCategory), false);
+    assert.equal(isIcoreError(unknownCode), false);
   });
 });
 
