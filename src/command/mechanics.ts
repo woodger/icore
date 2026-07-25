@@ -498,7 +498,7 @@ async function prepareCommand<TCommand extends AnyCommandDefinition>(
   options: CommandResolutionOptions = {}
 ): Promise<PreparedCommand<TCommand>> {
   if (options.strict === true) {
-    assertNoOptionBeforeCommand(args);
+    assertNoOptionBeforeCommand(args, command.path.length);
   }
 
   const argv = parseArgv(args, command.options);
@@ -629,7 +629,7 @@ function findStrictCommand<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): TCommands[number] | undefined {
-  assertNoOptionBeforeCommand(args);
+  assertNoOptionBeforeCommand(args, 1);
 
   for (const command of commandsBySpecificity(registry.commands)) {
     if (commandPathMatchesArgs(command.path, args)) {
@@ -640,11 +640,16 @@ function findStrictCommand<
   return undefined;
 }
 
-function assertNoOptionBeforeCommand(args: readonly string[]): void {
-  const firstArg = args[0];
+function assertNoOptionBeforeCommand(
+  args: readonly string[],
+  commandPathLength: number
+): void {
+  for (let index = 0; index < commandPathLength; index += 1) {
+    const arg = args[index];
 
-  if (firstArg !== undefined && isOptionBeforeCommand(firstArg)) {
-    throw createUnexpectedArgumentError(firstArg);
+    if (arg !== undefined && isOptionBeforeCommand(arg)) {
+      throw createUnexpectedArgumentError(arg);
+    }
   }
 }
 

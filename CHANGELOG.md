@@ -14,6 +14,11 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Fixed
+
+- Rejected options placed between segments of a multi-segment command path when
+  direct `runCommand(...)` execution uses strict mode.
+
 ## [2.0.2] - 2026-07-24
 
 ### Added

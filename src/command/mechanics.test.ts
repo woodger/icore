@@ -1138,6 +1138,47 @@ describe('runCommand', () => {
     );
   });
 
+  test('rejects options between command path segments in strict mode', async () => {
+    let handled = false;
+    const command = defineCommand({
+      path: ['users', 'current'],
+      options: {
+        format: {
+          type: 'string',
+          choices: ['json', 'table']
+        }
+      },
+      handle() {
+        handled = true;
+        return 'ok';
+      }
+    });
+
+    await assert.rejects(
+      () => runCommand(
+        command,
+        ['users', '--format', 'json', 'current'],
+        undefined,
+        {
+          strict: true
+        }
+      ),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '--format'");
+        assert.deepStrictEqual(error.details, {
+          reason: 'option-before-command',
+          argument: '--format'
+        });
+
+        return true;
+      }
+    );
+
+    assert.strictEqual(handled, false);
+  });
+
   test('passes user-provided option metadata to handler', async () => {
     const command = defineCommand({
       path: ['users', 'get-accounts'],
