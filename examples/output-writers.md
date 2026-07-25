@@ -13,6 +13,65 @@ only for `2.x` compatibility; see the
 [legacy migration guide](interactive-output.md) when maintaining existing
 code.
 
+## Application-Owned Interactive Output
+
+For new Consumers, keep interactive behavior in the terminal infrastructure or
+bootstrap layer. `icore` should receive only semantic stdout/stderr output:
+
+- application code emits progress state or domain events meaningful to the
+  operation;
+- the infrastructure reporter decides TTY behavior, line redraw, terminal
+  width, labels, signal handling, and cleanup;
+- bootstrap creates one reporter per invocation and closes it before writing a
+  final result or reporting an error;
+- `createOutput()` remains the shared boundary for regular output and
+  diagnostics.
+
+Do not interleave reporter writes with `output.write(...)`. If an application
+must support both at the same time, its infrastructure layer must provide the
+serialization; `createOutput()` does not coordinate application-owned line
+operations.
+
+The exact reporter contract is application-owned. A representative lifecycle
+looks like this:
+
+```ts
+import { createOutput, createTerminalApp } from 'icore';
+
+// These two names are supplied by the consuming project.
+const output = createOutput();
+const app = createTerminalApp({ commands, output });
+const progress = new TerminalProgressReporter({
+  stdout: process.stdout
+});
+
+let failure: unknown;
+
+try {
+  await runApplication({ progress });
+}
+catch (error) {
+  failure = error;
+}
+
+try {
+  await progress.close();
+}
+catch (error) {
+  failure ??= error;
+}
+
+if (failure !== undefined) {
+  process.exitCode = await app.reportError(failure, {
+    phase: 'external'
+  });
+}
+```
+
+`TerminalProgressReporter` and `runApplication(...)` in this example belong to
+the consuming project. Keep domain mapping, resource ownership, and process
+signals out of `icore`.
+
 ## Use Semantic Output
 
 ```ts

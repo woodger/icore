@@ -3,7 +3,9 @@
 > Compatibility notice: `createTerminalOutput()` and
 > `createTerminalProgress()` are deprecated in `icore@2`. This guide is kept
 > for migration of existing applications; new Consumers should own their
-> interactive output and progress lifecycle.
+> interactive output and progress lifecycle. See the
+> [application-owned pattern](output-writers.md#application-owned-interactive-output)
+> for new code.
 
 Use `createTerminalOutput()` when regular terminal output and an interactive
 progress line must share stdout. Use one instance for the complete CLI

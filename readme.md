@@ -119,8 +119,10 @@ Start with the highest-level API that fits the application:
 `createTerminalOutput()` and `createTerminalProgress()` remain available as
 deprecated `2.x` compatibility exports. Do not use them in new Consumers;
 keep interactive output and progress rendering in the consuming application.
-The retained [migration guide](examples/interactive-output.md) documents the
-legacy contract.
+The [application-owned output guide](examples/output-writers.md#application-owned-interactive-output)
+describes the recommended boundary. The retained
+[migration guide](examples/interactive-output.md) documents the legacy
+contract.
 
 The terminal application exposes the main lifecycle operations:
 
