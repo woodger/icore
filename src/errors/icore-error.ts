@@ -7,6 +7,7 @@
  * - preserving human-readable messages on Error instances;
  * - carrying structured details for application-level handling;
  * - narrowing unknown errors by their stable codes;
+ * - recognizing compatible errors from another physical package copy;
  *
  * This file must not contain parser, validator, or command resolution logic.
  */
@@ -160,6 +161,10 @@ const icoreErrorCategoryByCode = {
   DUPLICATE_COMMAND: 'definition'
 } as const satisfies Record<IcoreErrorCode, IcoreErrorCategory>;
 
+const icoreErrorBrand = Symbol.for('icore.error.IcoreError.v1');
+
+type DetailsRecord = Readonly<Record<string, unknown>>;
+
 /**
  * Error thrown by `icore` for CLI parsing, option validation, command
  * resolution, and schema configuration failures.
@@ -185,6 +190,9 @@ export class IcoreError<
     this.code = code;
     this.category = icoreErrorCategoryByCode[code];
     this.details = details;
+    Object.defineProperty(this, icoreErrorBrand, {
+      value: true
+    });
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
@@ -194,7 +202,10 @@ export type AnyIcoreError = {
   [TCode in IcoreErrorCode]: IcoreError<TCode>;
 }[IcoreErrorCode];
 
-/** Checks whether an unknown value is any supported `IcoreError`. */
+/**
+ * Checks whether an unknown value is any compatible `IcoreError`, including
+ * errors created by another physical copy in the same JavaScript realm.
+ */
 export function isIcoreError(error: unknown): error is AnyIcoreError;
 /** Checks and narrows an unknown value to one exact `IcoreError` code. */
 export function isIcoreError<TCode extends IcoreErrorCode>(
@@ -205,6 +216,77 @@ export function isIcoreError(
   error: unknown,
   code?: IcoreErrorCode
 ): error is AnyIcoreError {
-  return error instanceof IcoreError
-    && (code === undefined || error.code === code);
+  try {
+    if (!hasIcoreErrorIdentity(error)) {
+      return false;
+    }
+
+    const errorCode = error['code'];
+
+    if (
+      !isIcoreErrorCode(errorCode)
+      || (code !== undefined && errorCode !== code)
+      || error['category'] !== icoreErrorCategoryByCode[errorCode]
+    ) {
+      return false;
+    }
+
+    return isDetailsRecord(error['details']);
+  }
+  catch {
+    return false;
+  }
+}
+
+function hasIcoreErrorIdentity(
+  error: unknown
+): error is Error & DetailsRecord {
+  if (!(error instanceof Error) || !isDetailsRecord(error)) {
+    return false;
+  }
+
+  if (error instanceof IcoreError) {
+    return true;
+  }
+
+  if (
+    hasOwnProperty(error, icoreErrorBrand)
+    && Reflect.get(error, icoreErrorBrand) === true
+  ) {
+    return true;
+  }
+
+  return hasLegacyErrorIdentity(error, 'IcoreError');
+}
+
+function isIcoreErrorCode(value: unknown): value is IcoreErrorCode {
+  return typeof value === 'string'
+    && hasOwnProperty(icoreErrorCategoryByCode, value);
+}
+
+function isDetailsRecord(value: unknown): value is DetailsRecord {
+  return typeof value === 'object'
+    && value !== null
+    && !Array.isArray(value);
+}
+
+function hasOwnProperty(value: object, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function hasLegacyErrorIdentity(error: Error, name: string): boolean {
+  if (!hasOwnProperty(error, 'name') || error.name !== name) {
+    return false;
+  }
+
+  const prototype: unknown = Object.getPrototypeOf(error);
+
+  if (typeof prototype !== 'object' || prototype === null) {
+    return false;
+  }
+
+  const constructor = Reflect.get(prototype, 'constructor');
+
+  return typeof constructor === 'function'
+    && constructor.name === name;
 }
