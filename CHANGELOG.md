@@ -14,6 +14,11 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Changed
+
+- Added a production lifecycle example where a pre-bound command result combines
+  terminal output with an application-owned long-running command handle.
+
 ## [2.0.5] - 2026-07-25
 
 ### Added
