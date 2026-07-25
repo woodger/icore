@@ -1,20 +1,22 @@
 {
   "name": "icore",
-  "version": "2.0.4",
-  "description": "Declarative command line interface and terminal presentation mechanics for Node.js",
+  "version": "2.0.5",
+  "description": "Dependency-free typed CLI command routing, option parsing, and terminal output mechanics for Node.js",
   "keywords": [
+    "cli",
     "command-line",
+    "typescript",
+    "typed-cli",
+    "declarative-cli",
     "argv",
     "argument-parser",
     "option-parser",
-    "command-registry",
     "command-router",
-    "terminal-app",
-    "presentation",
-    "table-renderer",
-    "csv-renderer",
-    "typed-cli",
-    "declarative-cli"
+    "command-registry",
+    "command-aliases",
+    "terminal-output",
+    "dependency-free",
+    "nodejs"
   ],
   "author": {
     "name": "Stanislav Potemkin",

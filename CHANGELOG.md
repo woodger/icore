@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-07-25
+
 ### Added
 
 - Added `createCommand.withTypes<...>()` for fixing application-level command
@@ -31,6 +33,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   option filtering with schema aliases and `parseOptionsSubsetDetailed(...)`.
 - Clarified metadata-driven help, presentation projection choices, and the
   non-serializing boundary of backpressure-aware output writers.
+- Refined npm package metadata around dependency-free typed command routing,
+  option parsing, and terminal output mechanics.
 
 ## [2.0.4] - 2026-07-25
 
