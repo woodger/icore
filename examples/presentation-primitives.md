@@ -52,6 +52,25 @@ presentation.render(oneJob, 'table');
 presentation.render(manyJobs, 'json');
 ```
 
+`PresentationRecord` has a string index signature, while a regular TypeScript
+interface does not. Map DTOs to object literals to select presentation fields
+without a cast:
+
+```ts
+interface JobReportRow {
+  id: string;
+  status: string;
+  internalTraceId: string;
+}
+
+function presentJobs(rows: readonly JobReportRow[]) {
+  return presentation.records(rows.map((row) => ({
+    id: row.id,
+    status: row.status
+  })));
+}
+```
+
 This is the most convenient view when:
 
 - every format should expose the same fields;
@@ -63,9 +82,14 @@ Nested values that are useful in JSON therefore do not automatically make a
 useful table. Select fields before creating the view; generic presentation code
 should not inspect domain objects.
 
+In table format, `record(row)` produces a vertical `field`/`value` table. Use
+`records([row])` when one object should appear as a horizontal table with field
+names in its header.
+
 For an empty `records([])` view, JSON renders as an empty array while table and
-CSV render as empty text. Use an explicit table or CSV view, or a direct
-renderer, when an empty report must retain its headers.
+CSV render as empty text. An explicit table or CSV view can retain headers for
+one fixed format. When one command needs both JSON `[]` and header-only empty
+table or CSV output, select direct renderers separately by format.
 
 ## Explicit Table And CSV Views
 

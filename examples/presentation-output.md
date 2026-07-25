@@ -60,26 +60,41 @@ directly at this boundary instead:
 
 ```ts
 import {
+  renderCsv,
   renderJson,
   renderTextTable
 } from 'icore';
 
-const text = format === 'json'
-  ? renderJson(report)
-  : renderTextTable([
-      ['id', 'status'],
-      ...report.jobs.map((job) => [
-        job.id,
-        job.status
-      ])
-    ]);
+const rows = [
+  ['id', 'status'],
+  ...report.jobs.map((job) => [
+    job.id,
+    job.status
+  ])
+];
+
+let text: string;
+
+switch (format) {
+  case 'json':
+    text = renderJson(report);
+    break;
+  case 'table':
+    text = renderTextTable(rows);
+    break;
+  case 'csv':
+    text = renderCsv(rows);
+    break;
+  default:
+    throw new Error(`Unsupported presentation format: ${String(format)}`);
+}
 
 await output.write(text);
 ```
 
-This keeps the full nested report available to JSON while allowing a table to
-select and format its own columns. icore deliberately does not derive one
-projection from the other.
+This keeps the full nested report available to JSON while allowing table and
+CSV output to select and format their own columns. icore deliberately does not
+derive one projection from the other.
 
 The user sees the table in stdout:
 

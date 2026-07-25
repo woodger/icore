@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-07-25
+
 ### Added
 
 - Added first-class command path aliases with canonical command identity and

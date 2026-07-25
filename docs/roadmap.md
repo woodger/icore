@@ -52,6 +52,15 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
   to require command-first argv. Bootstrap parsing does not make option-first
   argv strict-compatible unless the application also reorders or rejects it.
 
+## Presentation result scope
+
+- `record(...)` and `records(...)` are intended for one flat projection shared
+  by JSON, table, and CSV output.
+- When formats need different projections, the consuming application owns
+  those projections and selects the corresponding direct renderer.
+- A multi-format presentation result is not planned for now. Reconsider it only
+  if the same requirement appears independently in another Consumer.
+
 ## Not planned
 
 - Declarative positional schemas and `string-list` positional parsing are not
