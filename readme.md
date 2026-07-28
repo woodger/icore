@@ -245,11 +245,9 @@ throw new CliUsageError(
 whose category is `usage`. Rendering, help text, and the choice of exit code
 remain application policy.
 
-Both guards recognize compatible errors created by another physical copy of
-`icore` in the same JavaScript realm. Current errors carry stable runtime
-brands, while validated unbranded `2.0.x` errors remain recognizable during
-migration. This does not turn errors serialized through JSON, IPC, or worker
-boundaries back into class instances.
+Both guards recognize compatible branded errors created by another physical
+copy of `icore` in the same JavaScript realm. This does not turn errors
+serialized through JSON, IPC, or worker boundaries back into class instances.
 
 Without a custom policy, terminal apps write `Error.message + "\n"` (or
 `String(error) + "\n"` for other thrown values) and return exit code `1`.

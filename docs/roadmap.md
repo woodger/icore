@@ -23,9 +23,8 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
   fields.
 - `isIcoreError(...)` is the supported narrowing boundary for keeping an error
   code correlated with its details type.
-- `isIcoreError(...)` and `isUsageError(...)` recognize compatible errors from
-  duplicate package copies through stable runtime brands and a validated
-  fallback for unbranded `2.0.x` errors.
+- `isIcoreError(...)` and `isUsageError(...)` recognize compatible branded
+  errors from duplicate package copies through stable runtime brands.
 - Serialized errors crossing JSON, IPC, or worker boundaries require a separate
   application protocol; in-process error guards do not reconstruct them.
 

@@ -19,6 +19,11 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Added a production lifecycle example where a pre-bound command result combines
   terminal output with an application-owned long-running command handle.
 
+### Removed
+
+- Removed transitional recognition of unbranded `2.0.x` error instances.
+  Cross-copy error guards now require stable runtime brands.
+
 ## [2.0.5] - 2026-07-25
 
 ### Added
