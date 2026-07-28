@@ -19,6 +19,21 @@ export default tseslint.config(
       globals: {
         ...globals.node
       }
+    },
+    rules: {
+      '@typescript-eslint/naming-convention': [
+        'warn',
+        {
+          selector: 'variableLike',
+          format: ['camelCase'],
+          leadingUnderscore: 'forbid',
+          trailingUnderscore: 'forbid'
+        },
+        {
+          selector: 'typeLike',
+          format: ['PascalCase']
+        }
+      ]
     }
   },
   {
