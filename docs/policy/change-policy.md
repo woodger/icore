@@ -6,7 +6,7 @@
 
 A change must be the minimum necessary change required to solve the task.
 
-Forbidden:
+Forbidden without a direct task requirement:
 
 - large refactoring without a request
 - cleanup without justification

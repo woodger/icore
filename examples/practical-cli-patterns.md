@@ -172,7 +172,6 @@ const helpCommand = command.define({
 const versionCommand = command.define({
   path: ['version'],
   options: {},
-  allowExtraPositionals: true,
   handle() {
     return renderVersionInfo();
   }
@@ -304,7 +303,7 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 
 The command handler receives:
 
-```ts
+```text
 {
   config: undefined,
   profile: 'staging',
@@ -325,6 +324,8 @@ already depend on the old name. Keep the deprecated option visible in code,
 warn when it is used, and reject ambiguous calls that pass both names.
 
 ```ts
+import { CliUsageError } from 'icore';
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -341,7 +342,9 @@ type ItemIdOptions = {
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {
-    throw new Error("Use either '--item-id' or deprecated '--legacy-id', not both");
+    throw new CliUsageError(
+      "Use either '--item-id' or deprecated '--legacy-id', not both"
+    );
   }
 
   if (options['item-id'] !== undefined) {
@@ -352,7 +355,7 @@ function resolveItemId(options: ItemIdOptions): string {
     return options['legacy-id'];
   }
 
-  throw new Error("Expected '--item-id'");
+  throw new CliUsageError("Expected '--item-id'");
 }
 ```
 

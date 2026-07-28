@@ -8,14 +8,19 @@ Changes must not break:
 - determinism
 - portability
 - CI
+
+Compatibility-sensitive properties must remain unchanged unless the task
+explicitly requires changing them:
+
 - runtime behavior
 - file structure
 - startup order
 - architecture
-- dependencies
+- dependency graph
 
-Even if the code works,
-a change is forbidden if it violates these properties.
+When the task requires one of these changes, keep it scoped and validate its
+effect explicitly. Even if the code works, a change is forbidden when it
+damages an unrelated property.
 
 ## Risk Examples
 

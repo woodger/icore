@@ -131,12 +131,6 @@ const context = await createContext(prepared);
 try {
   const result = await app.commands.run(prepared, context);
 
-  if (isShutdownHandle(result)) {
-    installShutdownHooks(result);
-
-    return;
-  }
-
   if (!isTerminalCommandOutput(result)) {
     throw new Error('Expected terminal command output');
   }
@@ -152,6 +146,10 @@ Only terminal output belongs here: ready text, streaming text, presentation
 results, or no output. Strings are written exactly as provided; include `\n`
 when line output is desired. If the raw result remains `unknown` at this
 boundary, narrow it with `isTerminalCommandOutput(...)` before writing.
+Long-running handles require an explicit transfer of context and cleanup
+ownership; use the
+[production lifecycle recipe](terminal-app.md#own-resources-cleanup-and-error-ordering)
+for that case.
 
 ## Prepare From A Registry
 
@@ -313,7 +311,7 @@ type Provided = InferProvidedOptions<typeof schema>;
 
 The parsed options are:
 
-```ts
+```text
 {
   format: 'table',
   verbose: true
@@ -322,7 +320,7 @@ The parsed options are:
 
 The provided map is:
 
-```ts
+```text
 {
   format: false,
   verbose: true

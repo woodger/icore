@@ -151,10 +151,14 @@ Command handlers receive parsed `options`, option-presence metadata in
 prepared `payload`.
 
 Supported terminal results are strings, async string streams, presentation
-results, and `undefined`:
+results, and `undefined`.
 
 Use `isTerminalCommandOutput(...)` to narrow an unknown caller-owned result
 before passing it to `app.writePreparedOutput(...)`.
+
+Text-table rendering supports plain-text cells. Column widths use JavaScript
+string length, so ANSI sequences, emoji, combining characters, tabs, and
+full-width Unicode may be aligned incorrectly.
 
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
