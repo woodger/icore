@@ -161,7 +161,8 @@ argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
 
 Exact public exports live in [`src/index.ts`](src/index.ts) and in the bundled
-TypeScript declarations.
+TypeScript declarations. Consumers import them from the package root; internal
+module paths are not exported.
 
 ## Supported Argument Syntax
 

@@ -36,9 +36,9 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
 - `createTerminalOutput()` and `createTerminalProgress()` are frozen `2.x`
   compatibility exports. They are not used by the ecosystem Consumers and
   receive no new capabilities.
-- The next major release removes the legacy root exports and adds an explicit
-  package `exports` map so internal terminal modules are not a replacement
-  public API.
+- The package exposes only its root entrypoint through an explicit `exports`
+  map, so internal terminal modules are not a replacement public API.
+- The next major release removes the legacy root exports.
 - A separate `icore-terminal` package is not planned until at least two
   Consumers require the same stable interactive contract.
 
