@@ -1,9 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  IcoreError,
-  parseArgv
-} from '../index';
+import { IcoreError } from '../errors/icore-error';
+import { parseArgv } from './parser';
 
 describe('parseArgv', () => {
   test('parses positionals and long options', () => {
@@ -313,7 +311,7 @@ describe('parseArgv', () => {
     );
   });
 
-  test('throws machine-readable alias schema errors', () => {
+  test('throws machine-readable invalid alias errors', () => {
     assert.throws(
       () => parseArgv([], {
         verbose: {
@@ -334,7 +332,9 @@ describe('parseArgv', () => {
         return true;
       }
     );
+  });
 
+  test('throws machine-readable duplicate alias errors', () => {
     assert.throws(
       () => parseArgv([], {
         verbose: {

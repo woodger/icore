@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import {
   isPresentationFormat,
   presentationFormatOptions
-} from '../index';
+} from './format-options';
 
 describe('presentationFormatOptions', () => {
   test('defines the shared format option contract', () => {

@@ -3,13 +3,13 @@ import { describe, test } from 'node:test';
 import {
   createCommand,
   createCommands,
-  createOutput,
-  createPresentation,
-  createTerminalApp,
-  defineCommand,
-  presentationFormatOptions
-} from '../index';
+  defineCommand
+} from '../command/mechanics';
+import { createOutput } from '../output/facade';
+import { createPresentation } from '../presentation/facade';
+import { presentationFormatOptions } from '../presentation/format-options';
 import {
+  createTerminalApp,
   isTerminalCommandOutput,
   type TerminalCommandOutput
 } from './app';

@@ -1,10 +1,10 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
+import { parseOptions } from './parser';
 import {
   mergeOptionsSchema,
-  parseOptions,
   type InferOptions
-} from '../index';
+} from './schema';
 
 describe('mergeOptionsSchema', () => {
   test('merges schemas and preserves literal option types', () => {

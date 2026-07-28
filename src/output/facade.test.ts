@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { createOutput } from '../index';
+import { createOutput } from './facade';
 
 describe('createOutput', () => {
   test('creates semantic output methods and writer channels', async () => {

@@ -2,14 +2,16 @@ import assert from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   createTerminalOutput,
+  type TerminalLineOutput
+} from '../output/terminal-output';
+import {
   createTerminalProgress,
   formatTerminalCount,
   formatTerminalDuration,
   renderTerminalProgress,
-  type TerminalLineOutput,
   type TerminalProgressSnapshot,
   type TerminalProgressState
-} from '../index';
+} from './progress';
 
 function createProgress(
   overrides: Partial<TerminalProgressState> = {}
@@ -231,7 +233,7 @@ describe('createTerminalProgress', () => {
     assert.deepStrictEqual(operations, ['line:still writable']);
   });
 
-  test('validates progress values synchronously', async () => {
+  test('rejects invalid progress values synchronously', () => {
     const progress = createTerminalProgress({
       output: createLineOutput([])
     });
@@ -250,12 +252,6 @@ describe('createTerminalProgress', () => {
       })),
       /Expected elapsedMs to be a finite non-negative number/
     );
-
-    await progress.close();
-
-    assert.doesNotThrow(() => {
-      progress.start(createProgress({ current: -1 }));
-    });
   });
 
   test('closes once, finishes the active line, and ignores later operations', async () => {

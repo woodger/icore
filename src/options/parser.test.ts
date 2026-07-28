@@ -1,14 +1,16 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
+import { IcoreError } from '../errors/icore-error';
 import {
-  IcoreError,
   parseOptions,
   parseOptionsDetailed,
   parseOptionsSubsetDetailed,
-  type InferOptions,
-  type InferProvidedOptions,
   type ParseOptionsSubsetResult
-} from '../index';
+} from './parser';
+import type {
+  InferOptions,
+  InferProvidedOptions
+} from './schema';
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {
@@ -51,85 +53,98 @@ describe('parseOptions', () => {
     );
   });
 
-  test('throws machine-readable option validation errors', () => {
-    const scenarios = [
-      {
-        run: () => parseOptions({}, {
-          unknown: 'value'
-        }),
-        code: 'UNEXPECTED_ARGUMENT',
-        message: "Unexpected argument '--unknown'",
-        details: {
+  test('throws machine-readable errors for unknown options', () => {
+    assert.throws(
+      () => parseOptions({}, {
+        unknown: 'value'
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '--unknown'");
+        assert.deepStrictEqual(error.details, {
           reason: 'unknown-option',
           argument: '--unknown',
           option: 'unknown'
+        });
+
+        return true;
+      }
+    );
+  });
+
+  test('throws machine-readable errors for missing required options', () => {
+    assert.throws(
+      () => parseOptions({
+        token: {
+          type: 'string',
+          required: true
         }
-      },
-      {
-        run: () => parseOptions({
-          token: {
-            type: 'string',
-            required: true
-          }
-        }, {}),
-        code: 'EXPECTED_REQUIRED_ARGUMENT',
-        message: "Expected required argument '--token'",
-        details: {
+      }, {}),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'EXPECTED_REQUIRED_ARGUMENT');
+        assert.strictEqual(error.message, "Expected required argument '--token'");
+        assert.deepStrictEqual(error.details, {
           reason: 'option',
           argument: '--token',
           option: 'token'
+        });
+
+        return true;
+      }
+    );
+  });
+
+  test('throws machine-readable errors for invalid option types', () => {
+    assert.throws(
+      () => parseOptions({
+        limit: {
+          type: 'number'
         }
-      },
-      {
-        run: () => parseOptions({
-          limit: {
-            type: 'number'
-          }
-        }, {
-          limit: 'many'
-        }),
-        code: 'INVALID_OPTION_TYPE',
-        message: "Expected '--limit' as number",
-        details: {
+      }, {
+        limit: 'many'
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'INVALID_OPTION_TYPE');
+        assert.strictEqual(error.message, "Expected '--limit' as number");
+        assert.deepStrictEqual(error.details, {
           argument: '--limit',
           option: 'limit',
           expected: 'number',
           value: 'many'
+        });
+
+        return true;
+      }
+    );
+  });
+
+  test('throws machine-readable errors for invalid option choices', () => {
+    assert.throws(
+      () => parseOptions({
+        format: {
+          type: 'string',
+          choices: ['json']
         }
-      },
-      {
-        run: () => parseOptions({
-          format: {
-            type: 'string',
-            choices: ['json']
-          }
-        } as const, {
-          format: 'xml'
-        }),
-        code: 'INVALID_OPTION_CHOICE',
-        message: "Expected '--format' as one of: json",
-        details: {
+      } as const, {
+        format: 'xml'
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'INVALID_OPTION_CHOICE');
+        assert.strictEqual(error.message, "Expected '--format' as one of: json");
+        assert.deepStrictEqual(error.details, {
           argument: '--format',
           option: 'format',
           choices: ['json'],
           value: 'xml'
-        }
+        });
+
+        return true;
       }
-    ];
-
-    for (const scenario of scenarios) {
-      assert.throws(
-        scenario.run,
-        (error) => {
-          assert.ok(error instanceof IcoreError);
-          assert.strictEqual(error.code, scenario.code);
-          assert.strictEqual(error.message, scenario.message);
-          assert.deepStrictEqual(error.details, scenario.details);
-
-          return true;
-        }
-      );
-    }
+    );
   });
 
   test('rejects missing required options', () => {

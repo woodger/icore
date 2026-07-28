@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { renderTextTable } from '../../index';
+import { renderTextTable } from './table';
 
 describe('renderTextTable', () => {
   test('aligns columns and keeps a trailing newline', () => {
