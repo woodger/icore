@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-28
+
 ### Changed
 
 - Added a production lifecycle example where a pre-bound command result combines

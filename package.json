@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "description": "Dependency-free typed CLI command routing, option parsing, and terminal output mechanics for Node.js",
   "keywords": [
     "cli",
