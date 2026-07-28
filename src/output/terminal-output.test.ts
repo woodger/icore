@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import { createTerminalOutput } from '../index';
+import { createTerminalOutput } from './terminal-output';
 
 type Deferred = {
   promise: Promise<void>;

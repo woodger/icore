@@ -128,6 +128,11 @@ Omit `metadataRequired` when commands may leave out metadata. The setting only
 changes the definitions created by that bound builder; ordinary
 `createCommand()` and other builders keep their existing contracts.
 
+When an application has no command metadata contract, use
+`metadata: undefined` in the bindings and omit `metadataRequired`. This keeps
+the shared binding explicit without requiring a metadata property on command
+definitions.
+
 Bindings describe independent application-level types. If metadata depends on
 the exact option schema, validate that relationship per command with
 `satisfies`, or keep a small application-owned wrapper. The bound builder does

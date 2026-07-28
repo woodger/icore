@@ -151,17 +151,22 @@ Command handlers receive parsed `options`, option-presence metadata in
 prepared `payload`.
 
 Supported terminal results are strings, async string streams, presentation
-results, and `undefined`:
+results, and `undefined`.
 
 Use `isTerminalCommandOutput(...)` to narrow an unknown caller-owned result
 before passing it to `app.writePreparedOutput(...)`.
+
+Text-table rendering supports plain-text cells. Column widths use JavaScript
+string length, so ANSI sequences, emoji, combining characters, tabs, and
+full-width Unicode may be aligned incorrectly.
 
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
 
 Exact public exports live in [`src/index.ts`](src/index.ts) and in the bundled
-TypeScript declarations.
+TypeScript declarations. Consumers import them from the package root; internal
+module paths are not exported.
 
 ## Supported Argument Syntax
 
@@ -245,11 +250,9 @@ throw new CliUsageError(
 whose category is `usage`. Rendering, help text, and the choice of exit code
 remain application policy.
 
-Both guards recognize compatible errors created by another physical copy of
-`icore` in the same JavaScript realm. Current errors carry stable runtime
-brands, while validated unbranded `2.0.x` errors remain recognizable during
-migration. This does not turn errors serialized through JSON, IPC, or worker
-boundaries back into class instances.
+Both guards recognize compatible branded errors created by another physical
+copy of `icore` in the same JavaScript realm. This does not turn errors
+serialized through JSON, IPC, or worker boundaries back into class instances.
 
 Without a custom policy, terminal apps write `Error.message + "\n"` (or
 `String(error) + "\n"` for other thrown values) and return exit code `1`.

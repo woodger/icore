@@ -4,15 +4,15 @@
 
 If the change is not required, do not make it.
 
-If the change adds behavior, do not make it.
+If the change adds behavior beyond the explicit task, do not make it.
 
-If the change removes behavior, do not make it.
+If the change removes behavior without an explicit requirement, do not make it.
 
 If the change is made because "this is how it is usually done", do not make it.
 
-If the change seems safe, do not make it.
+If the only justification is that the change seems safe, do not make it.
 
-If the change seems correct, do not make it.
+If the only justification is that the change seems correct, do not make it.
 
 If there is doubt, leave the code as it is.
 

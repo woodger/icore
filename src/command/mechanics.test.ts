@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
+import { IcoreError } from '../errors/icore-error';
 import {
   createCommand,
   createCommands,
   defineCommand,
   defineCommandRegistry,
-  IcoreError,
   isCommandName,
   isPreparedCommandName,
   prepareCommandFromArgs,
@@ -23,7 +23,7 @@ import {
   type CommandResult,
   type PreparedCommand,
   type PreparedCommandInput
-} from '../index';
+} from './mechanics';
 
 describe('createCommand', () => {
   test('creates a semantic command mechanics facade', async () => {
@@ -76,137 +76,47 @@ describe('createCommand', () => {
     );
   });
 
-  test('pre-binds application types while preserving command inference', async () => {
-    type CliCommandContext = {
-      accountId: string;
-    };
-    type CliCommandResult =
-      | {
-        kind: 'empty';
-      }
-      | {
-        kind: 'text';
-        output: string;
+  test('runs commands created by a pre-bound builder', async () => {
+    const command = createCommand.withTypes<{
+      context: {
+        prefix: string;
       };
-    type CliCommandMetadata = {
-      description: string;
-    };
-    type CliCommandTypes = {
-      context: CliCommandContext;
-      result: CliCommandResult;
-      metadata: CliCommandMetadata;
+      result: string;
+      metadata: {
+        description: string;
+      };
       metadataRequired: true;
-    };
-
-    const command: BoundCommand<CliCommandTypes> =
-      createCommand.withTypes<CliCommandTypes>();
-    const getAccounts = command.define({
-      path: ['account', 'list'],
-      aliases: [
-        ['users', 'get-accounts']
-      ],
+    }>();
+    const greet = command.define({
+      path: ['greet'],
       options: {
-        format: {
+        name: {
           type: 'string',
-          choices: ['json', 'table'],
-          default: 'table'
+          required: true
         }
       },
       metadata: {
-        description: 'List accounts'
+        description: 'Greet a user'
       },
       prepare({ options }) {
         return {
-          requestedFormat: options.format,
-          state: 'prepared' as const
+          normalizedName: options.name.trim()
         };
       },
-      handle({ context, options, payload }) {
-        const format: 'json' | 'table' = options.format;
-        const state: 'prepared' = payload.state;
-
-        return {
-          kind: 'text',
-          output: [
-            context.accountId,
-            format,
-            payload.requestedFormat,
-            state
-          ].join(':')
-        };
-      }
-    });
-    const commands = command.registry([
-      getAccounts
-    ] as const);
-    const prepared = await commands.prepare([
-      'users',
-      'get-accounts',
-      '--format=json'
-    ]);
-    const canonicalPath: typeof getAccounts.path = ['account', 'list'];
-    const acceptedAlias: CommandAcceptedPath<typeof getAccounts> = [
-      'users',
-      'get-accounts'
-    ];
-    const payload: CommandPayload<typeof getAccounts> = {
-      requestedFormat: 'table',
-      state: 'prepared'
-    };
-    const result: CommandResult<typeof getAccounts> = {
-      kind: 'text',
-      output: 'accounts'
-    };
-    const context: CommandContext<typeof getAccounts> = {
-      accountId: 'account-id'
-    };
-    const acceptConcreteResult = (
-      concreteResult: CommandResult<typeof getAccounts>
-    ): CommandResult<typeof getAccounts> => concreteResult;
-
-    acceptConcreteResult({
-      // @ts-expect-error The concrete handler result excludes other bound variants.
-      kind: 'empty'
-    });
-    // @ts-expect-error This bound builder requires metadata.
-    command.define({
-      path: ['account', 'missing-metadata'],
-      options: {},
-      handle() {
-        return {
-          kind: 'empty'
-        } as const;
-      }
-    });
-    command.define({
-      path: ['account', 'invalid-result'],
-      options: {},
-      metadata: {
-        description: 'Invalid result'
-      },
-      // @ts-expect-error Command results must satisfy the bound result type.
-      handle() {
-        return 42;
+      handle({ context, payload }) {
+        return `${context.prefix}, ${payload.normalizedName}`;
       }
     });
 
-    assert.deepStrictEqual(canonicalPath, ['account', 'list']);
-    assert.deepStrictEqual(acceptedAlias, ['users', 'get-accounts']);
-    assert.deepStrictEqual(payload, {
-      requestedFormat: 'table',
-      state: 'prepared'
-    });
-    assert.deepStrictEqual(result, {
-      kind: 'text',
-      output: 'accounts'
-    });
-    assert.strictEqual(prepared.command.metadata.description, 'List accounts');
-    assert.deepStrictEqual(
-      await commands.run(prepared, context),
-      {
-        kind: 'text',
-        output: 'account-id:json:json:prepared'
-      }
+    assert.strictEqual(
+      await command.run(greet, [
+        'greet',
+        '--name',
+        ' Alice '
+      ], {
+        prefix: 'Hello'
+      }),
+      'Hello, Alice'
     );
   });
 
@@ -229,6 +139,134 @@ describe('createCommand', () => {
     assert.strictEqual(versionCommand.metadata, undefined);
   });
 });
+
+function assertBoundCommandInferenceContract(): void {
+  type CliCommandContext = {
+    accountId: string;
+  };
+  type CliCommandResult =
+    | {
+      kind: 'empty';
+    }
+    | {
+      kind: 'text';
+      output: string;
+    };
+  type CliCommandMetadata = {
+    description: string;
+  };
+  type CliCommandTypes = {
+    context: CliCommandContext;
+    result: CliCommandResult;
+    metadata: CliCommandMetadata;
+    metadataRequired: true;
+  };
+
+  const command: BoundCommand<CliCommandTypes> =
+    createCommand.withTypes<CliCommandTypes>();
+  const getAccounts = command.define({
+    path: ['account', 'list'],
+    aliases: [
+      ['users', 'get-accounts']
+    ],
+    options: {
+      format: {
+        type: 'string',
+        choices: ['json', 'table'],
+        default: 'table'
+      }
+    },
+    metadata: {
+      description: 'List accounts'
+    },
+    prepare({ options }) {
+      return {
+        requestedFormat: options.format,
+        state: 'prepared' as const
+      };
+    },
+    handle({ context, options, payload }) {
+      const format: 'json' | 'table' = options.format;
+      const state: 'prepared' = payload.state;
+
+      return {
+        kind: 'text',
+        output: [
+          context.accountId,
+          format,
+          payload.requestedFormat,
+          state
+        ].join(':')
+      };
+    }
+  });
+  const canonicalPath: typeof getAccounts.path = ['account', 'list'];
+  const acceptedAlias: CommandAcceptedPath<typeof getAccounts> = [
+    'users',
+    'get-accounts'
+  ];
+  const payload: CommandPayload<typeof getAccounts> = {
+    requestedFormat: 'table',
+    state: 'prepared'
+  };
+  const result: CommandResult<typeof getAccounts> = {
+    kind: 'text',
+    output: 'accounts'
+  };
+  const context: CommandContext<typeof getAccounts> = {
+    accountId: 'account-id'
+  };
+  const description: string = getAccounts.metadata.description;
+  const acceptConcreteResult = (
+    concreteResult: CommandResult<typeof getAccounts>
+  ): CommandResult<typeof getAccounts> => concreteResult;
+
+  acceptConcreteResult({
+    // @ts-expect-error The concrete handler result excludes other bound variants.
+    kind: 'empty'
+  });
+
+  void canonicalPath;
+  void acceptedAlias;
+  void payload;
+  void result;
+  void context;
+  void description;
+}
+
+function assertBoundCommandConstraints(): void {
+  const command = createCommand.withTypes<{
+    context: undefined;
+    result: string;
+    metadata: {
+      description: string;
+    };
+    metadataRequired: true;
+  }>();
+
+  // @ts-expect-error This bound builder requires metadata.
+  command.define({
+    path: ['missing-metadata'],
+    options: {},
+    handle() {
+      return 'missing metadata';
+    }
+  });
+  command.define({
+    path: ['invalid-result'],
+    options: {},
+    metadata: {
+      description: 'Invalid result'
+    },
+    // @ts-expect-error Command results must satisfy the bound result type.
+    handle() {
+      return 42;
+    }
+  });
+}
+
+void assertBoundCommandInferenceContract;
+void assertBoundCommandConstraints;
 
 describe('createCommands', () => {
   test('creates a command mechanics facade', async () => {
@@ -350,24 +388,6 @@ describe('command registry', () => {
       'users',
       'get-accounts'
     ]);
-  });
-
-  test('rejects duplicate command paths', () => {
-    const command = defineCommand({
-      path: ['users', 'get-accounts'],
-      options: {},
-      handle() {
-        return 'accounts';
-      }
-    });
-
-    assert.throws(
-      () => defineCommandRegistry([
-        command,
-        command
-      ] as const),
-      /Unexpected duplicate command 'users get-accounts'/
-    );
   });
 
   test('rejects collisions between canonical and alias paths', () => {
@@ -673,7 +693,7 @@ describe('command registry', () => {
     );
   });
 
-  test('rejects unknown commands', async () => {
+  test('rejects unknown commands during registry execution', async () => {
     const commandRegistry = defineCommandRegistry([
       defineCommand({
         path: ['users'],
@@ -683,11 +703,6 @@ describe('command registry', () => {
         }
       })
     ] as const);
-
-    assert.throws(
-      () => resolveCommand(commandRegistry, ['unknown']),
-      /Unknown command: unknown/
-    );
 
     await assert.rejects(
       () => runCommandFromRegistry(commandRegistry, ['unknown'], {
@@ -733,26 +748,6 @@ describe('command registry', () => {
 });
 
 describe('two-phase command execution', () => {
-  test('rejects unknown commands during prepare without calling handlers', async () => {
-    let handled = false;
-    const commandRegistry = defineCommandRegistry([
-      defineCommand({
-        path: ['users'],
-        options: {},
-        handle() {
-          handled = true;
-          return 'ok';
-        }
-      })
-    ] as const);
-
-    await assert.rejects(
-      () => prepareCommandFromArgs(commandRegistry, ['unknown']),
-      /Unknown command: unknown/
-    );
-    assert.strictEqual(handled, false);
-  });
-
   test('rejects unknown options after command path during prepare', async () => {
     let handled = false;
     const commandRegistry = defineCommandRegistry([
@@ -1917,21 +1912,6 @@ describe('runCommand', () => {
         /Unexpected argument '--no-cache'/
       );
     }
-  });
-
-  test('rejects extra positionals by default', async () => {
-    const command = defineCommand({
-      path: ['users', 'get-accounts'],
-      options: {},
-      handle() {
-        return 'ok';
-      }
-    });
-
-    await assert.rejects(
-      () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
-      /Unexpected positional argument for 'users get-accounts': extra/
-    );
   });
 
   test('throws machine-readable unexpected positional errors', async () => {

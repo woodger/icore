@@ -19,9 +19,11 @@ export function renderTextTable(rows: readonly TextTableRow[]): string {
   }
 
   const columnCount = Math.max(...rows.map((row) => row.length));
-  const widths = Array.from({ length: columnCount }, (_, columnIndex) =>
-    Math.max(...rows.map((row) => (row[columnIndex] ?? '').length))
-  );
+  const widths = Array.from({ length: columnCount }, (unusedValue, columnIndex) => {
+    void unusedValue;
+
+    return Math.max(...rows.map((row) => (row[columnIndex] ?? '').length));
+  });
 
   return [
     ...rows.map((row) =>

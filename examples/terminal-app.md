@@ -19,8 +19,8 @@ parse global shortcuts
 → inspect metadata and payload
 → create selected resources
 → app.commands.run()
-→ finish application-owned interactive output
-→ app.writePreparedOutput()
+→ terminal result: finish interactive output → app.writePreparedOutput()
+  or long-running result: transfer handle, scope, and interactive output
 → cleanup
 → app.reportError() when a failure was captured
 ```
@@ -41,6 +41,7 @@ import {
   createOutput,
   createPresentation,
   createTerminalApp,
+  isTerminalCommandOutput,
   isUsageError,
   mergeOptionsSchema,
   presentationFormatOptions,
@@ -52,6 +53,29 @@ type ResourceName = 'database' | 'remote-api';
 type AppContext = {
   currentUser: string;
 };
+
+type LongRunningCommandHandle = {
+  completed: Promise<void>;
+  close(): Promise<void>;
+};
+
+type LongRunningCommandResult = {
+  kind: 'long-running';
+  handle: LongRunningCommandHandle;
+};
+
+type CliCommandResult =
+  | TerminalCommandOutput
+  | LongRunningCommandResult;
+
+function isLongRunningCommandResult(
+  result: CliCommandResult
+): result is LongRunningCommandResult {
+  return typeof result === 'object'
+    && result !== null
+    && 'kind' in result
+    && result.kind === 'long-running';
+}
 
 type CommandMetadata = {
   description: string;
@@ -69,12 +93,16 @@ const runtimeOptions = {
 
 const command = createCommand.withTypes<{
   context: AppContext;
-  result: TerminalCommandOutput;
+  result: CliCommandResult;
   metadata: CommandMetadata;
   metadataRequired: true;
 }>();
 
 const presentation = createPresentation();
+
+declare function startUserWatcher(
+  context: AppContext
+): LongRunningCommandHandle;
 
 const currentUserCommand = command.define({
   path: ['users', 'current'],
@@ -93,8 +121,24 @@ const currentUserCommand = command.define({
   }
 });
 
+const watchUsersCommand = command.define({
+  path: ['users', 'watch'],
+  options: runtimeOptions,
+  metadata: {
+    description: 'Watch the current user',
+    resources: ['remote-api']
+  },
+  handle({ context }) {
+    return {
+      kind: 'long-running',
+      handle: startUserWatcher(context)
+    } satisfies LongRunningCommandResult;
+  }
+});
+
 const commands = command.registry([
-  currentUserCommand
+  currentUserCommand,
+  watchUsersCommand
 ] as const);
 
 const app = createTerminalApp({
@@ -190,6 +234,12 @@ declare function createInvocationScope(
     insecure: boolean;
   }
 ): Promise<InvocationScope>;
+
+declare function transferLongRunningLifecycle(input: {
+  handle: LongRunningCommandHandle;
+  scope: InvocationScope;
+  signals: readonly ['SIGINT', 'SIGTERM'];
+}): void;
 
 declare function renderHelp(
   definitions: typeof commands.definitions,
@@ -345,8 +395,24 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'execute';
     const result = await app.commands.run(prepared, scope.context);
 
+    if (isLongRunningCommandResult(result)) {
+      phase = 'external';
+      transferLongRunningLifecycle({
+        handle: result.handle,
+        scope,
+        signals: ['SIGINT', 'SIGTERM']
+      });
+      scope = undefined;
+
+      return 0;
+    }
+
     phase = 'external';
     await scope.finishInteractiveOutput();
+
+    if (!isTerminalCommandOutput(result)) {
+      throw new TypeError('Expected terminal command output');
+    }
 
     phase = 'write';
     await app.writePreparedOutput(prepared, result);
@@ -388,12 +454,21 @@ caller cannot distinguish those failures, so this recipe reports its rejection
 as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths can
 distinguish `render` from `write` internally.
 
-If a command result may contain a long-running handle, branch on that
-application-specific result before `writePreparedOutput(...)`. Transfer the
-handle and resource scope to the SIGINT/SIGTERM lifecycle instead of closing
-them in the invocation `finally`. When the result type is not already limited
-to `TerminalCommandOutput`, narrow it with `isTerminalCommandOutput(...)`
-before writing.
+The bound `CliCommandResult` is an upper bound. The regular command still
+retains its concrete presentation result, while `watchUsersCommand` retains its
+concrete `LongRunningCommandResult`.
+
+`transferLongRunningLifecycle(...)` is application policy. It must return only
+after registering signal handling and cleanup for both the handle and scope.
+On success the runner clears `scope`, so the invocation `finally` no longer
+owns it. If transfer throws, it must close the handle without taking scope
+ownership; the invocation `finally` then closes the scope. The transferred
+lifecycle also owns finishing interactive output before writing later
+diagnostics.
+
+Only results accepted by `isTerminalCommandOutput(...)` reach
+`writePreparedOutput(...)`. This keeps custom handles, process signals, and
+long-running resource ownership outside the terminal app boundary.
 
 ## Choose Presentation Ownership
 

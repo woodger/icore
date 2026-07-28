@@ -99,9 +99,9 @@ derive one projection from the other.
 The user sees the table in stdout:
 
 ```text
-id         active
-job-1      true
-job-2      false
+id     active
+job-1  true
+job-2  false
 ```
 
 The status line goes to stderr:

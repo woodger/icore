@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { EventEmitter } from 'node:events';
 import { describe, test } from 'node:test';
-import { createBackpressureTextWriter } from '../index';
+import { createBackpressureTextWriter } from './text-writer';
 
 function createEventedBackpressureSink() {
   const events = new EventEmitter();

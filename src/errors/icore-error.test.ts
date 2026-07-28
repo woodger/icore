@@ -25,18 +25,6 @@ class ForeignBrandedIcoreError extends Error {
   }
 }
 
-const LegacyIcoreError = class IcoreError extends Error {
-  constructor(
-    readonly code: unknown,
-    readonly category: unknown,
-    readonly details: unknown
-  ) {
-    super('Legacy icore error');
-
-    this.name = 'IcoreError';
-  }
-};
-
 describe('IcoreError', () => {
   test('categorizes usage errors', () => {
     const errors = [
@@ -130,25 +118,6 @@ describe('isIcoreError', () => {
     assert.ok(isIcoreError(error, 'UNKNOWN_COMMAND'));
     assert.equal(error.details.command, 'missing');
     assert.deepStrictEqual(error.details.positionals, ['missing']);
-  });
-
-  test('recognizes a compatible unbranded 2.x error', () => {
-    const legacyError = new LegacyIcoreError(
-      'UNEXPECTED_POSITIONAL',
-      'usage',
-      {
-        command: 'users current',
-        positional: 'extra',
-        positionals: ['extra'],
-        matchedPath: ['users', 'current']
-      }
-    );
-    const error: unknown = legacyError;
-
-    assert.equal(legacyError instanceof IcoreError, false);
-    assert.ok(isIcoreError(error, 'UNEXPECTED_POSITIONAL'));
-    assert.equal(error.details.command, 'users current');
-    assert.deepStrictEqual(error.details.matchedPath, ['users', 'current']);
   });
 
   test('narrows an error to an exact code', () => {

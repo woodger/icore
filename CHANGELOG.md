@@ -14,6 +14,20 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-28
+
+### Changed
+
+- Added a production lifecycle example where a pre-bound command result combines
+  terminal output with an application-owned long-running command handle.
+- Exposed only the package root through the package `exports` map. Internal
+  module paths are no longer importable.
+
+### Removed
+
+- Removed transitional recognition of unbranded `2.0.x` error instances.
+  Cross-copy error guards now require stable runtime brands.
+
 ## [2.0.5] - 2026-07-25
 
 ### Added
@@ -393,6 +407,13 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.1.0]: https://www.npmjs.com/package/icore/v/2.1.0
+[2.0.5]: https://www.npmjs.com/package/icore/v/2.0.5
+[2.0.4]: https://www.npmjs.com/package/icore/v/2.0.4
+[2.0.3]: https://www.npmjs.com/package/icore/v/2.0.3
+[2.0.2]: https://www.npmjs.com/package/icore/v/2.0.2
+[2.0.1]: https://www.npmjs.com/package/icore/v/2.0.1
+[2.0.0]: https://www.npmjs.com/package/icore/v/2.0.0
 [1.0.19]: https://www.npmjs.com/package/icore/v/1.0.19
 [1.0.18]: https://www.npmjs.com/package/icore/v/1.0.18
 [1.0.17]: https://www.npmjs.com/package/icore/v/1.0.17

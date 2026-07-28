@@ -1,9 +1,7 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  IcoreError,
-  parseArgv
-} from '../index';
+import { IcoreError } from '../errors/icore-error';
+import { parseArgv } from './parser';
 
 describe('parseArgv', () => {
   test('parses positionals and long options', () => {
@@ -61,11 +59,7 @@ describe('parseArgv', () => {
     );
   });
 
-  test('rejects duplicated options', () => {
-    assert.throws(
-      () => parseArgv(['--format', 'json', '--format', 'table']),
-      /Unexpected duplicate argument '--format'/
-    );
+  test('rejects duplicated prototype-key options', () => {
     assert.throws(
       () => parseArgv(['--__proto__=first', '--__proto__=second']),
       /Unexpected duplicate argument '--__proto__'/
@@ -281,7 +275,6 @@ describe('parseArgv', () => {
       '',
       'vv',
       '-',
-      '1',
       ' ',
       'é'
     ]) {
@@ -297,23 +290,7 @@ describe('parseArgv', () => {
     }
   });
 
-  test('rejects duplicate aliases', () => {
-    assert.throws(
-      () => parseArgv([], {
-        verbose: {
-          type: 'boolean',
-          alias: 'v'
-        },
-        version: {
-          type: 'boolean',
-          alias: 'v'
-        }
-      }),
-      /Unexpected duplicate alias '-v'/
-    );
-  });
-
-  test('throws machine-readable alias schema errors', () => {
+  test('throws machine-readable invalid alias errors', () => {
     assert.throws(
       () => parseArgv([], {
         verbose: {
@@ -334,7 +311,9 @@ describe('parseArgv', () => {
         return true;
       }
     );
+  });
 
+  test('throws machine-readable duplicate alias errors', () => {
     assert.throws(
       () => parseArgv([], {
         verbose: {

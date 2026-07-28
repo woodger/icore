@@ -116,6 +116,11 @@ single table or CSV view still has one format-independent shape; use direct
 renderers when the application needs different projections for different
 formats.
 
+Text-table cells are plain text. Width calculation uses JavaScript string
+length rather than terminal display width, so ANSI sequences, emoji, combining
+characters, tabs, and full-width Unicode may be aligned incorrectly. JSON and
+CSV rendering do not use text-table column alignment.
+
 ## Supported Formats
 
 Use `presentation.formats`, `presentationFormats`, and

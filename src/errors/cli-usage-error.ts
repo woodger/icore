@@ -66,7 +66,7 @@ function isCliUsageError(error: unknown): error is CliUsageError {
       return true;
     }
 
-    return hasLegacyErrorIdentity(error, 'CliUsageError');
+    return false;
   }
   catch {
     return false;
@@ -75,21 +75,4 @@ function isCliUsageError(error: unknown): error is CliUsageError {
 
 function hasOwnProperty(value: object, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-function hasLegacyErrorIdentity(error: Error, name: string): boolean {
-  if (!hasOwnProperty(error, 'name') || error.name !== name) {
-    return false;
-  }
-
-  const prototype: unknown = Object.getPrototypeOf(error);
-
-  if (typeof prototype !== 'object' || prototype === null) {
-    return false;
-  }
-
-  const constructor = Reflect.get(prototype, 'constructor');
-
-  return typeof constructor === 'function'
-    && constructor.name === name;
 }

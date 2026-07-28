@@ -237,13 +237,13 @@ export function createTerminalApp<
     prepared: TPrepared,
     context: CommandContext<TCommands[number]>
   ): Promise<number> {
-    return runPreparedFromArgs(prepared, context);
+    return runPreparedTerminalCommand(prepared, context);
   }
 
-  async function runPreparedFromArgs(
+  async function runPreparedTerminalCommand(
     prepared: TPrepared,
     context: CommandContext<TCommands[number]>,
-    args?: readonly string[]
+    sourceArgs?: readonly string[]
   ): Promise<number> {
     let result: unknown;
 
@@ -254,7 +254,7 @@ export function createTerminalApp<
       return reportError(error, createPreparedErrorContext(
         'execute',
         prepared,
-        args
+        sourceArgs
       ));
     }
 
@@ -271,7 +271,7 @@ export function createTerminalApp<
       return reportError(error, createPreparedErrorContext(
         'render',
         prepared,
-        args
+        sourceArgs
       ));
     }
 
@@ -284,7 +284,7 @@ export function createTerminalApp<
       return reportError(error, createPreparedErrorContext(
         'write',
         prepared,
-        args
+        sourceArgs
       ));
     }
   }
@@ -312,7 +312,7 @@ export function createTerminalApp<
         });
       }
 
-      return runPreparedFromArgs(prepared, context, args);
+      return runPreparedTerminalCommand(prepared, context, args);
     }
   };
 }
