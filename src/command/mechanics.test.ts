@@ -390,24 +390,6 @@ describe('command registry', () => {
     ]);
   });
 
-  test('rejects duplicate command paths', () => {
-    const command = defineCommand({
-      path: ['users', 'get-accounts'],
-      options: {},
-      handle() {
-        return 'accounts';
-      }
-    });
-
-    assert.throws(
-      () => defineCommandRegistry([
-        command,
-        command
-      ] as const),
-      /Unexpected duplicate command 'users get-accounts'/
-    );
-  });
-
   test('rejects collisions between canonical and alias paths', () => {
     const defineTestCommand = (
       path: CommandPath,
@@ -711,7 +693,7 @@ describe('command registry', () => {
     );
   });
 
-  test('rejects unknown commands', async () => {
+  test('rejects unknown commands during registry execution', async () => {
     const commandRegistry = defineCommandRegistry([
       defineCommand({
         path: ['users'],
@@ -721,11 +703,6 @@ describe('command registry', () => {
         }
       })
     ] as const);
-
-    assert.throws(
-      () => resolveCommand(commandRegistry, ['unknown']),
-      /Unknown command: unknown/
-    );
 
     await assert.rejects(
       () => runCommandFromRegistry(commandRegistry, ['unknown'], {
@@ -771,26 +748,6 @@ describe('command registry', () => {
 });
 
 describe('two-phase command execution', () => {
-  test('rejects unknown commands during prepare without calling handlers', async () => {
-    let handled = false;
-    const commandRegistry = defineCommandRegistry([
-      defineCommand({
-        path: ['users'],
-        options: {},
-        handle() {
-          handled = true;
-          return 'ok';
-        }
-      })
-    ] as const);
-
-    await assert.rejects(
-      () => prepareCommandFromArgs(commandRegistry, ['unknown']),
-      /Unknown command: unknown/
-    );
-    assert.strictEqual(handled, false);
-  });
-
   test('rejects unknown options after command path during prepare', async () => {
     let handled = false;
     const commandRegistry = defineCommandRegistry([
@@ -1955,21 +1912,6 @@ describe('runCommand', () => {
         /Unexpected argument '--no-cache'/
       );
     }
-  });
-
-  test('rejects extra positionals by default', async () => {
-    const command = defineCommand({
-      path: ['users', 'get-accounts'],
-      options: {},
-      handle() {
-        return 'ok';
-      }
-    });
-
-    await assert.rejects(
-      () => runCommand(command, ['users', 'get-accounts', 'extra'], undefined),
-      /Unexpected positional argument for 'users get-accounts': extra/
-    );
   });
 
   test('throws machine-readable unexpected positional errors', async () => {

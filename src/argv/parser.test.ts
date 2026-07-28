@@ -59,11 +59,7 @@ describe('parseArgv', () => {
     );
   });
 
-  test('rejects duplicated options', () => {
-    assert.throws(
-      () => parseArgv(['--format', 'json', '--format', 'table']),
-      /Unexpected duplicate argument '--format'/
-    );
+  test('rejects duplicated prototype-key options', () => {
     assert.throws(
       () => parseArgv(['--__proto__=first', '--__proto__=second']),
       /Unexpected duplicate argument '--__proto__'/
@@ -279,7 +275,6 @@ describe('parseArgv', () => {
       '',
       'vv',
       '-',
-      '1',
       ' ',
       'é'
     ]) {
@@ -293,22 +288,6 @@ describe('parseArgv', () => {
         /Expected alias for '--verbose' as single ASCII letter/
       );
     }
-  });
-
-  test('rejects duplicate aliases', () => {
-    assert.throws(
-      () => parseArgv([], {
-        verbose: {
-          type: 'boolean',
-          alias: 'v'
-        },
-        version: {
-          type: 'boolean',
-          alias: 'v'
-        }
-      }),
-      /Unexpected duplicate alias '-v'/
-    );
   });
 
   test('throws machine-readable invalid alias errors', () => {

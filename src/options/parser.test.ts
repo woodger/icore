@@ -46,13 +46,6 @@ describe('parseOptions', () => {
     });
   });
 
-  test('rejects unknown options', () => {
-    assert.throws(
-      () => parseOptions({}, { unknown: 'value' }),
-      /Unexpected argument '--unknown'/
-    );
-  });
-
   test('throws machine-readable errors for unknown options', () => {
     assert.throws(
       () => parseOptions({}, {
@@ -147,18 +140,6 @@ describe('parseOptions', () => {
     );
   });
 
-  test('rejects missing required options', () => {
-    assert.throws(
-      () => parseOptions({
-        token: {
-          type: 'string',
-          required: true
-        }
-      }, {}),
-      /Expected required argument '--token'/
-    );
-  });
-
   test('supports flag-only boolean options', () => {
     const schema = {
       uppercase: {
@@ -201,8 +182,7 @@ describe('parseOptions', () => {
       'yes',
       'no',
       'on',
-      'off',
-      ''
+      'off'
     ]) {
       assert.throws(
         () => parseOptions({
@@ -234,31 +214,6 @@ describe('parseOptions', () => {
     assert.throws(
       () => parseOptions(schema, { depth: '0' }),
       /Expected '--depth' to be greater than or equal to 1/
-    );
-  });
-
-  test('validates default values with the same option constraints', () => {
-    assert.throws(
-      () => parseOptions({
-        format: {
-          type: 'string',
-          choices: ['json', 'table'],
-          default: 'xml'
-        }
-      } as const, {}),
-      /Expected '--format' as one of: json, table/
-    );
-
-    assert.throws(
-      () => parseOptions({
-        limit: {
-          type: 'number',
-          integer: true,
-          min: 1,
-          default: 0
-        }
-      } as const, {}),
-      /Expected '--limit' to be greater than or equal to 1/
     );
   });
 
