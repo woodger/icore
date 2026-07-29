@@ -340,7 +340,9 @@ describe('createTerminalApp', () => {
         options: {},
         handle(): ShutdownHandle {
           return {
-            close() {}
+            close() {
+              // The test only needs a recognizable lifecycle handle.
+            }
           };
         }
       }),

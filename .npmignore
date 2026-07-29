@@ -2,5 +2,5 @@ docs/
 src/
 yarn.lock
 tsconfig.json
-eslint.config.mjs
+biome.json
 **/*.test.*

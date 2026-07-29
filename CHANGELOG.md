@@ -20,6 +20,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   `TerminalApp` presentation, output, and error reporting before the full
   command registry is loaded.
 
+### Changed
+
+- Replaced ESLint with Biome for development linting.
+
 ## [2.1.0] - 2026-07-28
 
 ### Changed
