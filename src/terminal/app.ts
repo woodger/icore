@@ -191,6 +191,9 @@ export type TerminalApp<
  *
  * Command handlers keep ownership of application work; this facade only
  * prepares commands, renders supported terminal results, and writes output.
+ *
+ * An empty command registry is supported for bootstrap-only presentation,
+ * output, and error reporting. It does not provide resolvable commands.
  */
 export function createTerminalApp<
   const TCommands extends readonly TerminalCommandDefinition[]

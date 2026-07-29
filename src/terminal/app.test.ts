@@ -468,17 +468,9 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, 'command failed\n');
   });
 
-  test('reports errors with the default text and exit code', async () => {
+  test('reports bootstrap errors without registered commands', async () => {
     const memory = createMemoryOutput();
-    const commands = createCommands([
-      defineCommand({
-        path: ['status'],
-        options: {},
-        handle() {
-          return undefined;
-        }
-      })
-    ] as const);
+    const commands = createCommands([] as const);
     const app = createTerminalApp({
       commands,
       output: memory.output

@@ -146,6 +146,12 @@ The terminal application exposes the main lifecycle operations:
 - `app.reportError(error, context?)` applies the configured terminal error
   policy and returns a process-style exit code.
 
+An empty command registry is supported for a bootstrap-only `TerminalApp` that
+uses caller-owned global shortcuts and needs presentation, output, or
+`reportError(...)` before the full registry is loaded. It has no resolvable
+commands; construct the command application separately and reuse the same
+output and error policy instead of replacing the registry in place.
+
 Command handlers receive parsed `options`, option-presence metadata in
 `provided`, remaining `positionals`, caller-owned `context`, and an optional
 prepared `payload`.

@@ -14,6 +14,12 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Added
+
+- Explicitly supported an empty command registry for bootstrap-only
+  `TerminalApp` presentation, output, and error reporting before the full
+  command registry is loaded.
+
 ## [2.1.0] - 2026-07-28
 
 ### Changed
