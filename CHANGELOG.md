@@ -23,6 +23,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 ### Changed
 
 - Replaced ESLint with Biome for development linting.
+- Updated the development toolchain to TypeScript 7.0.2 and FWA 2.1.0. The
+  test runner no longer depends on the project's TypeScript compiler API.
 
 ## [2.1.0] - 2026-07-28
 
