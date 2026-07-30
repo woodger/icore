@@ -1,22 +1,13 @@
 {
   "name": "icore",
   "version": "2.1.0",
-  "description": "Dependency-free typed CLI command routing, option parsing, and terminal output mechanics for Node.js",
+  "description": "Typed CLI command mechanics for Node.js that keep argument parsing separate from application logics",
   "keywords": [
     "cli",
     "command-line",
-    "typescript",
+    "flags",
     "typed-cli",
-    "declarative-cli",
-    "argv",
-    "argument-parser",
-    "option-parser",
-    "command-router",
-    "command-registry",
-    "command-aliases",
-    "terminal-output",
-    "dependency-free",
-    "nodejs"
+    "argv"
   ],
   "author": {
     "name": "Stanislav Potemkin",
