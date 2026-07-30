@@ -22,7 +22,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ### Changed
 
-- Replaced ESLint with Biome for development linting.
+- Replaced ESLint with Biome for development linting while preserving the
+  previous error-level checks where Biome defaults to warning or info.
 - Updated the development toolchain to TypeScript 7.0.2 and FWA 2.1.0. The
   test runner no longer depends on the project's TypeScript compiler API.
 - Committed `yarn.lock` for reproducible development and CI installs while

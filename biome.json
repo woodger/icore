@@ -18,25 +18,46 @@
     "rules": {
       "recommended": true,
       "complexity": {
+        "noAdjacentSpacesInRegex": "error",
         "noArguments": "error",
         "noBannedTypes": "error",
+        "noExtraBooleanCast": "error",
+        "noUselessCatch": "error",
+        "noUselessEscapeInRegex": "error",
+        "noUselessThisAlias": "error",
+        "noUselessTypeConstraint": "error",
         "useLiteralKeys": "off"
       },
       "correctness": {
         "noUnusedFunctionParameters": "error",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUnusedLabels": "error",
+        "noUnusedPrivateClassMembers": "error",
+        "noUnusedVariables": "error"
       },
       "style": {
         "noCommonJs": "error",
         "noNamespace": "error",
+        "useArrayLiterals": "error",
+        "useAsConstAssertion": "error",
         "useConst": "error",
         "useExportType": "off",
         "useSpreadOverApply": "error"
       },
       "suspicious": {
+        "noCatchAssign": "error",
         "noConfusingVoidType": "off",
+        "noConstantBinaryExpressions": "error",
+        "noDuplicateEnumValues": "error",
+        "noEmptyBlockStatements": "error",
         "noExplicitAny": "error",
-        "noUnusedExpressions": "error"
+        "noExtraNonNullAssertion": "error",
+        "noIrregularWhitespace": "error",
+        "noPrototypeBuiltins": "error",
+        "noTsIgnore": "error",
+        "noUnusedExpressions": "error",
+        "noUselessRegexBackrefs": "error",
+        "noVar": "error"
       }
     }
   },
