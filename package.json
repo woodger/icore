@@ -18,6 +18,9 @@
     "type": "git",
     "url": "git+https://github.com/woodger/icore.git"
   },
+  "directories": {
+    "doc": "docs"
+  },
   "engines": {
     "node": ">=16.9.0"
   },

@@ -1,6 +1,6 @@
 # Production Terminal Application
 
-The [README quick start](../readme.md#quick-start) uses `app.run(...)` because
+The [README quick start](../../readme.md#quick-start) uses `app.run(...)` because
 that is the clearest entrypoint for a small CLI with an already available
 context.
 

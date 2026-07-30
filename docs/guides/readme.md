@@ -1,15 +1,15 @@
-# Examples
+# Guides
 
-These examples are guide-style notes for application code. They explain what to
-put into a consuming project, how to run it from a terminal, what output to
-expect, and why a particular shape is useful or intentionally limited.
+These guides show application code for consuming projects. They explain what to
+put into a project, how to run it from a terminal, what output to expect, and
+why a particular shape is useful or intentionally limited.
 
 ## Terminal Application
 
 - [terminal-app.md](terminal-app.md) is the main production recipe for global
   shortcuts, preparation, metadata-driven resources, execution, output,
   cleanup, and error reporting. The compact `app.run(...)` path remains in the
-  [README quick start](../readme.md#quick-start).
+  [README quick start](../../readme.md#quick-start).
 - [practical-cli-patterns.md](practical-cli-patterns.md) shows application-level
   patterns for schema-aware global help/version shortcuts, metadata-driven
   command help, deprecated options, and edge-case argument handling.

@@ -100,11 +100,11 @@ with defaults are always present; optional options are returned as
 Applications that share command context, result, and metadata contracts can
 bind those types once with `createCommand.withTypes<...>()`. Per-command schema,
 path, aliases, prepared payload, and concrete result types remain inferred.
-See [Bind application command types once](examples/option-schemas.md#bind-application-command-types-once).
+See [Bind application command types once](docs/guides/option-schemas.md#bind-application-command-types-once).
 
 `app.run(...)` is the compact path. Applications that handle global shortcuts,
 select runtime resources after preparation, or own cleanup should continue with
-the [production terminal lifecycle](examples/terminal-app.md).
+the [production terminal lifecycle](docs/guides/terminal-app.md).
 
 `strict: true` rejects options placed before the command path. String output is
 written exactly as returned, so include `\n` when line output is intended.
@@ -119,22 +119,22 @@ Start with the highest-level API that fits the application:
 | Need | Start with | Detailed guide |
 | --- | --- | --- |
 | Simple terminal application | `app.run(...)` | [Quick Start](#quick-start) |
-| Production shortcuts and resource lifecycle | `app.prepare(...)` and `app.commands.run(...)` | [Production Terminal Application](examples/terminal-app.md) |
-| Commands and option schemas | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Option Schemas](examples/option-schemas.md) |
-| Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](examples/custom-command-flow.md) |
-| One flat projection for every format | `createPresentation()` | [Presentation And Output](examples/presentation-output.md) |
-| Different JSON, table, or CSV projections | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Presentation And Output](examples/presentation-output.md) |
-| Explicit stdout/stderr writing | `createOutput()` | [Output Writers](examples/output-writers.md) |
-| Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](examples/readme.md#primitive-mechanics) |
+| Production shortcuts and resource lifecycle | `app.prepare(...)` and `app.commands.run(...)` | [Production Terminal Application](docs/guides/terminal-app.md) |
+| Commands and option schemas | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Option Schemas](docs/guides/option-schemas.md) |
+| Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](docs/guides/custom-command-flow.md) |
+| One flat projection for every format | `createPresentation()` | [Presentation And Output](docs/guides/presentation-output.md) |
+| Different JSON, table, or CSV projections | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Presentation And Output](docs/guides/presentation-output.md) |
+| Explicit stdout/stderr writing | `createOutput()` | [Output Writers](docs/guides/output-writers.md) |
+| Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](docs/guides/readme.md#primitive-mechanics) |
 
 `createTerminalOutput()` and `createTerminalProgress()` remain available as
 deprecated `2.x` compatibility exports. Do not use them in new Consumers;
 keep interactive output and progress rendering in the consuming application.
 `createOutput()` preserves sink backpressure but does not serialize
 application-owned progress with regular output.
-The [application-owned output guide](examples/output-writers.md#application-owned-interactive-output)
+The [application-owned output guide](docs/guides/output-writers.md#application-owned-interactive-output)
 describes the recommended boundary. The retained
-[migration guide](examples/interactive-output.md) documents the legacy
+[migration guide](docs/guides/interactive-output.md) documents the legacy
 contract.
 
 The terminal application exposes the main lifecycle operations:
@@ -170,7 +170,8 @@ full-width Unicode may be aligned incorrectly.
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
 
-Exact public exports live in [`src/index.ts`](src/index.ts) and in the bundled
+Exact public exports live in
+[`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) and in the bundled
 TypeScript declarations. Consumers import them from the package root; internal
 module paths are not exported.
 
@@ -191,7 +192,7 @@ Option names are exact: `icore` does not convert `camelCase` to `kebab-case`.
 Explicit boolean values such as `--verbose=true`, attached short values such as
 `-nAlice`, and grouped aliases such as `-abc` are not supported.
 
-See [CLI Argument Syntax](examples/cli-argument-syntax.md) for parsing examples,
+See [CLI Argument Syntax](docs/guides/cli-argument-syntax.md) for parsing examples,
 edge cases, duplicate handling, and the option terminator contract.
 
 ## Error Handling
@@ -267,25 +268,25 @@ Application-specific help remains application policy.
 Custom lifecycles can call `app.reportError(...)` to reuse the same rendering
 and exit-code policy. The complete prepare, execute, write, and external phase
 flow is shown in the
-[production terminal lifecycle](examples/terminal-app.md#own-resources-cleanup-and-error-ordering).
+[production terminal lifecycle](docs/guides/terminal-app.md#own-resources-cleanup-and-error-ordering).
 
 ## Guides
 
-The [examples index](examples/readme.md) routes from regular terminal apps to
+The [guides index](docs/guides/readme.md) routes from regular terminal apps to
 lower-level mechanics. Useful starting points:
 
-- [Production Terminal Application](examples/terminal-app.md) — global
+- [Production Terminal Application](docs/guides/terminal-app.md) — global
   shortcuts, preparation, metadata-driven resource selection, execution,
   output, cleanup, and reusable error reporting;
-- [Option Schemas](examples/option-schemas.md) — strings, booleans, numbers,
+- [Option Schemas](docs/guides/option-schemas.md) — strings, booleans, numbers,
   choices, defaults, aliases, and inferred types;
-- [Practical CLI Patterns](examples/practical-cli-patterns.md) — help/version
+- [Practical CLI Patterns](docs/guides/practical-cli-patterns.md) — help/version
   shortcuts, shared options, and compatibility aliases;
-- [Command Resolution](examples/command-resolution.md) — registries, canonical
+- [Command Resolution](docs/guides/command-resolution.md) — registries, canonical
   command aliases, matched paths, explicit resolution, and command-name guards;
-- [Two-Phase Primitives](examples/two-phase-primitives.md) — preparation,
+- [Two-Phase Primitives](docs/guides/two-phase-primitives.md) — preparation,
   payloads, execution, and provided-option metadata;
-- [Presentation Primitives](examples/presentation-primitives.md) — text, record,
+- [Presentation Primitives](docs/guides/presentation-primitives.md) — text, record,
   table, CSV, JSON, and direct renderers.
 
 Release history is recorded in [CHANGELOG.md](CHANGELOG.md). Directional

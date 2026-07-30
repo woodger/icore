@@ -6,7 +6,8 @@ are not release changes. Release history belongs in `CHANGELOG.md`.
 ## Terminal error reporting
 
 - Terminal error rendering and exit-code selection use the reusable policy
-  contract defined in [`src/terminal/app.ts`](../src/terminal/app.ts).
+  contract defined in
+  [`src/terminal/app.ts`](https://github.com/woodger/icore/blob/main/src/terminal/app.ts).
 - Built-in terminal app execution and caller-owned lifecycle flows share that
   policy through `TerminalApp.reportError(...)`.
 - Error phase context distinguishes prepare, execute, render, write, and

@@ -1,4 +1,4 @@
-docs/
+docs/policy/
 src/
 yarn.lock
 tsconfig.json

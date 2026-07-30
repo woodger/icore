@@ -28,6 +28,9 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   test runner no longer depends on the project's TypeScript compiler API.
 - Committed `yarn.lock` for reproducible development and CI installs while
   keeping it excluded from the published npm package.
+- Moved published Consumer guides from `examples/` to `docs/guides/`, added
+  package documentation metadata, and kept contributor policies out of the
+  npm package.
 
 ## [2.1.0] - 2026-07-28
 
