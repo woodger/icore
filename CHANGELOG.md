@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-30
+
 ### Added
 
 - Explicitly supported an empty command registry for bootstrap-only
@@ -28,6 +30,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   test runner no longer depends on the project's TypeScript compiler API.
 - Committed `yarn.lock` for reproducible development and CI installs while
   keeping it excluded from the published npm package.
+- Refined the npm description and keywords around typed CLI command mechanics.
 - Moved published Consumer guides from `examples/` to `docs/guides/`, added
   package documentation metadata, and kept contributor policies out of the
   npm package.
@@ -425,6 +428,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.0]: https://www.npmjs.com/package/icore/v/2.2.0
 [2.1.0]: https://www.npmjs.com/package/icore/v/2.1.0
 [2.0.5]: https://www.npmjs.com/package/icore/v/2.0.5
 [2.0.4]: https://www.npmjs.com/package/icore/v/2.0.4
