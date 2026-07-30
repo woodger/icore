@@ -99,6 +99,8 @@ export type TerminalErrorPolicy<TPrepared> = {
   ): number;
 };
 
+// Method syntax keeps callbacks bivariant: terminal composition erases command
+// shapes but must still accept handlers with their concrete inferred inputs.
 type BivariantCallback<TInput, TOutput> = {
   bivarianceHack(input: TInput): TOutput;
 }['bivarianceHack'];

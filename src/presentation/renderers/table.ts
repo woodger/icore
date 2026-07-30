@@ -12,6 +12,9 @@ import type { TextTableRow } from '../view';
 
 /**
  * Renders prepared text rows as an aligned table without changing cell values.
+ *
+ * Widths use JavaScript string length. ANSI sequences, emoji, combining
+ * characters, tabs, and full-width Unicode are not display-width aware.
  */
 export function renderTextTable(rows: readonly TextTableRow[]): string {
   if (rows.length === 0) {
