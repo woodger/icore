@@ -99,6 +99,8 @@ export type TerminalErrorPolicy<TPrepared> = {
   ): number;
 };
 
+// Method syntax keeps callbacks bivariant: terminal composition erases command
+// shapes but must still accept handlers with their concrete inferred inputs.
 type BivariantCallback<TInput, TOutput> = {
   bivarianceHack(input: TInput): TOutput;
 }['bivarianceHack'];
@@ -191,6 +193,9 @@ export type TerminalApp<
  *
  * Command handlers keep ownership of application work; this facade only
  * prepares commands, renders supported terminal results, and writes output.
+ *
+ * An empty command registry is supported for bootstrap-only presentation,
+ * output, and error reporting. It does not provide resolvable commands.
  */
 export function createTerminalApp<
   const TCommands extends readonly TerminalCommandDefinition[]

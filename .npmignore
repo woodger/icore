@@ -1,7 +1,6 @@
-node_modules/
-yarn.lock
-docs/
+docs/policy/
 src/
+yarn.lock
 tsconfig.json
-eslint.config.mjs
+biome.json
 **/*.test.*

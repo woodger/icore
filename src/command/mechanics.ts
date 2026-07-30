@@ -842,6 +842,8 @@ function parseCommandArgs<TCommand extends AnyCommandDefinition>(
   args: readonly string[],
   parsedByCommand: Map<TCommand, ParsedArgv>
 ): ParsedArgv {
+  // Canonical and alias routes share one definition, so route matching must
+  // not parse the same argv again for every accepted path.
   const cached = parsedByCommand.get(command);
 
   if (cached !== undefined) {

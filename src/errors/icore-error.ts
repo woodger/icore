@@ -250,7 +250,7 @@ function hasIcoreErrorIdentity(
   }
 
   if (
-    hasOwnProperty(error, icoreErrorBrand)
+    ownsProperty(error, icoreErrorBrand)
     && Reflect.get(error, icoreErrorBrand) === true
   ) {
     return true;
@@ -261,7 +261,7 @@ function hasIcoreErrorIdentity(
 
 function isIcoreErrorCode(value: unknown): value is IcoreErrorCode {
   return typeof value === 'string'
-    && hasOwnProperty(icoreErrorCategoryByCode, value);
+    && ownsProperty(icoreErrorCategoryByCode, value);
 }
 
 function isDetailsRecord(value: unknown): value is DetailsRecord {
@@ -270,6 +270,7 @@ function isDetailsRecord(value: unknown): value is DetailsRecord {
     && !Array.isArray(value);
 }
 
-function hasOwnProperty(value: object, key: PropertyKey): boolean {
+function ownsProperty(value: object, key: PropertyKey): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: This safely supports objects with arbitrary prototypes.
   return Object.prototype.hasOwnProperty.call(value, key);
 }

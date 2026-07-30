@@ -56,7 +56,8 @@ export type BooleanOption = OptionBase<'boolean', boolean> & {
  * Declarative number option contract.
  *
  * Number options can require integer values and enforce inclusive `min` / `max`
- * bounds.
+ * bounds. Explicit CLI values use plain base-10 decimal notation; exponent
+ * notation, leading plus signs, and noncanonical leading zeroes are rejected.
  */
 export type NumberOption<TChoices extends readonly number[] = readonly number[]> =
   OptionBase<'number', TChoices[number] | number> & {

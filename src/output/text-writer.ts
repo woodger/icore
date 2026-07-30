@@ -40,9 +40,10 @@ type EventedBackpressureTextSink = BackpressureTextSink & {
 /**
  * Creates a text writer that preserves writable-stream backpressure.
  *
- * Promise-returning sinks are awaited, and Node-style sinks returning `false`
- * are resumed after their next `drain` event. EventEmitter-compatible sinks
- * reject when they emit `error` or `close` before draining.
+ * Promise-returning sinks are awaited. Node-style sinks returning `false` are
+ * resumed after their next `drain` event when they expose a drain hook; without
+ * that hook, `false` is treated as synchronous completion. EventEmitter-
+ * compatible sinks reject when they emit `error` or `close` before draining.
  */
 export function createBackpressureTextWriter(
   sink: BackpressureTextSink

@@ -60,7 +60,7 @@ function isCliUsageError(error: unknown): error is CliUsageError {
     }
 
     if (
-      hasOwnProperty(error, cliUsageErrorBrand)
+      ownsProperty(error, cliUsageErrorBrand)
       && Reflect.get(error, cliUsageErrorBrand) === true
     ) {
       return true;
@@ -73,6 +73,7 @@ function isCliUsageError(error: unknown): error is CliUsageError {
   }
 }
 
-function hasOwnProperty(value: object, key: PropertyKey): boolean {
+function ownsProperty(value: object, key: PropertyKey): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: This safely supports objects with arbitrary prototypes.
   return Object.prototype.hasOwnProperty.call(value, key);
 }

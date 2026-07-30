@@ -83,7 +83,8 @@ export type TerminalProgressOptions = {
  * Creates interactive progress over a shared terminal line output.
  *
  * Progress operations enqueue output synchronously. `close()` finishes an
- * active line and waits for the stdout barrier.
+ * active line and waits for the stdout barrier. It is idempotent, and later
+ * progress operations are ignored.
  *
  * @deprecated Keep progress rendering and lifecycle in the consuming
  * application. This compatibility export will be removed in the next major.
@@ -374,6 +375,8 @@ function truncateTerminalLine(
   line: string,
   terminalColumns: number | undefined
 ): string {
+  // Leave the final terminal column unused so writing the progress line does
+  // not trigger an automatic wrap.
   const maximumLineLength = Math.max(
     1,
     (terminalColumns ?? defaultTerminalColumns) - 1
