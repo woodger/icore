@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Typed CLI command mechanics for Node.js that keep argument parsing separate from application logics",
   "keywords": [
     "cli",
