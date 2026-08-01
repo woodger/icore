@@ -18,6 +18,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 - Added initial Russian localization for the README, guides index, production
   terminal lifecycle, option schemas, and practical CLI patterns.
+- Added matching Simplified Chinese localization for the same documentation
+  route.
 
 ## [2.2.0] - 2026-07-30
 

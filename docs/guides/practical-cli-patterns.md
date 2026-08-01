@@ -1,6 +1,7 @@
 # Practical CLI Patterns
 
-[Русская версия](../ru/guides/practical-cli-patterns.md)
+[Русская версия](../ru/guides/practical-cli-patterns.md) ·
+[简体中文](../zh/guides/practical-cli-patterns.md)
 
 These examples show application-level patterns built on top of icore. They use
 neutral command names, but the shapes are meant for real CLI applications with

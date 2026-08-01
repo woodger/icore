@@ -5,7 +5,7 @@
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
 
-[Русская версия](readme.ru.md)
+[Русская версия](readme.ru.md) · [简体中文](readme.zh.md)
 
 Small dependency-free command line interface and terminal presentation
 mechanics for [Node.js®](https://nodejs.org) applications.

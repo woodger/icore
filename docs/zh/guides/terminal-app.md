@@ -1,22 +1,21 @@
-# Production-терминальное приложение
+# 生产级终端应用
 
-> Русский перевод [английской версии](../../guides/terminal-app.md). При
-> расхождении актуальной считается английская версия.
+> 本文是[英文版](../../guides/terminal-app.md)的简体中文翻译。如有差异，
+> 以英文版为准。
 
-[简体中文](../../zh/guides/terminal-app.md)
+[Русская версия](../../ru/guides/terminal-app.md)
 
-В [быстром старте README](../../../readme.ru.md#быстрый-старт) используется
-`app.run(...)`, потому что это наиболее понятная точка входа для небольшого CLI
-с уже доступным context.
+[README 快速开始](../../../readme.zh.md#快速开始)使用 `app.run(...)`，因为
+对已具备 context 的小型 CLI 来说，这是最清晰的入口。
 
-Используйте явный lifecycle из этого руководства, когда приложение:
+当应用满足以下情况时，请使用本指南中的显式 lifecycle：
 
-- обрабатывает глобальные shortcuts help или version до command validation;
-- выбирает runtime-ресурсы по metadata или payload подготовленной команды;
-- самостоятельно владеет cleanup ресурсов, progress или долгоживущими handles;
-- при этом использует rendering, output и error policy из `TerminalApp`.
+- 在 command validation 前处理全局 help 或 version shortcuts；
+- 根据 prepared command metadata 或 payload 选择 runtime resources；
+- 自行拥有 resource cleanup、progress 或 long-running handles；
+- 同时仍希望使用 `TerminalApp` 的 rendering、output 和 error policy。
 
-Production flow выглядит так:
+生产级流程如下：
 
 ```text
 parse global shortcuts
@@ -30,15 +29,15 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup выполняется до error reporting, чтобы progress и resources были
-завершены до записи diagnostics в stderr. Runtime-ресурсы остаются открытыми
-до окончания `writePreparedOutput(...)`, потому что terminal output может быть
-асинхронным потоком, который всё ещё от них зависит.
+Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向
+stderr 写入 diagnostics。Runtime resources 会一直保持打开，直到
+`writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些
+资源的异步流。
 
-## Однократная композиция команд и terminal services
+## 一次性组合命令与终端服务
 
-Один раз привяжите общие application contracts, сохранив inference конкретных
-schema, path, payload, aliases и result каждой команды:
+一次性绑定共享 application contracts，同时保留 command-specific schema、
+path、payload、aliases 和 result inference：
 
 ```ts
 import {
@@ -165,16 +164,15 @@ const app = createTerminalApp({
 });
 ```
 
-Создавайте `command`, `commands`, `presentation`, `output` и `app` один раз на
-один CLI invocation. Экземпляры ресурсов не входят в эту композицию; создавайте
-их только после того, как `app.prepare(...)` определит выбранную команду.
+每次 CLI invocation 只创建一次 `command`、`commands`、`presentation`、
+`output` 和 `app`。资源实例不属于这次组合；只有在 `app.prepare(...)` 确定
+所选命令后才创建它们。
 
-## Parsing глобальных shortcuts без изменения argv
+## 在不重写 argv 的情况下解析全局快捷方式
 
-Объявите короткие aliases в bootstrap option schema. `parseArgv(...)`
-сопоставит `-h` и `-v` с каноническими именами, а
-`parseOptionsSubsetDetailed(...)` проверит только options, принадлежащие
-bootstrap:
+在 bootstrap option schema 中声明短 aliases。`parseArgv(...)` 会将 `-h`
+和 `-v` 映射到 canonical names，而 `parseOptionsSubsetDetailed(...)` 只验证
+bootstrap 拥有的 options：
 
 ```ts
 import {
@@ -210,17 +208,16 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-Передавайте в `app.prepare(...)` исходный `args`; не собирайте argv заново из
-subset result. Command-specific options останутся доступны schema выбранной
-команды.
+将原始 `args` 传给 `app.prepare(...)`；不要根据 subset result 重建 argv。
+这样 command-specific options 才会继续提供给所选命令的 schema。
 
-Включайте каждую bootstrap option, тип которой влияет на владение tokens.
-Например, объявление boolean `--insecure` не позволит shortcut parsing принять
-следующий сегмент команды за её значение.
+应包含每个其类型会影响 token ownership 的 bootstrap option。例如，声明
+boolean `--insecure` 可以防止 shortcut parsing 把后续 command segment
+误认为它的值。
 
-## Владение ресурсами, очисткой и порядком ошибок
+## 资源、清理与错误顺序的所有权
 
-Приложение предоставляет собственный help renderer и resource scope:
+应用提供自己的 help renderer 和 resource scope：
 
 ```ts
 type InvocationScope = {
@@ -255,16 +252,15 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` должен регистрировать cleanup сразу после
-создания каждого ресурса и откатывать уже созданные ресурсы, если initialization
-завершилась ошибкой.
+`createInvocationScope(...)` 应在每个资源创建后立即注册 cleanup，并在
+initialization 失败时回滚已经创建的部分资源。
 
-[Recipe help на основе metadata](practical-cli-patterns.md#построение-help-по-command-metadata)
-показывает, как `renderHelp(...)` может получить канонический command inventory
-из `commands.definitions`, не дублируя aliases.
+[由 metadata 驱动的 help 方案](practical-cli-patterns.md#根据命令元数据构建-help)
+展示 `renderHelp(...)` 如何从 `commands.definitions` 构建 canonical command
+inventory，而不重复 aliases。
 
-Runner сохраняет phase основной ошибки, объединяет её с cleanup failure и
-вызывает reporting только после cleanup:
+Runner 保留主要 failure 的 phase、合并 cleanup failure，并且只在 cleanup
+完成后报告：
 
 ```ts
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
@@ -455,45 +451,40 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` выполняет и rendering, и запись. Внешний caller не
-может различить эти failures, поэтому recipe сообщает о rejection как о
-`write`. Встроенные пути `app.run(...)` и `app.runPrepared(...)` способны
-различать `render` и `write` внутри.
+`writePreparedOutput(...)` 同时执行 rendering 和 writing。外部 caller 无法
+区分这两种 failure，因此本方案将 rejection 报告为 `write`。内置的
+`app.run(...)` 与 `app.runPrepared(...)` 路径可以在内部区分 `render` 和
+`write`。
 
-Привязанный `CliCommandResult` является верхней границей. Обычная команда всё
-равно сохраняет свой конкретный presentation result, а `watchUsersCommand` —
-конкретный `LongRunningCommandResult`.
+绑定的 `CliCommandResult` 是上界。普通命令仍保留其具体 presentation
+result，而 `watchUsersCommand` 保留具体 `LongRunningCommandResult`。
 
-`transferLongRunningLifecycle(...)` относится к политике приложения. Функция
-должна возвращать управление только после регистрации signal handling и
-cleanup для handle и scope. При успехе runner очищает `scope`, поэтому
-invocation `finally` больше им не владеет. Если transfer выбросит ошибку, он
-должен закрыть handle, не принимая владение scope; затем invocation `finally`
-закроет scope. Переданный lifecycle также отвечает за завершение interactive
-output до записи последующих diagnostics.
+`transferLongRunningLifecycle(...)` 属于应用策略。它必须在注册 handle 与
+scope 的 signal handling 和 cleanup 后才返回。成功时 runner 清空 `scope`，
+因此 invocation `finally` 不再拥有它。如果 transfer 抛出异常，它必须关闭
+handle，但不能取得 scope ownership；随后 invocation `finally` 关闭 scope。
+转移后的 lifecycle 也负责在写入后续 diagnostics 前结束 interactive output。
 
-До `writePreparedOutput(...)` доходят только results, принятые
-`isTerminalCommandOutput(...)`. Так custom handles, process signals и владение
-долгоживущими ресурсами остаются за границей terminal app.
+只有被 `isTerminalCommandOutput(...)` 接受的 results 才会到达
+`writePreparedOutput(...)`。这样 custom handles、process signals 与
+long-running resource ownership 都保持在 terminal app 边界之外。
 
-## Выбор владельца presentation
+## 选择表示层所有权
 
-Используйте один из двух путей presentation:
+请在两种 presentation 路径中选择一种：
 
-- Когда одна плоская projection подходит для JSON, table и CSV, возвращайте
-  view из `createPresentation()`.
-- Когда JSON требует полный вложенный report, а table или CSV — выбранные
-  columns и domain formatting, выбирайте `renderJson(...)`,
-  `renderTextTable(...)` или `renderCsv(...)` непосредственно в Consumer-е.
+- 当同一个扁平 projection 适用于 JSON、table 和 CSV 时，从
+  `createPresentation()` 返回 view。
+- 当 JSON 需要完整的嵌套 report，而 table 或 CSV 需要选定 columns 与
+  domain formatting 时，由 Consumer 直接选择 `renderJson(...)`、
+  `renderTextTable(...)` 或 `renderCsv(...)`。
 
-Формат выбирается по [Presentation And Output (English)](../../guides/presentation-output.md),
-а низкоуровневые контракты описаны в
-[Presentation Primitives (English)](../../guides/presentation-primitives.md).
+格式选择见 [Presentation And Output（英文）](../../guides/presentation-output.md)，
+底层契约见 [Presentation Primitives（英文）](../../guides/presentation-primitives.md)。
 
-## Компактный путь для простых приложений
+## 为简单应用保留精简路径
 
-Когда context уже существует, а handlers возвращают поддерживаемый terminal
-output, используйте компактный путь:
+当 context 已存在且 handlers 返回终端支持的 output 时，请优先使用精简路径：
 
 ```ts
 process.exitCode = await app.run(args, context, {
@@ -501,5 +492,5 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-Явный recipe предназначен для application-owned lifecycle. Это не обязательная
-церемония для каждого CLI.
+显式方案用于 application-owned lifecycle 工作，并非每个 CLI 都必须采用的
+固定流程。
