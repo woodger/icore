@@ -1,5 +1,7 @@
 # Guides
 
+[Русская версия](../ru/guides/readme.md)
+
 These guides show application code for consuming projects. They explain what to
 put into a project, how to run it from a terminal, what output to expect, and
 why a particular shape is useful or intentionally limited.

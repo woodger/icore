@@ -21,6 +21,17 @@ Detailed rules and policies must live in `docs/`.
 
 Navigation documents must help find the source of truth, not become a second README.
 
+## Localization
+
+English documentation is the canonical source. A translation must link to its
+English source and state that the English contract takes precedence when the
+two versions differ.
+
+Code blocks, commands, identifiers, error messages, and byte-exact output must
+remain unchanged in translations. A change to canonical documentation must
+update an existing translation in the same change or explicitly record that the
+translation is pending.
+
 ## Minimum Rule
 
 Markdown must answer the question "where is the current contract and how should it

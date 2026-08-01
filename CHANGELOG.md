@@ -14,6 +14,11 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Added
+
+- Added initial Russian localization for the README, guides index, production
+  terminal lifecycle, option schemas, and practical CLI patterns.
+
 ## [2.2.0] - 2026-07-30
 
 ### Added

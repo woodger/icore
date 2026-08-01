@@ -1,5 +1,7 @@
 # Option Schemas
 
+[Русская версия](../ru/guides/option-schemas.md)
+
 Use option schemas to describe the public arguments of a command. The schema
 defines what the user can type in the terminal and what typed values the command
 handler receives.
