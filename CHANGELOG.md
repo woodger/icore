@@ -14,6 +14,15 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-08-01
+
+### Added
+
+- Added initial Russian localization for the README, guides index, production
+  terminal lifecycle, option schemas, and practical CLI patterns.
+- Added matching Simplified Chinese localization for the same documentation
+  route.
+
 ## [2.2.0] - 2026-07-30
 
 ### Added
@@ -428,6 +437,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.1]: https://www.npmjs.com/package/icore/v/2.2.1
 [2.2.0]: https://www.npmjs.com/package/icore/v/2.2.0
 [2.1.0]: https://www.npmjs.com/package/icore/v/2.1.0
 [2.0.5]: https://www.npmjs.com/package/icore/v/2.0.5

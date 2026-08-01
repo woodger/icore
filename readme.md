@@ -1,5 +1,7 @@
 # icore
 
+English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/readme.md) | [简体中文](https://github.com/woodger/icore/blob/main/docs/zh/readme.md)
+
 [![npm version](https://img.shields.io/npm/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![node](https://img.shields.io/node/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
