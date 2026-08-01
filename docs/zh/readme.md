@@ -1,13 +1,13 @@
 # icore
 
+[English](../../readme.md) | [Русский](../ru/readme.md) | 简体中文
+
 [![npm version](https://img.shields.io/npm/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![node](https://img.shields.io/node/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
-[![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
+[![license](https://img.shields.io/npm/l/icore.svg)](../../LICENSE)
 
-> 本文是[英文版](readme.md)的简体中文翻译。如有差异，以英文版为准。
-
-[Русская версия](readme.ru.md)
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
 一个面向 [Node.js®](https://nodejs.org) 应用的小型、无运行时依赖的命令行
 界面与终端呈现机制模块。
@@ -101,11 +101,11 @@ schema 决定 handler 的选项类型。必填选项和具有默认值的选项�
 具有共享 context、result 和 metadata 契约的应用可以通过
 `createCommand.withTypes<...>()` 一次性绑定这些类型，同时仍会为每条命令
 推导 schema、path、aliases、准备后的 payload 和具体 result 类型。参见
-[一次性绑定应用命令类型](docs/zh/guides/option-schemas.md#一次性绑定应用命令类型)。
+[一次性绑定应用命令类型](guides/option-schemas.md#一次性绑定应用命令类型)。
 
 `app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择
 runtime 资源或自行执行 cleanup，请使用
-[生产级终端应用 lifecycle](docs/zh/guides/terminal-app.md)。
+[生产级终端应用 lifecycle](guides/terminal-app.md)。
 
 `strict: true` 会拒绝 command path 之前的 options。字符串输出会原样写入，
 因此逐行输出时请在命令结果中添加 `\n`。默认解析仍接受 option-first
@@ -119,20 +119,20 @@ input。Bootstrap parsing 不会重排 argv，因此只有当 command-first synt
 | 任务 | 起点 | 详细指南 |
 | --- | --- | --- |
 | 简单终端应用 | `app.run(...)` | [快速开始](#快速开始) |
-| 生产级 shortcuts 与资源 lifecycle | `app.prepare(...)` 和 `app.commands.run(...)` | [生产级终端应用](docs/zh/guides/terminal-app.md) |
-| 命令与选项 schemas | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [选项模式](docs/zh/guides/option-schemas.md) |
-| 自定义 prepare/execute lifecycle | `commands.prepare()` 和 `commands.run()` | [Custom Command Flow（英文）](docs/guides/custom-command-flow.md) |
-| 所有格式共用一个扁平 projection | `createPresentation()` | [Presentation And Output（英文）](docs/guides/presentation-output.md) |
-| JSON、table 或 CSV 使用不同 projections | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [Presentation And Output（英文）](docs/guides/presentation-output.md) |
-| 显式写入 stdout/stderr | `createOutput()` | [Output Writers（英文）](docs/guides/output-writers.md) |
-| parser 与 resolver primitives | `parseArgv()`、`resolveCommand()` 及相关 exports | [Primitive Mechanics（英文）](docs/guides/readme.md#primitive-mechanics) |
+| 生产级 shortcuts 与资源 lifecycle | `app.prepare(...)` 和 `app.commands.run(...)` | [生产级终端应用](guides/terminal-app.md) |
+| 命令与选项 schemas | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [选项模式](guides/option-schemas.md) |
+| 自定义 prepare/execute lifecycle | `commands.prepare()` 和 `commands.run()` | [Custom Command Flow（英文）](../guides/custom-command-flow.md) |
+| 所有格式共用一个扁平 projection | `createPresentation()` | [Presentation And Output（英文）](../guides/presentation-output.md) |
+| JSON、table 或 CSV 使用不同 projections | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [Presentation And Output（英文）](../guides/presentation-output.md) |
+| 显式写入 stdout/stderr | `createOutput()` | [Output Writers（英文）](../guides/output-writers.md) |
+| parser 与 resolver primitives | `parseArgv()`、`resolveCommand()` 及相关 exports | [Primitive Mechanics（英文）](../guides/readme.md#primitive-mechanics) |
 
 `createTerminalOutput()` 和 `createTerminalProgress()` 在 `2.x` 分支中仍作为
 已弃用的 compatibility exports 提供。新 Consumer 不应使用它们：interactive
 output 与 progress rendering 应由应用拥有。`createOutput()` 会处理 sink 的
 backpressure，但不会把 application-owned progress 与普通输出串行化。推荐的
-边界见 [application-owned output guide（英文）](docs/guides/output-writers.md#application-owned-interactive-output)，
-保留的 [migration guide（英文）](docs/guides/interactive-output.md) 则说明旧版
+边界见 [application-owned output guide（英文）](../guides/output-writers.md#application-owned-interactive-output)，
+保留的 [migration guide（英文）](../guides/interactive-output.md) 则说明旧版
 契约。
 
 终端应用提供以下主要 lifecycle 操作：
@@ -191,7 +191,7 @@ module paths 不会导出。
 以及 `-abc` 这样的分组 aliases。
 
 Parsing examples、edge cases、duplicate handling 与终止符契约见
-[CLI Argument Syntax（英文）](docs/guides/cli-argument-syntax.md)。
+[CLI Argument Syntax（英文）](../guides/cli-argument-syntax.md)。
 
 ## 错误处理
 
@@ -264,29 +264,29 @@ throw new CliUsageError(
 
 Custom lifecycle 可以调用 `app.reportError(...)` 来复用相同的 rendering 和
 exit-code policy。prepare、execute、write 与 external 各阶段的完整 flow 见
-[生产级 lifecycle](docs/zh/guides/terminal-app.md#资源清理与错误顺序的所有权)。
+[生产级 lifecycle](guides/terminal-app.md#资源清理与错误顺序的所有权)。
 
 ## 指南
 
-[中文指南索引](docs/zh/guides/readme.md) 从普通终端应用逐步通向底层机制。
+[中文指南索引](guides/readme.md) 从普通终端应用逐步通向底层机制。
 建议从以下文档开始：
 
-- [生产级终端应用](docs/zh/guides/terminal-app.md) — global shortcuts、
+- [生产级终端应用](guides/terminal-app.md) — global shortcuts、
   preparation、按 metadata 选择资源、execution、output、cleanup 与可复用的
   error handling；
-- [选项模式](docs/zh/guides/option-schemas.md) — strings、booleans、numbers、
+- [选项模式](guides/option-schemas.md) — strings、booleans、numbers、
   choices、defaults、aliases 和推导类型；
-- [实用 CLI 模式](docs/zh/guides/practical-cli-patterns.md) — help/version
+- [实用 CLI 模式](guides/practical-cli-patterns.md) — help/version
   shortcuts、共享 options 和 compatibility aliases；
-- [Command Resolution（英文）](docs/guides/command-resolution.md) — registry、
+- [Command Resolution（英文）](../guides/command-resolution.md) — registry、
   canonical aliases、matched paths、显式解析与 command-name guards；
-- [Two-Phase Primitives（英文）](docs/guides/two-phase-primitives.md) —
+- [Two-Phase Primitives（英文）](../guides/two-phase-primitives.md) —
   preparation、payloads、execution 与已提供选项的 metadata；
-- [Presentation Primitives（英文）](docs/guides/presentation-primitives.md) —
+- [Presentation Primitives（英文）](../guides/presentation-primitives.md) —
   text、record、table、CSV、JSON 与 direct renderers。
 
-版本历史见 [CHANGELOG.md](CHANGELOG.md)，指导性决策见
-[docs/roadmap.md](docs/roadmap.md)。这些文档使用英文维护。
+版本历史见 [CHANGELOG.md](../../CHANGELOG.md)，指导性决策见
+[docs/roadmap.md](../roadmap.md)。这些文档使用英文维护。
 
 ## 项目边界
 
@@ -299,4 +299,4 @@ resource lifecycle 或 help 内容。这些职责留给 Consumer。Interactive l
 rendering 与 progress reporting 同样属于应用；旧版 compatibility exports
 不应成为新代码的基础。
 
-项目采用 [MIT 许可证](LICENSE)。
+项目采用 [MIT 许可证](../../LICENSE)。

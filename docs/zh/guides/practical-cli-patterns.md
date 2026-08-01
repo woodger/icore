@@ -1,9 +1,8 @@
 # 实用 CLI 模式
 
-> 本文是[英文版](../../guides/practical-cli-patterns.md)的简体中文翻译。
-> 如有差异，以英文版为准。
+[English](../../guides/practical-cli-patterns.md) | [Русский](../../ru/guides/practical-cli-patterns.md) | 简体中文
 
-[Русская версия](../../ru/guides/practical-cli-patterns.md)
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
 这些示例展示构建在 icore 之上的 application-level patterns。它们使用中性的
 命令名称，但相关结构面向具有大量命令、共享 options、utility commands 和

@@ -1,9 +1,8 @@
 # 选项模式
 
-> 本文是[英文版](../../guides/option-schemas.md)的简体中文翻译。如有差异，
-> 以英文版为准。
+[English](../../guides/option-schemas.md) | [Русский](../../ru/guides/option-schemas.md) | 简体中文
 
-[Русская версия](../../ru/guides/option-schemas.md)
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
 使用 option schemas 描述命令的公共参数。schema 决定用户可以在终端输入
 什么，以及 command handler 会收到哪些类型化值。

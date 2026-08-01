@@ -1,8 +1,8 @@
 # 指南
 
-> 本文是[英文版](../../guides/readme.md)的简体中文翻译。如有差异，以英文版为准。
+[English](../../guides/readme.md) | [Русский](../../ru/guides/readme.md) | 简体中文
 
-[Русская версия](../../ru/guides/readme.md)
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
 这些指南展示了供使用方项目采用的应用代码。它们说明应在项目中放置
 什么、如何从终端运行、预期得到什么输出，以及某种结构为何有用或为何
@@ -12,7 +12,7 @@
 
 - [terminal-app.md](terminal-app.md) 是处理全局快捷方式、准备、由 metadata
   驱动的资源、执行、输出、清理和错误报告的主要生产级方案。精简的
-  `app.run(...)` 路径仍位于 [README 快速开始](../../../readme.zh.md#快速开始)中。
+  `app.run(...)` 路径仍位于 [README 快速开始](../readme.md#快速开始)中。
 - [practical-cli-patterns.md](practical-cli-patterns.md) 展示应用层模式，包括
   schema-aware 的全局 help/version 快捷方式、由 command metadata 驱动的 help、
   已弃用选项和参数边界情况处理。

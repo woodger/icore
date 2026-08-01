@@ -1,7 +1,6 @@
 # Production Terminal Application
 
-[Русская версия](../ru/guides/terminal-app.md) ·
-[简体中文](../zh/guides/terminal-app.md)
+English | [Русский](../ru/guides/terminal-app.md) | [简体中文](../zh/guides/terminal-app.md)
 
 The [README quick start](../../readme.md#quick-start) uses `app.run(...)` because
 that is the clearest entrypoint for a small CLI with an already available

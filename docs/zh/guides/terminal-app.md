@@ -1,11 +1,10 @@
 # 生产级终端应用
 
-> 本文是[英文版](../../guides/terminal-app.md)的简体中文翻译。如有差异，
-> 以英文版为准。
+[English](../../guides/terminal-app.md) | [Русский](../../ru/guides/terminal-app.md) | 简体中文
 
-[Русская версия](../../ru/guides/terminal-app.md)
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-[README 快速开始](../../../readme.zh.md#快速开始)使用 `app.run(...)`，因为
+[README 快速开始](../readme.md#快速开始)使用 `app.run(...)`，因为
 对已具备 context 的小型 CLI 来说，这是最清晰的入口。
 
 当应用满足以下情况时，请使用本指南中的显式 lifecycle：

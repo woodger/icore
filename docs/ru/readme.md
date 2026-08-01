@@ -1,14 +1,14 @@
 # icore
 
+[English](../../readme.md) | Русский | [简体中文](../zh/readme.md)
+
 [![npm version](https://img.shields.io/npm/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![node](https://img.shields.io/node/v/icore.svg)](https://www.npmjs.com/package/icore)
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
-[![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
+[![license](https://img.shields.io/npm/l/icore.svg)](../../LICENSE)
 
-> Русский перевод [английской версии](readme.md). При расхождении актуальной
+> Русский перевод английской версии. При расхождении актуальной
 > считается английская версия.
-
-[简体中文](readme.zh.md)
 
 Небольшой модуль без runtime-зависимостей для механики интерфейсов командной
 строки и представления терминального вывода в приложениях на
@@ -108,12 +108,12 @@ HELLO, ALICE!
 привязать эти типы через `createCommand.withTypes<...>()`. При этом schema,
 path, aliases, подготовленный payload и конкретный тип результата каждой
 команды продолжают выводиться автоматически. См.
-[однократную привязку типов команд приложения](docs/ru/guides/option-schemas.md#однократная-привязка-типов-команд-приложения).
+[однократную привязку типов команд приложения](guides/option-schemas.md#однократная-привязка-типов-команд-приложения).
 
 `app.run(...)` — компактный путь. Приложениям, которые обрабатывают глобальные
 shortcuts, выбирают runtime-ресурсы после подготовки или самостоятельно
 выполняют cleanup, следует использовать
-[production lifecycle терминального приложения](docs/ru/guides/terminal-app.md).
+[production lifecycle терминального приложения](guides/terminal-app.md).
 
 `strict: true` отклоняет опции перед command path. Строковый вывод записывается
 без изменений, поэтому для построчного вывода добавляйте `\n` в результат
@@ -129,21 +129,21 @@ Bootstrap parsing не переставляет argv, поэтому включ�
 | Задача | С чего начать | Подробное руководство |
 | --- | --- | --- |
 | Простое терминальное приложение | `app.run(...)` | [Быстрый старт](#быстрый-старт) |
-| Production shortcuts и lifecycle ресурсов | `app.prepare(...)` и `app.commands.run(...)` | [Production Terminal Application](docs/ru/guides/terminal-app.md) |
-| Команды и схемы опций | `createCommand()`, `createCommand.withTypes()` или `createCommands()` | [Схемы опций](docs/ru/guides/option-schemas.md) |
-| Собственный lifecycle prepare/execute | `commands.prepare()` и `commands.run()` | [Custom Command Flow (English)](docs/guides/custom-command-flow.md) |
-| Одна плоская projection для всех форматов | `createPresentation()` | [Presentation And Output (English)](docs/guides/presentation-output.md) |
-| Разные JSON, table или CSV projections | `renderJson()`, `renderTextTable()` или `renderCsv()` | [Presentation And Output (English)](docs/guides/presentation-output.md) |
-| Явная запись в stdout/stderr | `createOutput()` | [Output Writers (English)](docs/guides/output-writers.md) |
-| Примитивы parser-а и resolver-а | `parseArgv()`, `resolveCommand()` и связанные exports | [Primitive Mechanics (English)](docs/guides/readme.md#primitive-mechanics) |
+| Production shortcuts и lifecycle ресурсов | `app.prepare(...)` и `app.commands.run(...)` | [Production Terminal Application](guides/terminal-app.md) |
+| Команды и схемы опций | `createCommand()`, `createCommand.withTypes()` или `createCommands()` | [Схемы опций](guides/option-schemas.md) |
+| Собственный lifecycle prepare/execute | `commands.prepare()` и `commands.run()` | [Custom Command Flow (English)](../guides/custom-command-flow.md) |
+| Одна плоская projection для всех форматов | `createPresentation()` | [Presentation And Output (English)](../guides/presentation-output.md) |
+| Разные JSON, table или CSV projections | `renderJson()`, `renderTextTable()` или `renderCsv()` | [Presentation And Output (English)](../guides/presentation-output.md) |
+| Явная запись в stdout/stderr | `createOutput()` | [Output Writers (English)](../guides/output-writers.md) |
+| Примитивы parser-а и resolver-а | `parseArgv()`, `resolveCommand()` и связанные exports | [Primitive Mechanics (English)](../guides/readme.md#primitive-mechanics) |
 
 `createTerminalOutput()` и `createTerminalProgress()` остаются доступными как
 deprecated compatibility exports ветки `2.x`. Не используйте их в новых
 Consumer-ах: interactive output и progress rendering должны принадлежать
 приложению. `createOutput()` учитывает backpressure sink-а, но не сериализует
 application-owned progress вместе с обычным выводом. Рекомендуемая граница
-описана в [application-owned output guide (English)](docs/guides/output-writers.md#application-owned-interactive-output),
-а сохранённый [migration guide (English)](docs/guides/interactive-output.md)
+описана в [application-owned output guide (English)](../guides/output-writers.md#application-owned-interactive-output),
+а сохранённый [migration guide (English)](../guides/interactive-output.md)
 описывает legacy-контракт.
 
 Терминальное приложение предоставляет основные lifecycle-операции:
@@ -203,7 +203,7 @@ argv → resolve → validate/prepare → execute → render → stdout/stderr
 вроде `-nAlice` и сгруппированные aliases вроде `-abc` не поддерживаются.
 
 Parsing examples, edge cases, обработка duplicates и контракт терминатора
-описаны в [CLI Argument Syntax (English)](docs/guides/cli-argument-syntax.md).
+описаны в [CLI Argument Syntax (English)](../guides/cli-argument-syntax.md).
 
 ## Обработка ошибок
 
@@ -281,29 +281,29 @@ throw new CliUsageError(
 Custom lifecycle может вызвать `app.reportError(...)`, чтобы переиспользовать
 те же rendering и exit-code policy. Полный flow фаз prepare, execute, write и
 external приведён в
-[production lifecycle](docs/ru/guides/terminal-app.md#владение-ресурсами-очисткой-и-порядком-ошибок).
+[production lifecycle](guides/terminal-app.md#владение-ресурсами-очисткой-и-порядком-ошибок).
 
 ## Руководства
 
-[Русский индекс руководств](docs/ru/guides/readme.md) ведёт от обычного
+[Русский индекс руководств](guides/readme.md) ведёт от обычного
 терминального приложения к низкоуровневой механике. Начать стоит с:
 
-- [Production Terminal Application](docs/ru/guides/terminal-app.md) — global
+- [Production Terminal Application](guides/terminal-app.md) — global
   shortcuts, preparation, выбор ресурсов по metadata, execution, output,
   cleanup и переиспользуемая обработка ошибок;
-- [Схемы опций](docs/ru/guides/option-schemas.md) — strings, booleans, numbers,
+- [Схемы опций](guides/option-schemas.md) — strings, booleans, numbers,
   choices, defaults, aliases и выведенные типы;
-- [Практические CLI-паттерны](docs/ru/guides/practical-cli-patterns.md) —
+- [Практические CLI-паттерны](guides/practical-cli-patterns.md) —
   help/version shortcuts, общие options и compatibility aliases;
-- [Command Resolution (English)](docs/guides/command-resolution.md) — registry,
+- [Command Resolution (English)](../guides/command-resolution.md) — registry,
   canonical aliases, matched paths, explicit resolution и command-name guards;
-- [Two-Phase Primitives (English)](docs/guides/two-phase-primitives.md) —
+- [Two-Phase Primitives (English)](../guides/two-phase-primitives.md) —
   preparation, payloads, execution и metadata предоставленных опций;
-- [Presentation Primitives (English)](docs/guides/presentation-primitives.md) —
+- [Presentation Primitives (English)](../guides/presentation-primitives.md) —
   text, record, table, CSV, JSON и direct renderers.
 
-История релизов находится в [CHANGELOG.md](CHANGELOG.md), а направляющие решения
-— в [docs/roadmap.md](docs/roadmap.md). Эти документы ведутся на английском.
+История релизов находится в [CHANGELOG.md](../../CHANGELOG.md), а направляющие
+решения — в [docs/roadmap.md](../roadmap.md). Эти документы ведутся на английском.
 
 ## Граница проекта
 
@@ -317,4 +317,4 @@ domain-specific validation, lifecycle resources или содержимое help
 reporting также принадлежат приложению; legacy compatibility exports не должны
 становиться основой нового кода.
 
-Проект распространяется по [лицензии MIT](LICENSE).
+Проект распространяется по [лицензии MIT](../../LICENSE).

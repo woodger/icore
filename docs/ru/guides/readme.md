@@ -1,9 +1,9 @@
 # Руководства
 
-> Русский перевод [английской версии](../../guides/readme.md). При расхождении
-> актуальной считается английская версия.
+[English](../../guides/readme.md) | Русский | [简体中文](../../zh/guides/readme.md)
 
-[简体中文](../../zh/guides/readme.md)
+> Русский перевод английской версии. При расхождении актуальной считается
+> английская версия.
 
 Эти руководства показывают application code для Consumer-проектов. Они
 объясняют, что поместить в проект, как запустить его из терминала, какой output
@@ -14,7 +14,7 @@
 - [terminal-app.md](terminal-app.md) — основной production recipe для global
   shortcuts, preparation, ресурсов на основе metadata, execution, output,
   cleanup и обработки ошибок. Компактный путь `app.run(...)` приведён в
-  [быстром старте README](../../../readme.ru.md#быстрый-старт).
+  [быстром старте README](../readme.md#быстрый-старт).
 - [practical-cli-patterns.md](practical-cli-patterns.md) показывает
   application-level patterns для schema-aware глобальных help/version
   shortcuts, help на основе command metadata, deprecated options и обработки

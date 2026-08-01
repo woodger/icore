@@ -1,7 +1,6 @@
 # Guides
 
-[Русская версия](../ru/guides/readme.md) ·
-[简体中文](../zh/guides/readme.md)
+English | [Русский](../ru/guides/readme.md) | [简体中文](../zh/guides/readme.md)
 
 These guides show application code for consuming projects. They explain what to
 put into a project, how to run it from a terminal, what output to expect, and
