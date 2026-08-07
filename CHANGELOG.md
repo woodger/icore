@@ -19,6 +19,9 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Replaced Biome with Oxlint for development linting, retaining native
   equivalents of the explicitly configured checks while leaving type checking
   to TypeScript.
+- Standardized development and CI dependency installation on npm, replaced
+  `yarn.lock` with `package-lock.json`, and made alternative package managers
+  unsupported.
 
 ## [2.2.1] - 2026-08-01
 

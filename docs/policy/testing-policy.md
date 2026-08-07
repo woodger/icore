@@ -26,8 +26,8 @@ Tests are written in TypeScript in `src/**/*.test.ts` or `src/**/*.spec.ts` and 
 Before running tests after changes in `src`, rebuild the project:
 
 ```bash
-yarn build
-yarn test
+npm run build
+npm test
 ```
 
 The development test runner is `fwa`, which requires Node.js `>=20.19.0`.
