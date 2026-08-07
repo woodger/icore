@@ -14,6 +14,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-08-07
+
 ### Changed
 
 - Replaced Biome with Oxlint for development linting, retaining native
@@ -454,6 +456,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2
 [2.2.1]: https://www.npmjs.com/package/icore/v/2.2.1
 [2.2.0]: https://www.npmjs.com/package/icore/v/2.2.0
 [2.1.0]: https://www.npmjs.com/package/icore/v/2.1.0
