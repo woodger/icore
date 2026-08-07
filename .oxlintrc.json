@@ -1,0 +1,72 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import"
+  ],
+  "env": {
+    "node": true
+  },
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "eslint/no-regex-spaces": "error",
+    "eslint/prefer-rest-params": "error",
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-wrapper-object-types": "error",
+    "eslint/no-extra-boolean-cast": "error",
+    "eslint/no-useless-catch": "error",
+    "eslint/no-useless-escape": "error",
+    "typescript/no-this-alias": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "eslint/no-unused-vars": [
+      "error",
+      {
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "eslint/no-unused-labels": "error",
+    "eslint/no-unused-private-class-members": "error",
+    "import/no-commonjs": [
+      "error",
+      {
+        "allowConditionalRequire": false
+      }
+    ],
+    "typescript/no-namespace": "error",
+    "eslint/no-array-constructor": "error",
+    "typescript/prefer-as-const": "error",
+    "eslint/prefer-const": "error",
+    "eslint/prefer-spread": "error",
+    "eslint/no-ex-assign": "error",
+    "eslint/no-constant-binary-expression": "error",
+    "typescript/no-duplicate-enum-values": "error",
+    "eslint/no-empty": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "eslint/no-irregular-whitespace": "error",
+    "eslint/no-prototype-builtins": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-check": false,
+        "ts-expect-error": false,
+        "ts-ignore": true,
+        "ts-nocheck": false
+      }
+    ],
+    "eslint/no-unused-expressions": "error",
+    "eslint/no-useless-backreference": "error",
+    "eslint/no-var": "error"
+  }
+}

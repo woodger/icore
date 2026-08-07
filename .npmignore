@@ -2,5 +2,5 @@ docs/policy/
 src/
 yarn.lock
 tsconfig.json
-biome.json
+.oxlintrc.json
 **/*.test.*

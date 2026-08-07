@@ -14,6 +14,12 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced Biome with Oxlint for development linting, retaining native
+  equivalents of the explicitly configured checks while leaving type checking
+  to TypeScript.
+
 ## [2.2.1] - 2026-08-01
 
 ### Added
