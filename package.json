@@ -29,7 +29,6 @@
   "engines": {
     "node": ">=16.9.0"
   },
-  "packageManager": "npm@11.16.0",
   "scripts": {
     "build": "tsc",
     "prepack": "tsc",
