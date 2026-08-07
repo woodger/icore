@@ -3,5 +3,4 @@ src/
 package-lock.json
 tsconfig.json
 .oxlintrc.json
-.oxlintrc.type-aware.json
 **/*.test.*
