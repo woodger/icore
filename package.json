@@ -14,10 +14,14 @@
     "email": "woodger@ya.ru"
   },
   "license": "MIT",
-  "packageManager": "npm@11.16.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/woodger/icore.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
   },
   "directories": {
     "doc": "docs"
@@ -25,11 +29,7 @@
   "engines": {
     "node": ">=16.9.0"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js"
-  },
+  "packageManager": "npm@11.16.0",
   "scripts": {
     "build": "tsc",
     "prepack": "tsc",
