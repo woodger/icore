@@ -14,6 +14,25 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-08-07
+
+### Changed
+
+- Replaced Biome with Oxlint for development linting, retaining native
+  equivalents of the explicitly configured checks and adding a curated
+  type-aware pass for asynchronous control flow and exhaustive switches while
+  leaving type checking to TypeScript.
+- Standardized development and CI dependency installation on npm, replaced
+  `yarn.lock` with `package-lock.json`, and made alternative package managers
+  unsupported.
+
+### Fixed
+
+- Reported options interrupting a matching multi-segment registry command path
+  as `UNEXPECTED_ARGUMENT` in strict mode, consistently with direct command
+  execution.
+- Corrected the npm package description to refer to application logic.
+
 ## [2.2.1] - 2026-08-01
 
 ### Added
@@ -437,6 +456,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2
 [2.2.1]: https://www.npmjs.com/package/icore/v/2.2.1
 [2.2.0]: https://www.npmjs.com/package/icore/v/2.2.0
 [2.1.0]: https://www.npmjs.com/package/icore/v/2.1.0

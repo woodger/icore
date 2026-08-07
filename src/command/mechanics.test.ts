@@ -856,6 +856,45 @@ describe('two-phase command execution', () => {
     );
   });
 
+  test('rejects options between registry command path segments in strict mode', async () => {
+    const commandRegistry = defineCommandRegistry([
+      defineCommand({
+        path: ['users', 'current'],
+        options: {
+          format: {
+            type: 'string',
+            choices: ['json', 'table']
+          }
+        },
+        handle() {
+          return 'ok';
+        }
+      })
+    ] as const);
+
+    await assert.rejects(
+      () => prepareCommandFromArgs(commandRegistry, [
+        'users',
+        '--format',
+        'json',
+        'current'
+      ], {
+        strict: true
+      }),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'UNEXPECTED_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected argument '--format'");
+        assert.deepStrictEqual(error.details, {
+          reason: 'option-before-command',
+          argument: '--format'
+        });
+
+        return true;
+      }
+    );
+  });
+
   test('accepts options after command path in strict mode', async () => {
     const commandRegistry = defineCommandRegistry([
       defineCommand({

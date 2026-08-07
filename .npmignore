@@ -1,6 +1,6 @@
 docs/policy/
 src/
-yarn.lock
+package-lock.json
 tsconfig.json
-biome.json
+.oxlintrc.json
 **/*.test.*

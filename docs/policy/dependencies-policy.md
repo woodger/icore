@@ -19,6 +19,18 @@ Undesirable dependencies:
 - a package for a small utility
 - a package wrapper over a standard function
 
+## Package Manager
+
+npm is the project's only supported package manager.
+
+- Commit `package-lock.json` so development and CI resolve the same dependency
+  graph.
+- Use `npm ci` for reproducible installs and `npm install` when intentionally
+  changing dependencies.
+- Run package scripts through npm.
+- Do not add Yarn, pnpm, Bun, their lockfiles, or instructions that depend on
+  alternative package managers.
+
 Bad example:
 
 rimraf
