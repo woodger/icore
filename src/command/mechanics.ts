@@ -865,7 +865,48 @@ function findStrictCommandRoute<
 ): CommandRoute<TCommands[number]> | undefined {
   assertNoOptionBeforeCommand(args, 1);
 
-  return findMatchingRawCommandRoute(commandRoutes(registry), args);
+  const routes = commandRoutes(registry);
+  const matchedRoute = findMatchingRawCommandRoute(routes, args);
+
+  if (matchedRoute !== undefined) {
+    return matchedRoute;
+  }
+
+  const interruptedByOption = findOptionBeforeMatchingCommandPath(
+    routes,
+    args
+  );
+
+  if (interruptedByOption !== undefined) {
+    throw createUnexpectedArgumentError(interruptedByOption);
+  }
+
+  return undefined;
+}
+
+function findOptionBeforeMatchingCommandPath<
+  TCommand extends AnyCommandDefinition
+>(
+  routes: readonly CommandRoute<TCommand>[],
+  args: readonly string[]
+): string | undefined {
+  for (const route of routes) {
+    for (let index = 0; index < route.matchedPath.length; index += 1) {
+      const arg = args[index];
+
+      if (arg === route.matchedPath[index]) {
+        continue;
+      }
+
+      if (arg !== undefined && isOptionBeforeCommand(arg)) {
+        return arg;
+      }
+
+      break;
+    }
+  }
+
+  return undefined;
 }
 
 function assertNoOptionBeforeCommand(

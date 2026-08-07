@@ -23,6 +23,13 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
   `yarn.lock` with `package-lock.json`, and made alternative package managers
   unsupported.
 
+### Fixed
+
+- Reported options interrupting a matching multi-segment registry command path
+  as `UNEXPECTED_ARGUMENT` in strict mode, consistently with direct command
+  execution.
+- Corrected the npm package description to refer to application logic.
+
 ## [2.2.1] - 2026-08-01
 
 ### Added
