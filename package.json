@@ -34,12 +34,13 @@
     "build": "tsc",
     "prepack": "tsc",
     "test": "fwa --prune",
-    "lint": "oxlint src"
+    "lint": "oxlint src && oxlint --config .oxlintrc.type-aware.json src"
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
     "fwa": "^2.1.0",
     "oxlint": "1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2"
   }
 }
