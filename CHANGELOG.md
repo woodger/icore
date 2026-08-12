@@ -14,6 +14,12 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the development toolchain to Oxlint 1.78.0 and FWA 2.1.4.
+- Replaced category-driven Oxlint presets with an explicit, project-audited
+  error-level rule set and narrow compatibility exceptions.
+
 ## [2.2.2] - 2026-08-07
 
 ### Changed

@@ -171,9 +171,12 @@ export function mergeOptionsSchema<
 ): MergeOptionsSchemas<readonly [TSchema, ...TSchemas]> {
   const merged = Object.assign(
     Object.create(null) as OptionsSchema,
-    schema,
-    ...schemas
+    schema
   );
+
+  for (const nextSchema of schemas) {
+    Object.assign(merged, nextSchema);
+  }
 
   return { ...merged } as MergeOptionsSchemas<readonly [TSchema, ...TSchemas]>;
 }
