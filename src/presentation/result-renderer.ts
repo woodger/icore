@@ -223,6 +223,9 @@ function formatPresentationCell(value: unknown): string {
     return String(value);
   }
 
+  // JSON.stringify can return undefined for otherwise displayable values;
+  // preserve the renderer's existing String fallback.
+  // oxlint-disable-next-line typescript/no-base-to-string
   return JSON.stringify(value) ?? String(value);
 }
 

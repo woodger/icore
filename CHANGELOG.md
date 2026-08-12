@@ -14,6 +14,14 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-08-12
+
+### Changed
+
+- Updated the development toolchain to Oxlint 1.78.0 and FWA 2.1.4.
+- Replaced category-driven Oxlint presets with an explicit, project-audited
+  error-level rule set and narrow compatibility exceptions.
+
 ## [2.2.2] - 2026-08-07
 
 ### Changed
@@ -456,6 +464,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.3]: https://www.npmjs.com/package/icore/v/2.2.3
 [2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2
 [2.2.1]: https://www.npmjs.com/package/icore/v/2.2.1
 [2.2.0]: https://www.npmjs.com/package/icore/v/2.2.0
