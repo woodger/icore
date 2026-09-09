@@ -14,6 +14,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the development toolchain to Oxlint 1.82.0 and `@types/node` 26.5.0.
+
 ## [2.2.3] - 2026-08-12
 
 ### Changed
