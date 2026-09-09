@@ -1,11 +1,8 @@
 # Two-Phase Primitives
 
-The high-level flow is `commands.prepare(...)` followed by
-`commands.run(...)`. The primitives below are useful when a custom terminal
-boundary needs the same pieces without adopting the full facade.
+The high-level flow is `commands.prepare(...)` followed by `commands.run(...)`. The primitives below are useful when a custom terminal boundary needs the same pieces without adopting the full facade.
 
-Prefer the facade first. These primitives are intentionally lower-level and
-become worthwhile only when the application needs a custom lifecycle.
+Prefer the facade first. These primitives are intentionally lower-level and become worthwhile only when the application needs a custom lifecycle.
 
 The snippets below use this setup:
 
@@ -54,8 +51,7 @@ const app = createTerminalApp({
 
 ## Prepare From A Terminal App
 
-`app.prepare(...)` lets an application validate command input before runtime
-context exists.
+`app.prepare(...)` lets an application validate command input before runtime context exists.
 
 ```ts
 const prepared = await app.prepare([
@@ -74,19 +70,13 @@ prepared.options;
 prepared.provided;
 ```
 
-This is useful when the selected command decides which runtime resources to
-create. If preparation fails, the application can print an argument error
-without opening connections or starting background work.
+This is useful when the selected command decides which runtime resources to create. If preparation fails, the application can print an argument error without opening connections or starting background work.
 
-`name` and `path` preserve canonical command identity. When the definition has
-command aliases, `matchedPath` records the canonical or alias path that selected
-the command.
+`name` and `path` preserve canonical command identity. When the definition has command aliases, `matchedPath` records the canonical or alias path that selected the command.
 
 ## Run Prepared Through A Terminal App
 
-`app.runPrepared(...)` keeps terminal rendering, stdout/stderr writing, and exit
-code handling in `createTerminalApp()` after the application has created its
-own runtime context.
+`app.runPrepared(...)` keeps terminal rendering, stdout/stderr writing, and exit code handling in `createTerminalApp()` after the application has created its own runtime context.
 
 ```ts
 const prepared = await app.prepare([
@@ -108,13 +98,11 @@ finally {
 }
 ```
 
-Resource creation and cleanup stay application-owned. The terminal app only
-runs the prepared command and applies the same output behavior as `app.run(...)`.
+Resource creation and cleanup stay application-owned. The terminal app only runs the prepared command and applies the same output behavior as `app.run(...)`.
 
 ## Write Prepared Output
 
-Use `app.writePreparedOutput(...)` when the application needs to inspect the raw
-command result before terminal output is written.
+Use `app.writePreparedOutput(...)` when the application needs to inspect the raw command result before terminal output is written.
 
 ```ts
 const prepared = await app.prepare([
@@ -142,19 +130,11 @@ finally {
 }
 ```
 
-Only terminal output belongs here: ready text, streaming text, presentation
-results, or no output. Strings are written exactly as provided; include `\n`
-when line output is desired. If the raw result remains `unknown` at this
-boundary, narrow it with `isTerminalCommandOutput(...)` before writing.
-Long-running handles require an explicit transfer of context and cleanup
-ownership; use the
-[production lifecycle recipe](terminal-app.md#own-resources-cleanup-and-error-ordering)
-for that case.
+Only terminal output belongs here: ready text, streaming text, presentation results, or no output. Strings are written exactly as provided; include `\n` when line output is desired. If the raw result remains `unknown` at this boundary, narrow it with `isTerminalCommandOutput(...)` before writing. Long-running handles require an explicit transfer of context and cleanup ownership; use the [production lifecycle recipe](terminal-app.md#own-resources-cleanup-and-error-ordering) for that case.
 
 ## Prepare From A Registry
 
-`prepareCommandFromArgs(...)` is the standalone primitive behind
-`commands.prepare(...)`.
+`prepareCommandFromArgs(...)` is the standalone primitive behind `commands.prepare(...)`.
 
 ```ts
 import {
@@ -174,14 +154,11 @@ const prepared = await prepareCommandFromArgs(commands.registry, [
 type Payload = CommandPayload<typeof runJobCommand>;
 ```
 
-Use this when code owns a registry but does not use the `commands` object. The
-tradeoff is weaker readability: readers have to know which primitive maps to
-which facade method.
+Use this when code owns a registry but does not use the `commands` object. The tradeoff is weaker readability: readers have to know which primitive maps to which facade method.
 
 ## Run A Prepared Command
 
-`runPreparedCommand(...)` executes a command that was already resolved and
-validated.
+`runPreparedCommand(...)` executes a command that was already resolved and validated.
 
 ```ts
 import {
@@ -200,8 +177,7 @@ const context: Context = {
 const result: Result = await runPreparedCommand(prepared, context);
 ```
 
-This is the safest primitive when context creation has side effects. Prepare
-first, then create the exact context the selected command needs.
+This is the safest primitive when context creation has side effects. Prepare first, then create the exact context the selected command needs.
 
 ## Narrow Prepared Commands
 
@@ -215,14 +191,11 @@ if (isPreparedCommandName(prepared, 'jobs run')) {
 }
 ```
 
-Use this when several commands reuse one preparation flow but need different
-runtime setup. The guard is intentionally narrow: it checks the prepared
-command name, not arbitrary metadata.
+Use this when several commands reuse one preparation flow but need different runtime setup. The guard is intentionally narrow: it checks the prepared command name, not arbitrary metadata.
 
 ## Run From A Registry
 
-`runCommandFromRegistry(...)` is the standalone primitive behind
-`commands.runFromArgs(...)`.
+`runCommandFromRegistry(...)` is the standalone primitive behind `commands.runFromArgs(...)`.
 
 ```ts
 import { runCommandFromRegistry } from 'icore';
@@ -244,13 +217,11 @@ const output = await runCommandFromRegistry(
 );
 ```
 
-This is compact, but it removes the explicit gap between validation and runtime
-context creation. Use it when that gap does not matter.
+This is compact, but it removes the explicit gap between validation and runtime context creation. Use it when that gap does not matter.
 
 ## Run One Command Without A Registry
 
-Use `command.run(...)` or standalone `runCommand(...)` for focused execution of
-one command.
+Use `command.run(...)` or standalone `runCommand(...)` for focused execution of one command.
 
 ```ts
 import { runCommand } from 'icore';
@@ -278,8 +249,7 @@ const outputFromPrimitive = await runCommand(runJobCommand, [
 });
 ```
 
-This is useful for tests and tiny tools. It is a poor fit for large CLIs because
-it skips registry-level command selection.
+This is useful for tests and tiny tools. It is a poor fit for large CLIs because it skips registry-level command selection.
 
 ## Read Provided Metadata
 
@@ -327,13 +297,11 @@ The provided map is:
 }
 ```
 
-This distinction matters when defaults exist. The command can know whether the
-user explicitly typed an option or received the default.
+This distinction matters when defaults exist. The command can know whether the user explicitly typed an option or received the default.
 
 ## Validate A Subset
 
-`parseOptionsSubsetDetailed(...)` validates only options known by one schema and
-leaves the rest untouched.
+`parseOptionsSubsetDetailed(...)` validates only options known by one schema and leaves the rest untouched.
 
 ```ts
 import { parseOptionsSubsetDetailed } from 'icore';
@@ -352,7 +320,4 @@ parsed.options;
 parsed.rest;
 ```
 
-This is useful for staged parsing where bootstrap options and command options
-are validated by different layers. It should be used carefully: accepting
-unknown rest values is a deliberate boundary decision, not a shortcut around
-validation.
+This is useful for staged parsing where bootstrap options and command options are validated by different layers. It should be used carefully: accepting unknown rest values is a deliberate boundary decision, not a shortcut around validation.

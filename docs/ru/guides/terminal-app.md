@@ -2,12 +2,9 @@
 
 [English](../../guides/terminal-app.md) | Русский | [简体中文](../../zh/guides/terminal-app.md)
 
-> Русский перевод английской версии. При расхождении актуальной считается
-> английская версия.
+> Русский перевод английской версии. При расхождении актуальной считается английская версия.
 
-В [быстром старте README](../readme.md#быстрый-старт) используется
-`app.run(...)`, потому что это наиболее понятная точка входа для небольшого CLI
-с уже доступным context.
+В [быстром старте README](../readme.md#быстрый-старт) используется `app.run(...)`, потому что это наиболее понятная точка входа для небольшого CLI с уже доступным context.
 
 Используйте явный lifecycle из этого руководства, когда приложение:
 
@@ -30,15 +27,11 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup выполняется до error reporting, чтобы progress и resources были
-завершены до записи diagnostics в stderr. Runtime-ресурсы остаются открытыми
-до окончания `writePreparedOutput(...)`, потому что terminal output может быть
-асинхронным потоком, который всё ещё от них зависит.
+Cleanup выполняется до error reporting, чтобы progress и resources были завершены до записи diagnostics в stderr. Runtime-ресурсы остаются открытыми до окончания `writePreparedOutput(...)`, потому что terminal output может быть асинхронным потоком, который всё ещё от них зависит.
 
 ## Однократная композиция команд и terminal services
 
-Один раз привяжите общие application contracts, сохранив inference конкретных
-schema, path, payload, aliases и result каждой команды:
+Один раз привяжите общие application contracts, сохранив inference конкретных schema, path, payload, aliases и result каждой команды:
 
 ```ts
 import {
@@ -165,16 +158,11 @@ const app = createTerminalApp({
 });
 ```
 
-Создавайте `command`, `commands`, `presentation`, `output` и `app` один раз на
-один CLI invocation. Экземпляры ресурсов не входят в эту композицию; создавайте
-их только после того, как `app.prepare(...)` определит выбранную команду.
+Создавайте `command`, `commands`, `presentation`, `output` и `app` один раз на один CLI invocation. Экземпляры ресурсов не входят в эту композицию; создавайте их только после того, как `app.prepare(...)` определит выбранную команду.
 
 ## Parsing глобальных shortcuts без изменения argv
 
-Объявите короткие aliases в bootstrap option schema. `parseArgv(...)`
-сопоставит `-h` и `-v` с каноническими именами, а
-`parseOptionsSubsetDetailed(...)` проверит только options, принадлежащие
-bootstrap:
+Объявите короткие aliases в bootstrap option schema. `parseArgv(...)` сопоставит `-h` и `-v` с каноническими именами, а `parseOptionsSubsetDetailed(...)` проверит только options, принадлежащие bootstrap:
 
 ```ts
 import {
@@ -210,13 +198,9 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-Передавайте в `app.prepare(...)` исходный `args`; не собирайте argv заново из
-subset result. Command-specific options останутся доступны schema выбранной
-команды.
+Передавайте в `app.prepare(...)` исходный `args`; не собирайте argv заново из subset result. Command-specific options останутся доступны schema выбранной команды.
 
-Включайте каждую bootstrap option, тип которой влияет на владение tokens.
-Например, объявление boolean `--insecure` не позволит shortcut parsing принять
-следующий сегмент команды за её значение.
+Включайте каждую bootstrap option, тип которой влияет на владение tokens. Например, объявление boolean `--insecure` не позволит shortcut parsing принять следующий сегмент команды за её значение.
 
 ## Владение ресурсами, очисткой и порядком ошибок
 
@@ -255,16 +239,11 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` должен регистрировать cleanup сразу после
-создания каждого ресурса и откатывать уже созданные ресурсы, если initialization
-завершилась ошибкой.
+`createInvocationScope(...)` должен регистрировать cleanup сразу после создания каждого ресурса и откатывать уже созданные ресурсы, если initialization завершилась ошибкой.
 
-[Recipe help на основе metadata](practical-cli-patterns.md#построение-help-по-command-metadata)
-показывает, как `renderHelp(...)` может получить канонический command inventory
-из `commands.definitions`, не дублируя aliases.
+[Recipe help на основе metadata](practical-cli-patterns.md#построение-help-по-command-metadata) показывает, как `renderHelp(...)` может получить канонический command inventory из `commands.definitions`, не дублируя aliases.
 
-Runner сохраняет phase основной ошибки, объединяет её с cleanup failure и
-вызывает reporting только после cleanup:
+Runner сохраняет phase основной ошибки, объединяет её с cleanup failure и вызывает reporting только после cleanup:
 
 ```ts
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
@@ -455,45 +434,26 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` выполняет и rendering, и запись. Внешний caller не
-может различить эти failures, поэтому recipe сообщает о rejection как о
-`write`. Встроенные пути `app.run(...)` и `app.runPrepared(...)` способны
-различать `render` и `write` внутри.
+`writePreparedOutput(...)` выполняет и rendering, и запись. Внешний caller не может различить эти failures, поэтому recipe сообщает о rejection как о `write`. Встроенные пути `app.run(...)` и `app.runPrepared(...)` способны различать `render` и `write` внутри.
 
-Привязанный `CliCommandResult` является верхней границей. Обычная команда всё
-равно сохраняет свой конкретный presentation result, а `watchUsersCommand` —
-конкретный `LongRunningCommandResult`.
+Привязанный `CliCommandResult` является верхней границей. Обычная команда всё равно сохраняет свой конкретный presentation result, а `watchUsersCommand` — конкретный `LongRunningCommandResult`.
 
-`transferLongRunningLifecycle(...)` относится к политике приложения. Функция
-должна возвращать управление только после регистрации signal handling и
-cleanup для handle и scope. При успехе runner очищает `scope`, поэтому
-invocation `finally` больше им не владеет. Если transfer выбросит ошибку, он
-должен закрыть handle, не принимая владение scope; затем invocation `finally`
-закроет scope. Переданный lifecycle также отвечает за завершение interactive
-output до записи последующих diagnostics.
+`transferLongRunningLifecycle(...)` относится к политике приложения. Функция должна возвращать управление только после регистрации signal handling и cleanup для handle и scope. При успехе runner очищает `scope`, поэтому invocation `finally` больше им не владеет. Если transfer выбросит ошибку, он должен закрыть handle, не принимая владение scope; затем invocation `finally` закроет scope. Переданный lifecycle также отвечает за завершение interactive output до записи последующих diagnostics.
 
-До `writePreparedOutput(...)` доходят только results, принятые
-`isTerminalCommandOutput(...)`. Так custom handles, process signals и владение
-долгоживущими ресурсами остаются за границей terminal app.
+До `writePreparedOutput(...)` доходят только results, принятые `isTerminalCommandOutput(...)`. Так custom handles, process signals и владение долгоживущими ресурсами остаются за границей terminal app.
 
 ## Выбор владельца presentation
 
 Используйте один из двух путей presentation:
 
-- Когда одна плоская projection подходит для JSON, table и CSV, возвращайте
-  view из `createPresentation()`.
-- Когда JSON требует полный вложенный report, а table или CSV — выбранные
-  columns и domain formatting, выбирайте `renderJson(...)`,
-  `renderTextTable(...)` или `renderCsv(...)` непосредственно в Consumer-е.
+- Когда одна плоская projection подходит для JSON, table и CSV, возвращайте view из `createPresentation()`.
+- Когда JSON требует полный вложенный report, а table или CSV — выбранные columns и domain formatting, выбирайте `renderJson(...)`, `renderTextTable(...)` или `renderCsv(...)` непосредственно в Consumer-е.
 
-Формат выбирается по [Presentation And Output (English)](../../guides/presentation-output.md),
-а низкоуровневые контракты описаны в
-[Presentation Primitives (English)](../../guides/presentation-primitives.md).
+Формат выбирается по [Presentation And Output (English)](../../guides/presentation-output.md), а низкоуровневые контракты описаны в [Presentation Primitives (English)](../../guides/presentation-primitives.md).
 
 ## Компактный путь для простых приложений
 
-Когда context уже существует, а handlers возвращают поддерживаемый terminal
-output, используйте компактный путь:
+Когда context уже существует, а handlers возвращают поддерживаемый terminal output, используйте компактный путь:
 
 ```ts
 process.exitCode = await app.run(args, context, {
@@ -501,5 +461,4 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-Явный recipe предназначен для application-owned lifecycle. Это не обязательная
-церемония для каждого CLI.
+Явный recipe предназначен для application-owned lifecycle. Это не обязательная церемония для каждого CLI.

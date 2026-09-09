@@ -1,18 +1,12 @@
 # Presentation Primitives
 
-`createPresentation()` is the preferred entrypoint for terminal rendering. The
-primitives below are useful when a command needs explicit view types or when an
-adapter wants to use a renderer directly.
+`createPresentation()` is the preferred entrypoint for terminal rendering. The primitives below are useful when a command needs explicit view types or when an adapter wants to use a renderer directly.
 
-Prefer `presentation.render(...)` when one view has the same meaning in every
-format. Direct renderers are lower-level and make the caller responsible for
-choosing the right input shape, which is useful when JSON, table, and CSV need
-different projections of the same report.
+Prefer `presentation.render(...)` when one view has the same meaning in every format. Direct renderers are lower-level and make the caller responsible for choosing the right input shape, which is useful when JSON, table, and CSV need different projections of the same report.
 
 ## Empty And Text Views
 
-Use `presentation.empty()` when a command succeeds without terminal output.
-Use `presentation.text(...)` when the command already owns final text.
+Use `presentation.empty()` when a command succeeds without terminal output. Use `presentation.text(...)` when the command already owns final text.
 
 ```ts
 import { createPresentation } from 'icore';
@@ -23,13 +17,11 @@ const noOutput = presentation.empty();
 const readyText = presentation.text('cache cleared\n');
 ```
 
-These views are format-independent. Rendering them as `table`, `json`, or `csv`
-does not invent structure.
+These views are format-independent. Rendering them as `table`, `json`, or `csv` does not invent structure.
 
 ## Record And Records Views
 
-Use `record(...)` and `records(...)` when the same flat key/value shape is the
-intended JSON model and the intended source of table and CSV columns.
+Use `record(...)` and `records(...)` when the same flat key/value shape is the intended JSON model and the intended source of table and CSV columns.
 
 ```ts
 const oneJob = presentation.record({
@@ -52,9 +44,7 @@ presentation.render(oneJob, 'table');
 presentation.render(manyJobs, 'json');
 ```
 
-`PresentationRecord` has a string index signature, while a regular TypeScript
-interface does not. Map DTOs to object literals to select presentation fields
-without a cast:
+`PresentationRecord` has a string index signature, while a regular TypeScript interface does not. Map DTOs to object literals to select presentation fields without a cast:
 
 ```ts
 interface JobReportRow {
@@ -77,24 +67,15 @@ This is the most convenient view when:
 - generic conversion of values to table and CSV cells is sufficient;
 - table and CSV headers can be inferred from non-empty data.
 
-The view does not support per-format field selection or cell formatting.
-Nested values that are useful in JSON therefore do not automatically make a
-useful table. Select fields before creating the view; generic presentation code
-should not inspect domain objects.
+The view does not support per-format field selection or cell formatting. Nested values that are useful in JSON therefore do not automatically make a useful table. Select fields before creating the view; generic presentation code should not inspect domain objects.
 
-In table format, `record(row)` produces a vertical `field`/`value` table. Use
-`records([row])` when one object should appear as a horizontal table with field
-names in its header.
+In table format, `record(row)` produces a vertical `field`/`value` table. Use `records([row])` when one object should appear as a horizontal table with field names in its header.
 
-For an empty `records([])` view, JSON renders as an empty array while table and
-CSV render as empty text. An explicit table or CSV view can retain headers for
-one fixed format. When one command needs both JSON `[]` and header-only empty
-table or CSV output, select direct renderers separately by format.
+For an empty `records([])` view, JSON renders as an empty array while table and CSV render as empty text. An explicit table or CSV view can retain headers for one fixed format. When one command needs both JSON `[]` and header-only empty table or CSV output, select direct renderers separately by format.
 
 ## Explicit Table And CSV Views
 
-Use `table(...)` when the application already owns prepared text cells.
-Use `csv(...)` when the application already owns CSV scalar rows.
+Use `table(...)` when the application already owns prepared text cells. Use `csv(...)` when the application already owns CSV scalar rows.
 
 ```ts
 const table = presentation.table([
@@ -110,21 +91,13 @@ const csv = presentation.csv([
 ]);
 ```
 
-These forms are less convenient than `records(...)`, but they are useful when
-the application needs full control over column sequence and cell values. A
-single table or CSV view still has one format-independent shape; use direct
-renderers when the application needs different projections for different
-formats.
+These forms are less convenient than `records(...)`, but they are useful when the application needs full control over column sequence and cell values. A single table or CSV view still has one format-independent shape; use direct renderers when the application needs different projections for different formats.
 
-Text-table cells are plain text. Width calculation uses JavaScript string
-length rather than terminal display width, so ANSI sequences, emoji, combining
-characters, tabs, and full-width Unicode may be aligned incorrectly. JSON and
-CSV rendering do not use text-table column alignment.
+Text-table cells are plain text. Width calculation uses JavaScript string length rather than terminal display width, so ANSI sequences, emoji, combining characters, tabs, and full-width Unicode may be aligned incorrectly. JSON and CSV rendering do not use text-table column alignment.
 
 ## Supported Formats
 
-Use `presentation.formats`, `presentationFormats`, and
-`isPresentationFormat(...)` when a custom boundary accepts a format option.
+Use `presentation.formats`, `presentationFormats`, and `isPresentationFormat(...)` when a custom boundary accepts a format option.
 
 ```ts
 import {
@@ -140,8 +113,7 @@ presentation.formats;
 presentationFormats;
 ```
 
-This keeps format checks aligned with the renderer. Avoid copying the string
-union into application code.
+This keeps format checks aligned with the renderer. Avoid copying the string union into application code.
 
 ## Render Through The Facade
 
@@ -161,8 +133,7 @@ const fromFacade = presentation.render(view, 'csv');
 const fromPrimitive = renderPresentationResult(view, 'csv');
 ```
 
-Prefer the facade in application code. The standalone function is useful for
-tests or custom presentation objects.
+Prefer the facade in application code. The standalone function is useful for tests or custom presentation objects.
 
 ## Check Presentation Results
 
@@ -180,8 +151,7 @@ function renderUnknown(value: unknown): string {
 }
 ```
 
-This is useful at generic boundaries. Inside a command handler, returning a
-known presentation view is usually clearer.
+This is useful at generic boundaries. Inside a command handler, returning a known presentation view is usually clearer.
 
 ## Use Direct Renderers
 
@@ -230,11 +200,7 @@ renderCsv([
 ]);
 ```
 
-Direct renderers make format selection an application responsibility. They are
-useful for adapters and tests, and they are the recommended path for reports
-whose formats intentionally have different shapes. For example, JSON can
-preserve a complete nested report while a table exposes only selected columns
-with domain-specific cell formatting:
+Direct renderers make format selection an application responsibility. They are useful for adapters and tests, and they are the recommended path for reports whose formats intentionally have different shapes. For example, JSON can preserve a complete nested report while a table exposes only selected columns with domain-specific cell formatting:
 
 ```ts
 const jsonText = renderJson(report);
@@ -247,7 +213,4 @@ const tableText = renderTextTable([
 ]);
 ```
 
-The application remains responsible for selecting the renderer after resolving
-the requested format. icore does not infer a curated table from a JSON model.
-When all formats share one generic record shape, returning a presentation view
-and letting `presentation.render(...)` choose the renderer remains simpler.
+The application remains responsible for selecting the renderer after resolving the requested format. icore does not infer a curated table from a JSON model. When all formats share one generic record shape, returning a presentation view and letting `presentation.render(...)` choose the renderer remains simpler.

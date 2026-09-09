@@ -4,8 +4,7 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-[README 快速开始](../readme.md#快速开始)使用 `app.run(...)`，因为
-对已具备 context 的小型 CLI 来说，这是最清晰的入口。
+[README 快速开始](../readme.md#快速开始)使用 `app.run(...)`，因为对已具备 context 的小型 CLI 来说，这是最清晰的入口。
 
 当应用满足以下情况时，请使用本指南中的显式 lifecycle：
 
@@ -28,15 +27,11 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向
-stderr 写入 diagnostics。Runtime resources 会一直保持打开，直到
-`writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些
-资源的异步流。
+Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向 stderr 写入 diagnostics。Runtime resources 会一直保持打开，直到 `writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些资源的异步流。
 
 ## 一次性组合命令与终端服务
 
-一次性绑定共享 application contracts，同时保留 command-specific schema、
-path、payload、aliases 和 result inference：
+一次性绑定共享 application contracts，同时保留 command-specific schema、 path、payload、aliases 和 result inference：
 
 ```ts
 import {
@@ -163,15 +158,11 @@ const app = createTerminalApp({
 });
 ```
 
-每次 CLI invocation 只创建一次 `command`、`commands`、`presentation`、
-`output` 和 `app`。资源实例不属于这次组合；只有在 `app.prepare(...)` 确定
-所选命令后才创建它们。
+每次 CLI invocation 只创建一次 `command`、`commands`、`presentation`、 `output` 和 `app`。资源实例不属于这次组合；只有在 `app.prepare(...)` 确定所选命令后才创建它们。
 
 ## 在不重写 argv 的情况下解析全局快捷方式
 
-在 bootstrap option schema 中声明短 aliases。`parseArgv(...)` 会将 `-h`
-和 `-v` 映射到 canonical names，而 `parseOptionsSubsetDetailed(...)` 只验证
-bootstrap 拥有的 options：
+在 bootstrap option schema 中声明短 aliases。`parseArgv(...)` 会将 `-h` 和 `-v` 映射到 canonical names，而 `parseOptionsSubsetDetailed(...)` 只验证 bootstrap 拥有的 options：
 
 ```ts
 import {
@@ -207,12 +198,9 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-将原始 `args` 传给 `app.prepare(...)`；不要根据 subset result 重建 argv。
-这样 command-specific options 才会继续提供给所选命令的 schema。
+将原始 `args` 传给 `app.prepare(...)`；不要根据 subset result 重建 argv。这样 command-specific options 才会继续提供给所选命令的 schema。
 
-应包含每个其类型会影响 token ownership 的 bootstrap option。例如，声明
-boolean `--insecure` 可以防止 shortcut parsing 把后续 command segment
-误认为它的值。
+应包含每个其类型会影响 token ownership 的 bootstrap option。例如，声明 boolean `--insecure` 可以防止 shortcut parsing 把后续 command segment 误认为它的值。
 
 ## 资源、清理与错误顺序的所有权
 
@@ -251,15 +239,11 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` 应在每个资源创建后立即注册 cleanup，并在
-initialization 失败时回滚已经创建的部分资源。
+`createInvocationScope(...)` 应在每个资源创建后立即注册 cleanup，并在 initialization 失败时回滚已经创建的部分资源。
 
-[由 metadata 驱动的 help 方案](practical-cli-patterns.md#根据命令元数据构建-help)
-展示 `renderHelp(...)` 如何从 `commands.definitions` 构建 canonical command
-inventory，而不重复 aliases。
+[由 metadata 驱动的 help 方案](practical-cli-patterns.md#根据命令元数据构建-help) 展示 `renderHelp(...)` 如何从 `commands.definitions` 构建 canonical command inventory，而不重复 aliases。
 
-Runner 保留主要 failure 的 phase、合并 cleanup failure，并且只在 cleanup
-完成后报告：
+Runner 保留主要 failure 的 phase、合并 cleanup failure，并且只在 cleanup 完成后报告：
 
 ```ts
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
@@ -450,36 +434,22 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` 同时执行 rendering 和 writing。外部 caller 无法
-区分这两种 failure，因此本方案将 rejection 报告为 `write`。内置的
-`app.run(...)` 与 `app.runPrepared(...)` 路径可以在内部区分 `render` 和
-`write`。
+`writePreparedOutput(...)` 同时执行 rendering 和 writing。外部 caller 无法区分这两种 failure，因此本方案将 rejection 报告为 `write`。内置的 `app.run(...)` 与 `app.runPrepared(...)` 路径可以在内部区分 `render` 和 `write`。
 
-绑定的 `CliCommandResult` 是上界。普通命令仍保留其具体 presentation
-result，而 `watchUsersCommand` 保留具体 `LongRunningCommandResult`。
+绑定的 `CliCommandResult` 是上界。普通命令仍保留其具体 presentation result，而 `watchUsersCommand` 保留具体 `LongRunningCommandResult`。
 
-`transferLongRunningLifecycle(...)` 属于应用策略。它必须在注册 handle 与
-scope 的 signal handling 和 cleanup 后才返回。成功时 runner 清空 `scope`，
-因此 invocation `finally` 不再拥有它。如果 transfer 抛出异常，它必须关闭
-handle，但不能取得 scope ownership；随后 invocation `finally` 关闭 scope。
-转移后的 lifecycle 也负责在写入后续 diagnostics 前结束 interactive output。
+`transferLongRunningLifecycle(...)` 属于应用策略。它必须在注册 handle 与 scope 的 signal handling 和 cleanup 后才返回。成功时 runner 清空 `scope`，因此 invocation `finally` 不再拥有它。如果 transfer 抛出异常，它必须关闭 handle，但不能取得 scope ownership；随后 invocation `finally` 关闭 scope。转移后的 lifecycle 也负责在写入后续 diagnostics 前结束 interactive output。
 
-只有被 `isTerminalCommandOutput(...)` 接受的 results 才会到达
-`writePreparedOutput(...)`。这样 custom handles、process signals 与
-long-running resource ownership 都保持在 terminal app 边界之外。
+只有被 `isTerminalCommandOutput(...)` 接受的 results 才会到达 `writePreparedOutput(...)`。这样 custom handles、process signals 与 long-running resource ownership 都保持在 terminal app 边界之外。
 
 ## 选择表示层所有权
 
 请在两种 presentation 路径中选择一种：
 
-- 当同一个扁平 projection 适用于 JSON、table 和 CSV 时，从
-  `createPresentation()` 返回 view。
-- 当 JSON 需要完整的嵌套 report，而 table 或 CSV 需要选定 columns 与
-  domain formatting 时，由 Consumer 直接选择 `renderJson(...)`、
-  `renderTextTable(...)` 或 `renderCsv(...)`。
+- 当同一个扁平 projection 适用于 JSON、table 和 CSV 时，从 `createPresentation()` 返回 view。
+- 当 JSON 需要完整的嵌套 report，而 table 或 CSV 需要选定 columns 与 domain formatting 时，由 Consumer 直接选择 `renderJson(...)`、 `renderTextTable(...)` 或 `renderCsv(...)`。
 
-格式选择见 [Presentation And Output（英文）](../../guides/presentation-output.md)，
-底层契约见 [Presentation Primitives（英文）](../../guides/presentation-primitives.md)。
+格式选择见 [Presentation And Output（英文）](../../guides/presentation-output.md)，底层契约见 [Presentation Primitives（英文）](../../guides/presentation-primitives.md)。
 
 ## 为简单应用保留精简路径
 
@@ -491,5 +461,4 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-显式方案用于 application-owned lifecycle 工作，并非每个 CLI 都必须采用的
-固定流程。
+显式方案用于 application-owned lifecycle 工作，并非每个 CLI 都必须采用的固定流程。

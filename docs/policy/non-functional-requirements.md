@@ -9,8 +9,7 @@ Changes must not break:
 - portability
 - CI
 
-Compatibility-sensitive properties must remain unchanged unless the task
-explicitly requires changing them:
+Compatibility-sensitive properties must remain unchanged unless the task explicitly requires changing them:
 
 - runtime behavior
 - file structure
@@ -18,9 +17,7 @@ explicitly requires changing them:
 - architecture
 - dependency graph
 
-When the task requires one of these changes, keep it scoped and validate its
-effect explicitly. Even if the code works, a change is forbidden when it
-damages an unrelated property.
+When the task requires one of these changes, keep it scoped and validate its effect explicitly. Even if the code works, a change is forbidden when it damages an unrelated property.
 
 ## Risk Examples
 

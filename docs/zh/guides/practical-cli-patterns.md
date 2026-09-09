@@ -4,21 +4,15 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-这些示例展示构建在 icore 之上的 application-level patterns。它们使用中性的
-命令名称，但相关结构面向具有大量命令、共享 options、utility commands 和
-compatibility behavior 的真实 CLI 应用。
+这些示例展示构建在 icore 之上的 application-level patterns。它们使用中性的命令名称，但相关结构面向具有大量命令、共享 options、utility commands 和 compatibility behavior 的真实 CLI 应用。
 
 ## 全局 help 和 version 快捷方式
 
-在大型 CLI 中，`--help`、`-h`、`--version` 和 `-v` 经常需要在命令执行前
-生效。它们不应要求 command-specific required options 或 runtime context。
+在大型 CLI 中，`--help`、`-h`、`--version` 和 `-v` 经常需要在命令执行前生效。它们不应要求 command-specific required options 或 runtime context。
 
-icore 不会自动提供这种行为，因为它属于应用策略，而不是 command mechanics。
-将它明确放在 bootstrap runner 中最为清晰：utility shortcuts 可以绕过特定
-命令的 validation，普通命令则继续使用 registry 与自己的 schemas。
+icore 不会自动提供这种行为，因为它属于应用策略，而不是 command mechanics。将它明确放在 bootstrap runner 中最为清晰：utility shortcuts 可以绕过特定命令的 validation，普通命令则继续使用 registry 与自己的 schemas。
 
-请把这段逻辑放在 bootstrap runner 中，并在 command registry 执行业务命令
-之前运行：
+请把这段逻辑放在 bootstrap runner 中，并在 command registry 执行业务命令之前运行：
 
 ```ts
 import {
@@ -59,18 +53,11 @@ function parseBootstrapInput(args: readonly string[]) {
 }
 ```
 
-短 aliases 属于 schema behavior：`parseArgv(...)` 将 `-h` 映射到 `help`，
-将 `-v` 映射到 `version`。应用不需要规范化 argv，也不需要分别声明 `h`
-和 `v` options。
+短 aliases 属于 schema behavior：`parseArgv(...)` 将 `-h` 映射到 `help`，将 `-v` 映射到 `version`。应用不需要规范化 argv，也不需要分别声明 `h` 和 `v` options。
 
-这里只验证 bootstrap 拥有的 options。Command-specific options 会在 `rest`
-中返回以供检查，但通常仍应保留在传给 `app.prepare(...)` 的原始 argv 中。
-不要根据 subset result 重建 command argv。这样可避免 global parsing 在命令
-解析前错误地拒绝、重排或丢弃有效 command options。
+这里只验证 bootstrap 拥有的 options。Command-specific options 会在 `rest` 中返回以供检查，但通常仍应保留在传给 `app.prepare(...)` 的原始 argv 中。不要根据 subset result 重建 command argv。这样可避免 global parsing 在命令解析前错误地拒绝、重排或丢弃有效 command options。
 
-应包含所有其类型会影响 token ownership 的 bootstrap options。本例将
-`offline` 声明为 boolean，因此 shortcut parsing 不会把后续 command segment
-作为它的值。
+应包含所有其类型会影响 token ownership 的 bootstrap options。本例将 `offline` 声明为 boolean，因此 shortcut parsing 不会把后续 command segment 作为它的值。
 
 用户可以请求顶层 help：
 
@@ -143,12 +130,9 @@ Expected '--help' as boolean flag
 
 ## 将工具命令作为普通命令
 
-Utility commands 可以与应用其余部分使用同一个 command registry。下面的
-命令接受额外 positionals，因此 `help jobs run` 可以指向另一条命令：
+Utility commands 可以与应用其余部分使用同一个 command registry。下面的命令接受额外 positionals，因此 `help jobs run` 可以指向另一条命令：
 
-这种方式通常比在 registry 外硬编码 utility commands 更合适，因为 `help`
-和 `version` 仍是可见的公共命令。其代价是：如果 `--help`、`-h`、
-`--version` 和 `-v` 属于公共接口，bootstrap 仍需处理这些 shortcuts。
+这种方式通常比在 registry 外硬编码 utility commands 更合适，因为 `help` 和 `version` 仍是可见的公共命令。其代价是：如果 `--help`、`-h`、 `--version` 和 `-v` 属于公共接口，bootstrap 仍需处理这些 shortcuts。
 
 ```ts
 import { createCommand } from 'icore';
@@ -177,14 +161,11 @@ const versionCommand = command.define({
 });
 ```
 
-这样 utility command routing 保持显式。实际 help 与 version 文本仍由应用
-拥有。
+这样 utility command routing 保持显式。实际 help 与 version 文本仍由应用拥有。
 
 ## 根据命令元数据构建 help
 
-将 help 文本保存在每个 command definition 中，再从
-`commands.definitions` 构建 help inventory。Definitions 只包含 canonical
-commands，因此 aliases 不会产生重复条目：
+将 help 文本保存在每个 command definition 中，再从 `commands.definitions` 构建 help inventory。Definitions 只包含 canonical commands，因此 aliases 不会产生重复条目：
 
 ```ts
 import { createCommand } from 'icore';
@@ -236,21 +217,15 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 }));
 ```
 
-使用 `commandHelpEntries` 生成顶层与分组 help。对于特定命令的 help，将请求的
-path 与 `definition.path`、`definition.aliases` 匹配，但渲染时使用
-`definition.path` 中的 canonical path。
+使用 `commandHelpEntries` 生成顶层与分组 help。对于特定命令的 help，将请求的 path 与 `definition.path`、`definition.aliases` 匹配，但渲染时使用 `definition.path` 中的 canonical path。
 
-`icore` 会公开 definitions 和类型化 metadata，但有意不决定 help 的 layout、
-措辞、分组方式或 aliases 是否可见。这些仍属于应用策略。
+`icore` 会公开 definitions 和类型化 metadata，但有意不决定 help 的 layout、措辞、分组方式或 aliases 是否可见。这些仍属于应用策略。
 
 ## 应用共享选项
 
-实际命令经常复用 connection、output 或 runtime switches。请保持这些 schemas
-小而专注，并与 command-specific schemas 组合：
+实际命令经常复用 connection、output 或 runtime switches。请保持这些 schemas 小而专注，并与 command-specific schemas 组合：
 
-当相同 options 出现在多条命令中时，组合很有价值；但这并不意味着应为仅
-使用一次的 options 创建 generic schemas。若一个 option 只被一条命令使用，
-就在该命令中直接定义。
+当相同 options 出现在多条命令中时，组合很有价值；但这并不意味着应为仅使用一次的 options 创建 generic schemas。若一个 option 只被一条命令使用，就在该命令中直接定义。
 
 ```ts
 import {
@@ -314,12 +289,9 @@ Command handler 收到：
 
 ## 已弃用的选项别名
 
-重命名公共 CLI option 时，请将 compatibility option 放在 canonical option
-附近，并显式处理冲突：
+重命名公共 CLI option 时，请将 compatibility option 放在 canonical option 附近，并显式处理冲突：
 
-这不是最简洁的契约，但当现有用户可能依赖旧名称时很有用。让 deprecated
-option 在代码中保持可见，使用时发出 warning，同时拒绝同时传入两个名称的
-歧义调用。
+这不是最简洁的契约，但当现有用户可能依赖旧名称时很有用。让 deprecated option 在代码中保持可见，使用时发出 warning，同时拒绝同时传入两个名称的歧义调用。
 
 ```ts
 import { CliUsageError } from 'icore';
@@ -391,27 +363,23 @@ Use either '--item-id' or deprecated '--legacy-id', not both
 
 Boolean flags 不会把下一个 token 当作值：
 
-这是有意的行为，可以防止 `--offline false` 悄悄表示与受支持 boolean syntax
-不同的含义。
+这是有意的行为，可以防止 `--offline false` 悄悄表示与受支持 boolean syntax 不同的含义。
 
 ```bash
 workspace-cli jobs list --offline false
 ```
 
-Parser 得到 `offline: true`，并将 `false` 留作 positional token。如果命令不
-允许额外 positionals，command validation 会拒绝它。
+Parser 得到 `offline: true`，并将 `false` 留作 positional token。如果命令不允许额外 positionals，command validation 会拒绝它。
 
 schema 已知的 string 和 number options 可以取得以短横线开头的值：
 
-这正是 parsing 需要 command schema 的原因。没有 schema 时，`-draft` 或
-`-1` 可能被误认为另一个 option-like token。
+这正是 parsing 需要 command schema 的原因。没有 schema 时，`-draft` 或 `-1` 可能被误认为另一个 option-like token。
 
 ```bash
 workspace-cli search --query -draft --limit -1
 ```
 
-这对搜索文本和有符号数字很有用。Schema validation 之后仍可拒绝解析后的
-值，例如 `limit` 设置了 `min: 1` 时。
+这对搜索文本和有符号数字很有用。Schema validation 之后仍可拒绝解析后的值，例如 `limit` 设置了 `min: 1` 时。
 
 选项终止符会将其后的所有内容变成 positional input：
 
@@ -425,8 +393,7 @@ Tokens `--query`、`-draft` 和 `--offline` 不再被解析为 options。
 
 重复的长形式与短形式会被作为同一个参数拒绝：
 
-拒绝 duplicates 比“最后一个值优先”更严格，但能避免 command contracts 中
-隐藏的优先级规则。
+拒绝 duplicates 比“最后一个值优先”更严格，但能避免 command contracts 中隐藏的优先级规则。
 
 ```bash
 workspace-cli jobs list --offline -o

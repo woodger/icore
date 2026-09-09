@@ -9,8 +9,7 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-一个面向 [Node.js®](https://nodejs.org) 应用的小型、无运行时依赖的命令行
-界面与终端呈现机制模块。
+一个面向 [Node.js®](https://nodejs.org) 应用的小型、无运行时依赖的命令行界面与终端呈现机制模块。
 
 `icore` 负责从 `process.argv` 到终端输出的整条路径：
 
@@ -43,8 +42,7 @@ npm install icore
 
 ## 快速开始
 
-创建命令，将它们放入 registry，然后把该 registry 传给
-`createTerminalApp()`：
+创建命令，将它们放入 registry，然后把该 registry 传给 `createTerminalApp()`：
 
 ```ts
 import {
@@ -95,22 +93,13 @@ $ node dist/cli.js hello --name Alice --uppercase
 HELLO, ALICE!
 ```
 
-schema 决定 handler 的选项类型。必填选项和具有默认值的选项始终存在；
-可选项返回 `T | undefined`。
+schema 决定 handler 的选项类型。必填选项和具有默认值的选项始终存在；可选项返回 `T | undefined`。
 
-具有共享 context、result 和 metadata 契约的应用可以通过
-`createCommand.withTypes<...>()` 一次性绑定这些类型，同时仍会为每条命令
-推导 schema、path、aliases、准备后的 payload 和具体 result 类型。参见
-[一次性绑定应用命令类型](guides/option-schemas.md#一次性绑定应用命令类型)。
+具有共享 context、result 和 metadata 契约的应用可以通过 `createCommand.withTypes<...>()` 一次性绑定这些类型，同时仍会为每条命令推导 schema、path、aliases、准备后的 payload 和具体 result 类型。参见 [一次性绑定应用命令类型](guides/option-schemas.md#一次性绑定应用命令类型)。
 
-`app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择
-runtime 资源或自行执行 cleanup，请使用
-[生产级终端应用 lifecycle](guides/terminal-app.md)。
+`app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择 runtime 资源或自行执行 cleanup，请使用 [生产级终端应用 lifecycle](guides/terminal-app.md)。
 
-`strict: true` 会拒绝 command path 之前的 options。字符串输出会原样写入，
-因此逐行输出时请在命令结果中添加 `\n`。默认解析仍接受 option-first
-input。Bootstrap parsing 不会重排 argv，因此只有当 command-first syntax
-属于应用的公共 CLI 契约时，才应启用 strict mode。
+`strict: true` 会拒绝 command path 之前的 options。字符串输出会原样写入，因此逐行输出时请在命令结果中添加 `\n`。默认解析仍接受 option-first input。Bootstrap parsing 不会重排 argv，因此只有当 command-first syntax 属于应用的公共 CLI 契约时，才应启用 strict mode。
 
 ## 选择 API 层级
 
@@ -127,13 +116,7 @@ input。Bootstrap parsing 不会重排 argv，因此只有当 command-first synt
 | 显式写入 stdout/stderr | `createOutput()` | [Output Writers（英文）](../guides/output-writers.md) |
 | parser 与 resolver primitives | `parseArgv()`、`resolveCommand()` 及相关 exports | [Primitive Mechanics（英文）](../guides/readme.md#primitive-mechanics) |
 
-`createTerminalOutput()` 和 `createTerminalProgress()` 在 `2.x` 分支中仍作为
-已弃用的 compatibility exports 提供。新 Consumer 不应使用它们：interactive
-output 与 progress rendering 应由应用拥有。`createOutput()` 会处理 sink 的
-backpressure，但不会把 application-owned progress 与普通输出串行化。推荐的
-边界见 [application-owned output guide（英文）](../guides/output-writers.md#application-owned-interactive-output)，
-保留的 [migration guide（英文）](../guides/interactive-output.md) 则说明旧版
-契约。
+`createTerminalOutput()` 和 `createTerminalProgress()` 在 `2.x` 分支中仍作为已弃用的 compatibility exports 提供。新 Consumer 不应使用它们：interactive output 与 progress rendering 应由应用拥有。`createOutput()` 会处理 sink 的 backpressure，但不会把 application-owned progress 与普通输出串行化。推荐的边界见 [application-owned output guide（英文）](../guides/output-writers.md#application-owned-interactive-output)，保留的 [migration guide（英文）](../guides/interactive-output.md) 则说明旧版契约。
 
 终端应用提供以下主要 lifecycle 操作：
 
@@ -141,37 +124,23 @@ backpressure，但不会把 application-owned progress 与普通输出串行化�
 - `app.prepare(args, options?)` 在没有 runtime context 时验证输入；
 - `app.runPrepared(prepared, context)` 执行已准备的命令；
 - `app.writePreparedOutput(prepared, output)` 写入 caller 得到的 output；
-- `app.reportError(error, context?)` 应用配置的 terminal error policy，并返回
-  process-style exit code。
+- `app.reportError(error, context?)` 应用配置的 terminal error policy，并返回 process-style exit code。
 
-空 command registry 是 bootstrap-only `TerminalApp` 的受支持场景。它可在
-完整 registry 加载前处理 caller-owned global shortcuts，并使用 presentation、
-output 或 `reportError(...)`。空 registry 中没有可解析的命令：应创建另一个
-含完整命令 registry 的应用，并复用相同的 output 与 error policy，而不是
-原地修改 registry。
+空 command registry 是 bootstrap-only `TerminalApp` 的受支持场景。它可在完整 registry 加载前处理 caller-owned global shortcuts，并使用 presentation、 output 或 `reportError(...)`。空 registry 中没有可解析的命令：应创建另一个含完整命令 registry 的应用，并复用相同的 output 与 error policy，而不是原地修改 registry。
 
-Command handlers 会收到解析后的 `options`、记录选项是否由用户提供的
-`provided` metadata、剩余 `positionals`、caller-owned `context` 和可选的
-prepared `payload`。
+Command handlers 会收到解析后的 `options`、记录选项是否由用户提供的 `provided` metadata、剩余 `positionals`、caller-owned `context` 和可选的 prepared `payload`。
 
-受支持的 terminal results 包括字符串、字符串异步流、presentation results
-和 `undefined`。
+受支持的 terminal results 包括字符串、字符串异步流、presentation results 和 `undefined`。
 
-在将未知的 caller-owned result 传给 `app.writePreparedOutput(...)` 之前，
-使用 `isTerminalCommandOutput(...)` 缩小其类型。
+在将未知的 caller-owned result 传给 `app.writePreparedOutput(...)` 之前，使用 `isTerminalCommandOutput(...)` 缩小其类型。
 
-文本表格 rendering 仅支持 plain-text cells。列宽通过 JavaScript string
-length 计算，因此 ANSI sequences、emoji、combining characters、tabs 和
-full-width Unicode 可能无法正确对齐。
+文本表格 rendering 仅支持 plain-text cells。列宽通过 JavaScript string length 计算，因此 ANSI sequences、emoji、combining characters、tabs 和 full-width Unicode 可能无法正确对齐。
 
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
 
-公共 exports 的准确列表位于
-[`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) 以及
-包内的 TypeScript declarations。Consumer 从包根目录导入这些 API；内部
-module paths 不会导出。
+公共 exports 的准确列表位于 [`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) 以及包内的 TypeScript declarations。Consumer 从包根目录导入这些 API；内部 module paths 不会导出。
 
 ## 支持的参数语法
 
@@ -186,24 +155,19 @@ module paths 不会导出。
 | 短 alias | `-v`、`-n Alice` | 必须在 schema 中声明为单个 ASCII 字母 |
 | 选项终止符 | `--` | 后续每个 token 都成为 positional |
 
-选项名称必须精确匹配：`icore` 不会把 `camelCase` 转换为 `kebab-case`。
-不支持 `--verbose=true` 这样的显式 boolean values、`-nAlice` 这样的连接短值，
-以及 `-abc` 这样的分组 aliases。
+选项名称必须精确匹配：`icore` 不会把 `camelCase` 转换为 `kebab-case`。不支持 `--verbose=true` 这样的显式 boolean values、`-nAlice` 这样的连接短值，以及 `-abc` 这样的分组 aliases。
 
-Parsing examples、edge cases、duplicate handling 与终止符契约见
-[CLI Argument Syntax（英文）](../guides/cli-argument-syntax.md)。
+Parsing examples、edge cases、duplicate handling 与终止符契约见 [CLI Argument Syntax（英文）](../guides/cli-argument-syntax.md)。
 
 ## 错误处理
 
-CLI parsing、validation、resolution 和 definitions 产生的错误用
-`IcoreError` 表示。它扩展 `Error` 并包含：
+CLI parsing、validation、resolution 和 definitions 产生的错误用 `IcoreError` 表示。它扩展 `Error` 并包含：
 
 - 稳定、机器可读的 `code`；
 - `usage` 或 `definition` category；
 - 与错误 code 对应的必填 `details`。
 
-请使用 `isIcoreError(...)`，而不是手动转换 details。向 guard 传入 code
-会缩小到对应的 details 结构：
+请使用 `isIcoreError(...)`，而不是手动转换 details。向 guard 传入 code 会缩小到对应的 details 结构：
 
 ```ts
 import {
@@ -235,13 +199,9 @@ const app = createTerminalApp({
 });
 ```
 
-在 `UNKNOWN_COMMAND` 分支内，`error.details.command` 和
-`error.details.positionals` 等字段均具有严格类型。
-`IcoreErrorDetailsMap` 是每种 code 的公共 source of truth。直接调用
-`new IcoreError(...)` 时，必须提供与所选 code 匹配的第三个参数。
+在 `UNKNOWN_COMMAND` 分支内，`error.details.command` 和 `error.details.positionals` 等字段均具有严格类型。 `IcoreErrorDetailsMap` 是每种 code 的公共 source of truth。直接调用 `new IcoreError(...)` 时，必须提供与所选 code 匹配的第三个参数。
 
-Application-owned semantic validation 可以抛出 `CliUsageError`，而不必为
-错误分配 framework-owned `IcoreError` code：
+Application-owned semantic validation 可以抛出 `CliUsageError`，而不必为错误分配 framework-owned `IcoreError` code：
 
 ```ts
 import { CliUsageError } from 'icore';
@@ -251,52 +211,31 @@ throw new CliUsageError(
 );
 ```
 
-`isUsageError(...)` 会识别 `CliUsageError`，以及 category 为 `usage` 的
-`IcoreError` 实例。Rendering、help text 与 exit code 选择仍由应用决定。
+`isUsageError(...)` 会识别 `CliUsageError`，以及 category 为 `usage` 的 `IcoreError` 实例。Rendering、help text 与 exit code 选择仍由应用决定。
 
-两个 guards 都能识别同一 JavaScript realm 中由另一份物理 `icore` 副本
-创建的兼容 branded errors。这不会把经 JSON、IPC 或 worker boundaries
-序列化的错误恢复成类实例。
+两个 guards 都能识别同一 JavaScript realm 中由另一份物理 `icore` 副本创建的兼容 branded errors。这不会把经 JSON、IPC 或 worker boundaries 序列化的错误恢复成类实例。
 
-未提供 custom policy 时，终端应用会写入 `Error.message + "\n"`；对于其他
-抛出值则写入 `String(error) + "\n"`，并返回 exit code `1`。应用特有的 help
-仍属于应用策略。
+未提供 custom policy 时，终端应用会写入 `Error.message + "\n"`；对于其他抛出值则写入 `String(error) + "\n"`，并返回 exit code `1`。应用特有的 help 仍属于应用策略。
 
-Custom lifecycle 可以调用 `app.reportError(...)` 来复用相同的 rendering 和
-exit-code policy。prepare、execute、write 与 external 各阶段的完整 flow 见
-[生产级 lifecycle](guides/terminal-app.md#资源清理与错误顺序的所有权)。
+Custom lifecycle 可以调用 `app.reportError(...)` 来复用相同的 rendering 和 exit-code policy。prepare、execute、write 与 external 各阶段的完整 flow 见 [生产级 lifecycle](guides/terminal-app.md#资源清理与错误顺序的所有权)。
 
 ## 指南
 
-[中文指南索引](guides/readme.md) 从普通终端应用逐步通向底层机制。
-建议从以下文档开始：
+[中文指南索引](guides/readme.md) 从普通终端应用逐步通向底层机制。建议从以下文档开始：
 
-- [生产级终端应用](guides/terminal-app.md) — global shortcuts、
-  preparation、按 metadata 选择资源、execution、output、cleanup 与可复用的
-  error handling；
-- [选项模式](guides/option-schemas.md) — strings、booleans、numbers、
-  choices、defaults、aliases 和推导类型；
-- [实用 CLI 模式](guides/practical-cli-patterns.md) — help/version
-  shortcuts、共享 options 和 compatibility aliases；
-- [Command Resolution（英文）](../guides/command-resolution.md) — registry、
-  canonical aliases、matched paths、显式解析与 command-name guards；
-- [Two-Phase Primitives（英文）](../guides/two-phase-primitives.md) —
-  preparation、payloads、execution 与已提供选项的 metadata；
-- [Presentation Primitives（英文）](../guides/presentation-primitives.md) —
-  text、record、table、CSV、JSON 与 direct renderers。
+- [生产级终端应用](guides/terminal-app.md) — global shortcuts、 preparation、按 metadata 选择资源、execution、output、cleanup 与可复用的 error handling；
+- [选项模式](guides/option-schemas.md) — strings、booleans、numbers、 choices、defaults、aliases 和推导类型；
+- [实用 CLI 模式](guides/practical-cli-patterns.md) — help/version shortcuts、共享 options 和 compatibility aliases；
+- [Command Resolution（英文）](../guides/command-resolution.md) — registry、 canonical aliases、matched paths、显式解析与 command-name guards；
+- [Two-Phase Primitives（英文）](../guides/two-phase-primitives.md) — preparation、payloads、execution 与已提供选项的 metadata；
+- [Presentation Primitives（英文）](../guides/presentation-primitives.md) — text、record、table、CSV、JSON 与 direct renderers。
 
-版本历史见 [CHANGELOG.md](../../CHANGELOG.md)，指导性决策见
-[docs/roadmap.md](../roadmap.md)。这些文档使用英文维护。
+版本历史见 [CHANGELOG.md](../../CHANGELOG.md)，指导性决策见 [docs/roadmap.md](../roadmap.md)。这些文档使用英文维护。
 
 ## 项目边界
 
-`icore` 是一个小型终端机制模块，负责 generic behavior：选项 validation、
-command resolution、handler 的类型化输入、presentation rendering、error
-contracts，以及向 stdout/stderr 的输出。
+`icore` 是一个小型终端机制模块，负责 generic behavior：选项 validation、 command resolution、handler 的类型化输入、presentation rendering、error contracts，以及向 stdout/stderr 的输出。
 
-它不负责应用 DTO mapping、API calls、配置加载、domain-specific validation、
-resource lifecycle 或 help 内容。这些职责留给 Consumer。Interactive line
-rendering 与 progress reporting 同样属于应用；旧版 compatibility exports
-不应成为新代码的基础。
+它不负责应用 DTO mapping、API calls、配置加载、domain-specific validation、 resource lifecycle 或 help 内容。这些职责留给 Consumer。Interactive line rendering 与 progress reporting 同样属于应用；旧版 compatibility exports 不应成为新代码的基础。
 
 项目采用 [MIT 许可证](../../LICENSE)。

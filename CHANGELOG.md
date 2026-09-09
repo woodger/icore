@@ -2,15 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Historical entries before this file was introduced were reconstructed from npm
-publish metadata and local git history. Older entries are intentionally
-conservative.
+Historical entries before this file was introduced were reconstructed from npm publish metadata and local git history. Older entries are intentionally conservative.
 
-Version boundaries from `1.0.12` through `1.0.19` were checked against npm
-`gitHead` metadata and local git history.
+Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitHead` metadata and local git history.
 
 ## [Unreleased]
 
@@ -23,191 +19,129 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 ### Changed
 
 - Updated the development toolchain to Oxlint 1.78.0 and FWA 2.1.4.
-- Replaced category-driven Oxlint presets with an explicit, project-audited
-  error-level rule set and narrow compatibility exceptions.
+- Replaced category-driven Oxlint presets with an explicit, project-audited error-level rule set and narrow compatibility exceptions.
 
 ## [2.2.2] - 2026-08-07
 
 ### Changed
 
-- Replaced Biome with Oxlint for development linting, retaining native
-  equivalents of the explicitly configured checks and adding a curated
-  type-aware pass for asynchronous control flow and exhaustive switches while
-  leaving type checking to TypeScript.
-- Standardized development and CI dependency installation on npm, replaced
-  `yarn.lock` with `package-lock.json`, and made alternative package managers
-  unsupported.
+- Replaced Biome with Oxlint for development linting, retaining native equivalents of the explicitly configured checks and adding a curated type-aware pass for asynchronous control flow and exhaustive switches while leaving type checking to TypeScript.
+- Standardized development and CI dependency installation on npm, replaced `yarn.lock` with `package-lock.json`, and made alternative package managers unsupported.
 
 ### Fixed
 
-- Reported options interrupting a matching multi-segment registry command path
-  as `UNEXPECTED_ARGUMENT` in strict mode, consistently with direct command
-  execution.
+- Reported options interrupting a matching multi-segment registry command path as `UNEXPECTED_ARGUMENT` in strict mode, consistently with direct command execution.
 - Corrected the npm package description to refer to application logic.
 
 ## [2.2.1] - 2026-08-01
 
 ### Added
 
-- Added initial Russian localization for the README, guides index, production
-  terminal lifecycle, option schemas, and practical CLI patterns.
-- Added matching Simplified Chinese localization for the same documentation
-  route.
+- Added initial Russian localization for the README, guides index, production terminal lifecycle, option schemas, and practical CLI patterns.
+- Added matching Simplified Chinese localization for the same documentation route.
 
 ## [2.2.0] - 2026-07-30
 
 ### Added
 
-- Explicitly supported an empty command registry for bootstrap-only
-  `TerminalApp` presentation, output, and error reporting before the full
-  command registry is loaded.
+- Explicitly supported an empty command registry for bootstrap-only `TerminalApp` presentation, output, and error reporting before the full command registry is loaded.
 
 ### Changed
 
-- Replaced ESLint with Biome for development linting while preserving the
-  previous error-level checks where Biome defaults to warning or info.
-- Updated the development toolchain to TypeScript 7.0.2 and FWA 2.1.0. The
-  test runner no longer depends on the project's TypeScript compiler API.
-- Committed `yarn.lock` for reproducible development and CI installs while
-  keeping it excluded from the published npm package.
+- Replaced ESLint with Biome for development linting while preserving the previous error-level checks where Biome defaults to warning or info.
+- Updated the development toolchain to TypeScript 7.0.2 and FWA 2.1.0. The test runner no longer depends on the project's TypeScript compiler API.
+- Committed `yarn.lock` for reproducible development and CI installs while keeping it excluded from the published npm package.
 - Refined the npm description and keywords around typed CLI command mechanics.
-- Moved published Consumer guides from `examples/` to `docs/guides/`, added
-  package documentation metadata, and kept contributor policies out of the
-  npm package.
+- Moved published Consumer guides from `examples/` to `docs/guides/`, added package documentation metadata, and kept contributor policies out of the npm package.
 
 ## [2.1.0] - 2026-07-28
 
 ### Changed
 
-- Added a production lifecycle example where a pre-bound command result combines
-  terminal output with an application-owned long-running command handle.
-- Exposed only the package root through the package `exports` map. Internal
-  module paths are no longer importable.
+- Added a production lifecycle example where a pre-bound command result combines terminal output with an application-owned long-running command handle.
+- Exposed only the package root through the package `exports` map. Internal module paths are no longer importable.
 
 ### Removed
 
-- Removed transitional recognition of unbranded `2.0.x` error instances.
-  Cross-copy error guards now require stable runtime brands.
+- Removed transitional recognition of unbranded `2.0.x` error instances. Cross-copy error guards now require stable runtime brands.
 
 ## [2.0.5] - 2026-07-25
 
 ### Added
 
-- Added `createCommand.withTypes<...>()` for fixing application-level command
-  context, result, and metadata types while retaining per-command schema, path,
-  alias, payload, and result inference.
-- Added opt-in required command metadata through the bound builder's
-  `metadataRequired: true` type binding.
+- Added `createCommand.withTypes<...>()` for fixing application-level command context, result, and metadata types while retaining per-command schema, path, alias, payload, and result inference.
+- Added opt-in required command metadata through the bound builder's `metadataRequired: true` type binding.
 
 ### Changed
 
-- Reorganized the primary documentation route around a production CLI
-  lifecycle with global shortcuts, preparation, metadata-driven resources,
-  execution, output, cleanup, and shared error reporting.
-- Replaced the global help/version example's manual alias normalization and
-  option filtering with schema aliases and `parseOptionsSubsetDetailed(...)`.
-- Clarified metadata-driven help, presentation projection choices, and the
-  non-serializing boundary of backpressure-aware output writers.
-- Refined npm package metadata around dependency-free typed command routing,
-  option parsing, and terminal output mechanics.
+- Reorganized the primary documentation route around a production CLI lifecycle with global shortcuts, preparation, metadata-driven resources, execution, output, cleanup, and shared error reporting.
+- Replaced the global help/version example's manual alias normalization and option filtering with schema aliases and `parseOptionsSubsetDetailed(...)`.
+- Clarified metadata-driven help, presentation projection choices, and the non-serializing boundary of backpressure-aware output writers.
+- Refined npm package metadata around dependency-free typed command routing, option parsing, and terminal output mechanics.
 
 ## [2.0.4] - 2026-07-25
 
 ### Fixed
 
-- Recognized compatible `IcoreError` and `CliUsageError` instances created by
-  another physical package copy, including validated unbranded `2.0.x` errors.
+- Recognized compatible `IcoreError` and `CliUsageError` instances created by another physical package copy, including validated unbranded `2.0.x` errors.
 
 ## [2.0.3] - 2026-07-25
 
 ### Added
 
-- Added first-class command path aliases with canonical command identity and
-  literal `matchedPath` values on resolved and prepared commands.
-- Added collision validation and longest-path resolution across canonical and
-  alias paths without duplicating command definitions.
+- Added first-class command path aliases with canonical command identity and literal `matchedPath` values on resolved and prepared commands.
+- Added collision validation and longest-path resolution across canonical and alias paths without duplicating command definitions.
 
 ### Changed
 
-- `ResolvedCommand` and `PreparedCommand` now require `matchedPath`; callers
-  constructing these public values directly must provide the path used for
-  resolution.
+- `ResolvedCommand` and `PreparedCommand` now require `matchedPath`; callers constructing these public values directly must provide the path used for resolution.
 
 ### Deprecated
 
-- Deprecated `createTerminalOutput`, its interactive line contracts, and the
-  terminal progress contracts. They remain available as `2.x` compatibility
-  exports, but new consumers should use `createOutput()` and own interactive
-  output and progress rendering in the application. The deprecated exports
-  will be removed in the next major release.
+- Deprecated `createTerminalOutput`, its interactive line contracts, and the terminal progress contracts. They remain available as `2.x` compatibility exports, but new consumers should use `createOutput()` and own interactive output and progress rendering in the application. The deprecated exports will be removed in the next major release.
 
 ### Fixed
 
-- Rejected options placed between segments of a multi-segment command path when
-  direct `runCommand(...)` execution uses strict mode.
-- Parsed each canonical command definition at most once per non-strict
-  resolution, regardless of its number of aliases.
+- Rejected options placed between segments of a multi-segment command path when direct `runCommand(...)` execution uses strict mode.
+- Parsed each canonical command definition at most once per non-strict resolution, regardless of its number of aliases.
 
 ## [2.0.2] - 2026-07-24
 
 ### Added
 
-- Added `CliUsageError` for application-owned semantic CLI validation and
-  `isUsageError(...)` for recognizing it together with usage-category
-  `IcoreError` instances.
-- Added `isTerminalCommandOutput(...)` as the runtime guard corresponding to
-  `TerminalCommandOutput` for caller-owned command lifecycles.
-- Added `createTerminalOutput()` with shared ordered stdout, independent stderr,
-  atomic interactive line operations, barrier flushing, and sticky failures.
-- Added generic `createTerminalProgress()` with throttled redraws, derived
-  percentage and ETA snapshots, replaceable rendering, width truncation, and
-  asynchronous idempotent close.
-- Added deterministic terminal count and duration formatters for progress and
-  final reports.
+- Added `CliUsageError` for application-owned semantic CLI validation and `isUsageError(...)` for recognizing it together with usage-category `IcoreError` instances.
+- Added `isTerminalCommandOutput(...)` as the runtime guard corresponding to `TerminalCommandOutput` for caller-owned command lifecycles.
+- Added `createTerminalOutput()` with shared ordered stdout, independent stderr, atomic interactive line operations, barrier flushing, and sticky failures.
+- Added generic `createTerminalProgress()` with throttled redraws, derived percentage and ETA snapshots, replaceable rendering, width truncation, and asynchronous idempotent close.
+- Added deterministic terminal count and duration formatters for progress and final reports.
 
 ## [2.0.1] - 2026-07-16
 
 ### Fixed
 
 - Built package output automatically before npm and Yarn packing.
-- Preserved option names that overlap properties inherited from
-  `Object.prototype`.
-- Rejected malformed nested records, table rows, and CSV rows in presentation
-  result guards.
+- Preserved option names that overlap properties inherited from `Object.prototype`.
+- Rejected malformed nested records, table rows, and CSV rows in presentation result guards.
 - Quoted CSV cells containing carriage returns.
-- Rejected backpressured writes when EventEmitter-compatible sinks error or
-  close before `drain`.
-- Rejected top-level values without a JSON representation instead of emitting
-  invalid JSON text.
+- Rejected backpressured writes when EventEmitter-compatible sinks error or close before `drain`.
+- Rejected top-level values without a JSON representation instead of emitting invalid JSON text.
 
 ## [2.0.0] - 2026-07-14
 
 ### Added
 
-- Added reusable terminal error rendering and exit-code policy with prepare,
-  execute, render, write, and external phase context.
-- Added `TerminalApp.reportError(...)` for caller-owned lifecycle flows that
-  need the same stderr and exit-code behavior as `run(...)` and
-  `runPrepared(...)`.
-- Added `IcoreError.category` to distinguish usage failures from invalid
-  command and option definitions.
-- Added the public `IcoreErrorDetailsMap`, generic `IcoreErrorDetails<TCode>`,
-  and distributed `AnyIcoreError` contracts for code-specific error details.
-- Added `isIcoreError(...)` overloads for narrowing any `IcoreError` or one
-  exact error code while preserving its details type.
+- Added reusable terminal error rendering and exit-code policy with prepare, execute, render, write, and external phase context.
+- Added `TerminalApp.reportError(...)` for caller-owned lifecycle flows that need the same stderr and exit-code behavior as `run(...)` and `runPrepared(...)`.
+- Added `IcoreError.category` to distinguish usage failures from invalid command and option definitions.
+- Added the public `IcoreErrorDetailsMap`, generic `IcoreErrorDetails<TCode>`, and distributed `AnyIcoreError` contracts for code-specific error details.
+- Added `isIcoreError(...)` overloads for narrowing any `IcoreError` or one exact error code while preserving its details type.
 
 ### Changed
 
-- Clarified that extra positionals after a matched command path are rejected
-  during prepare unless the command declares `allowExtraPositionals: true`.
-- Changed `TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` to share the
-  configured terminal error policy while preserving the default error text and
-  exit code.
-- **Breaking:** changed the `IcoreError` constructor to require code-specific
-  `details`; direct callers must now provide the third argument.
-- Added explicit variant discriminators to `UNKNOWN_COMMAND`,
-  `UNEXPECTED_ARGUMENT`, `EXPECTED_REQUIRED_ARGUMENT`, and
-  `INVALID_OPTION_DEFAULT` details.
+- Clarified that extra positionals after a matched command path are rejected during prepare unless the command declares `allowExtraPositionals: true`.
+- Changed `TerminalApp.run(...)` and `TerminalApp.runPrepared(...)` to share the configured terminal error policy while preserving the default error text and exit code.
+- **Breaking:** changed the `IcoreError` constructor to require code-specific `details`; direct callers must now provide the third argument.
+- Added explicit variant discriminators to `UNKNOWN_COMMAND`, `UNEXPECTED_ARGUMENT`, `EXPECTED_REQUIRED_ARGUMENT`, and `INVALID_OPTION_DEFAULT` details.
 
 ## [1.0.19]
 
@@ -219,8 +153,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 ### Changed
 
 - Changed `createTerminalApp` typing to allow custom command results when consumers run prepared commands themselves.
-- Documented the caller-owned flow for command execution results that may be
-  lifecycle handles before terminal output is written.
+- Documented the caller-owned flow for command execution results that may be lifecycle handles before terminal output is written.
 - Documented that terminal string output is written exactly as provided.
 
 ## [1.0.18]
@@ -231,15 +164,13 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ### Changed
 
-- Documented the `app.prepare(...)` and `app.runPrepared(...)` flow for applications
-  that create and clean up runtime context themselves.
+- Documented the `app.prepare(...)` and `app.runPrepared(...)` flow for applications that create and clean up runtime context themselves.
 
 ## [1.0.17]
 
 ### Changed
 
-- Relaxed `createTerminalApp` typing so command registries with commands
-  without `prepare()` hooks and with void payloads compile without adapter casts.
+- Relaxed `createTerminalApp` typing so command registries with commands without `prepare()` hooks and with void payloads compile without adapter casts.
 
 ## [1.0.16]
 
@@ -269,8 +200,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 - Documentation was reorganized around `command`, `presentation`, and `output`.
 - Examples were grouped by usage level: Terminal Application, Layer Toolkit, Primitive Mechanics.
 - Public README now positions `icore` as terminal application mechanics, not only argv parsing.
-- Source files were reorganized by framework area: argv, command, options,
-  presentation, output, and terminal app.
+- Source files were reorganized by framework area: argv, command, options, presentation, output, and terminal app.
 - Updated tests to run with `fwa --prune`.
 - Restored `CHANGELOG.md` to published package contents.
 
@@ -315,8 +245,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm
 
 ### Changed
 
-- Replaced the preliminary `flagOnly` boolean option setting with typed
-  `syntax: 'flag'`.
+- Replaced the preliminary `flagOnly` boolean option setting with typed `syntax: 'flag'`.
 
 ## [1.0.11] - 2026-07-02
 

@@ -2,28 +2,17 @@
 
 [English](../../guides/practical-cli-patterns.md) | Русский | [简体中文](../../zh/guides/practical-cli-patterns.md)
 
-> Русский перевод английской версии. При расхождении актуальной считается
-> английская версия.
+> Русский перевод английской версии. При расхождении актуальной считается английская версия.
 
-Эти примеры показывают application-level patterns, построенные поверх icore.
-В них используются нейтральные имена команд, но сами структуры рассчитаны на
-реальные CLI-приложения с множеством команд, общими options, utility-командами
-и compatibility behavior.
+Эти примеры показывают application-level patterns, построенные поверх icore. В них используются нейтральные имена команд, но сами структуры рассчитаны на реальные CLI-приложения с множеством команд, общими options, utility-командами и compatibility behavior.
 
 ## Глобальные shortcuts help и version
 
-В большом CLI `--help`, `-h`, `--version` и `-v` часто работают до выполнения
-команды. Они не должны требовать обязательные options конкретной команды или
-runtime context.
+В большом CLI `--help`, `-h`, `--version` и `-v` часто работают до выполнения команды. Они не должны требовать обязательные options конкретной команды или runtime context.
 
-В icore это поведение не является автоматическим, потому что оно относится к
-политике приложения, а не к command mechanics. Явная обработка в bootstrap
-runner — наиболее понятный выбор: utility shortcuts могут обойти validation
-конкретной команды, а обычные команды по-прежнему используют registry и
-собственные schemas.
+В icore это поведение не является автоматическим, потому что оно относится к политике приложения, а не к command mechanics. Явная обработка в bootstrap runner — наиболее понятный выбор: utility shortcuts могут обойти validation конкретной команды, а обычные команды по-прежнему используют registry и собственные schemas.
 
-Поместите эту логику в bootstrap runner перед запуском business-команды через
-command registry:
+Поместите эту логику в bootstrap runner перед запуском business-команды через command registry:
 
 ```ts
 import {
@@ -64,20 +53,11 @@ function parseBootstrapInput(args: readonly string[]) {
 }
 ```
 
-Короткие aliases задаются схемой: `parseArgv(...)` сопоставляет `-h` с `help`,
-а `-v` — с `version`. Приложению не нужно нормализовать argv или объявлять
-отдельные options `h` и `v`.
+Короткие aliases задаются схемой: `parseArgv(...)` сопоставляет `-h` с `help`, а `-v` — с `version`. Приложению не нужно нормализовать argv или объявлять отдельные options `h` и `v`.
 
-Здесь проверяются только options, принадлежащие bootstrap. Options конкретной
-команды возвращаются в `rest` для анализа, но обычно должны оставаться в
-исходном argv, передаваемом в `app.prepare(...)`. Не собирайте command argv
-заново из subset result. Это предотвращает распространённую ошибку, при которой
-global parsing отклоняет, меняет порядок или теряет допустимые command options
-до разрешения команды.
+Здесь проверяются только options, принадлежащие bootstrap. Options конкретной команды возвращаются в `rest` для анализа, но обычно должны оставаться в исходном argv, передаваемом в `app.prepare(...)`. Не собирайте command argv заново из subset result. Это предотвращает распространённую ошибку, при которой global parsing отклоняет, меняет порядок или теряет допустимые command options до разрешения команды.
 
-Включайте каждую bootstrap option, тип которой влияет на владение tokens. В
-этом примере `offline` объявлена boolean, поэтому shortcut parsing не примет
-следующий сегмент команды за её значение.
+Включайте каждую bootstrap option, тип которой влияет на владение tokens. В этом примере `offline` объявлена boolean, поэтому shortcut parsing не примет следующий сегмент команды за её значение.
 
 Пользователь может запросить help верхнего уровня:
 
@@ -100,8 +80,7 @@ Commands:
   jobs run
 ```
 
-Пользователь может запросить help команды, не передавая её обязательные
-options:
+Пользователь может запросить help команды, не передавая её обязательные options:
 
 ```bash
 workspace-cli jobs run --help
@@ -137,8 +116,7 @@ node v24.13.1
 platform linux x64
 ```
 
-Некорректные присваивания boolean по-прежнему отклоняются до выполнения
-команды:
+Некорректные присваивания boolean по-прежнему отклоняются до выполнения команды:
 
 ```bash
 workspace-cli --help=false
@@ -152,14 +130,9 @@ Expected '--help' as boolean flag
 
 ## Utility-команды как обычные команды
 
-Utility-команды могут использовать тот же command registry, что и остальное
-приложение. Следующая команда принимает дополнительные positionals, поэтому
-`help jobs run` может адресовать другую команду:
+Utility-команды могут использовать тот же command registry, что и остальное приложение. Следующая команда принимает дополнительные positionals, поэтому `help jobs run` может адресовать другую команду:
 
-Обычно этот подход лучше, чем жёстко задавать utility-команды вне registry:
-`help` и `version` остаются видимыми публичными командами. Цена подхода —
-bootstrap всё равно должен обрабатывать shortcuts `--help`, `-h`, `--version`
-и `-v`, если эти формы входят в публичный интерфейс.
+Обычно этот подход лучше, чем жёстко задавать utility-команды вне registry: `help` и `version` остаются видимыми публичными командами. Цена подхода — bootstrap всё равно должен обрабатывать shortcuts `--help`, `-h`, `--version` и `-v`, если эти формы входят в публичный интерфейс.
 
 ```ts
 import { createCommand } from 'icore';
@@ -188,14 +161,11 @@ const versionCommand = command.define({
 });
 ```
 
-Так routing utility-команд остаётся явным. Текст help и version по-прежнему
-принадлежит приложению.
+Так routing utility-команд остаётся явным. Текст help и version по-прежнему принадлежит приложению.
 
 ## Построение help по command metadata
 
-Храните текст help вместе с каждой command definition, а его inventory
-стройте по `commands.definitions`. Definitions содержат только канонические
-команды, поэтому aliases не создают повторяющиеся записи:
+Храните текст help вместе с каждой command definition, а его inventory стройте по `commands.definitions`. Definitions содержат только канонические команды, поэтому aliases не создают повторяющиеся записи:
 
 ```ts
 import { createCommand } from 'icore';
@@ -247,22 +217,15 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 }));
 ```
 
-Используйте `commandHelpEntries` для help верхнего уровня и групп. Для help
-конкретной команды сопоставляйте запрошенный path с `definition.path` и
-`definition.aliases`, но выводите канонический path из `definition.path`.
+Используйте `commandHelpEntries` для help верхнего уровня и групп. Для help конкретной команды сопоставляйте запрошенный path с `definition.path` и `definition.aliases`, но выводите канонический path из `definition.path`.
 
-`icore` предоставляет definitions и типизированные metadata, но намеренно не
-выбирает layout, формулировки и группировку help и не решает, должны ли aliases
-быть видимыми. Это остаётся политикой приложения.
+`icore` предоставляет definitions и типизированные metadata, но намеренно не выбирает layout, формулировки и группировку help и не решает, должны ли aliases быть видимыми. Это остаётся политикой приложения.
 
 ## Общие options приложения
 
-Реальные команды часто переиспользуют connection, output или runtime switches.
-Храните такие schemas небольшими и объединяйте их с command-specific schemas:
+Реальные команды часто переиспользуют connection, output или runtime switches. Храните такие schemas небольшими и объединяйте их с command-specific schemas:
 
-Композиция полезна, когда одни options встречаются во многих командах. Это не
-повод создавать generic schemas для одноразовых options. Если option нужна
-только одной команде, определите её прямо в этой команде.
+Композиция полезна, когда одни options встречаются во многих командах. Это не повод создавать generic schemas для одноразовых options. Если option нужна только одной команде, определите её прямо в этой команде.
 
 ```ts
 import {
@@ -326,13 +289,9 @@ Command handler получает:
 
 ## Deprecated aliases опций
 
-При переименовании публичной CLI option держите compatibility option рядом с
-канонической и разрешайте конфликт явно:
+При переименовании публичной CLI option держите compatibility option рядом с канонической и разрешайте конфликт явно:
 
-Это не самый чистый контракт, но он полезен, если существующие пользователи
-уже зависят от старого имени. Оставьте deprecated option видимой в коде,
-показывайте warning при её использовании и отклоняйте неоднозначные вызовы с
-обоими именами.
+Это не самый чистый контракт, но он полезен, если существующие пользователи уже зависят от старого имени. Оставьте deprecated option видимой в коде, показывайте warning при её использовании и отклоняйте неоднозначные вызовы с обоими именами.
 
 ```ts
 import { CliUsageError } from 'icore';
@@ -404,29 +363,23 @@ Use either '--item-id' or deprecated '--legacy-id', not both
 
 Boolean flags не поглощают следующий token как значение:
 
-Это намеренное поведение. Оно не позволяет `--offline false` незаметно
-означать что-то отличное от поддерживаемого boolean syntax.
+Это намеренное поведение. Оно не позволяет `--offline false` незаметно означать что-то отличное от поддерживаемого boolean syntax.
 
 ```bash
 workspace-cli jobs list --offline false
 ```
 
-Parser видит `offline: true` и оставляет `false` positional token. Если команда
-не разрешает дополнительные positionals, command validation отклонит его.
+Parser видит `offline: true` и оставляет `false` positional token. Если команда не разрешает дополнительные positionals, command validation отклонит его.
 
-Известные схеме string и number options могут поглощать значения, начинающиеся
-с дефиса:
+Известные схеме string и number options могут поглощать значения, начинающиеся с дефиса:
 
-Именно поэтому при parsing передаётся command schema. Без схемы `-draft` или
-`-1` можно ошибочно принять за очередной option-like token.
+Именно поэтому при parsing передаётся command schema. Без схемы `-draft` или `-1` можно ошибочно принять за очередной option-like token.
 
 ```bash
 workspace-cli search --query -draft --limit -1
 ```
 
-Это полезно для поискового текста и знаковых чисел. Schema validation всё равно
-может позднее отклонить разобранное значение, например если у `limit` задано
-`min: 1`.
+Это полезно для поискового текста и знаковых чисел. Schema validation всё равно может позднее отклонить разобранное значение, например если у `limit` задано `min: 1`.
 
 Терминатор опций превращает всё после него в positional input:
 
@@ -440,8 +393,7 @@ Tokens `--query`, `-draft` и `--offline` больше не разбираютс
 
 Повторяющиеся длинная и короткая формы отклоняются как один аргумент:
 
-Отклонение duplicates строже правила «последнее значение побеждает», но не
-допускает скрытых правил приоритета в command contracts.
+Отклонение duplicates строже правила «последнее значение побеждает», но не допускает скрытых правил приоритета в command contracts.
 
 ```bash
 workspace-cli jobs list --offline -o

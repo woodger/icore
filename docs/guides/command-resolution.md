@@ -1,12 +1,8 @@
 # Command Resolution
 
-Use these primitives when the application needs command selection without
-immediately running a command. This is common in help systems, command previews,
-audit logs, and custom routers.
+Use these primitives when the application needs command selection without immediately running a command. This is common in help systems, command previews, audit logs, and custom routers.
 
-For regular terminal applications, prefer `createTerminalApp()` or
-`createCommand().registry(...)`. The lower-level resolution API is more verbose,
-but it makes command selection explicit and testable.
+For regular terminal applications, prefer `createTerminalApp()` or `createCommand().registry(...)`. The lower-level resolution API is more verbose, but it makes command selection explicit and testable.
 
 ## Define Commands Without The Facade
 
@@ -55,9 +51,7 @@ const registry = defineCommandRegistry([
 type PublicCommandName = CommandName<typeof runJobCommand>;
 ```
 
-Use this form when the registry itself is the important object. The tradeoff is
-that you do not get the convenient `commands.prepare(...)` and
-`commands.run(...)` methods until you call `createCommands(...)`.
+Use this form when the registry itself is the important object. The tradeoff is that you do not get the convenient `commands.prepare(...)` and `commands.run(...)` methods until you call `createCommands(...)`.
 
 The inferred `PublicCommandName` is:
 
@@ -67,9 +61,7 @@ type PublicCommandName = 'jobs run';
 
 ## Declare Canonical Command Aliases
 
-Put compatibility paths on the canonical command definition. Aliases select the
-same option schema, prepare hook, metadata, and handler; they do not create
-additional command definitions.
+Put compatibility paths on the canonical command definition. Aliases select the same option schema, prepare hook, metadata, and handler; they do not create additional command definitions.
 
 ```ts
 const listAccountsCommand = defineCommand({
@@ -107,8 +99,7 @@ type AcceptedAccountPath =
   CommandAcceptedPath<typeof listAccountsCommand>;
 ```
 
-`name` and `path` always describe the canonical command. `matchedPath` records
-the path used for this invocation:
+`name` and `path` always describe the canonical command. `matchedPath` records the path used for this invocation:
 
 ```ts
 canonical.name;        // 'account list'
@@ -120,23 +111,15 @@ aliased.path;           // ['account', 'list']
 aliased.matchedPath;    // ['users', 'get-accounts']
 ```
 
-For a canonical invocation, `matchedPath === path`. The inferred
-`AcceptedAccountPath` is the literal union of the canonical path and both alias
-paths.
+For a canonical invocation, `matchedPath === path`. The inferred `AcceptedAccountPath` is the literal union of the canonical path and both alias paths.
 
-`accountCommands.names` contains only `'account list'`, and
-`accountCommands.definitions` contains one definition. Canonical and alias
-paths participate in the same collision validation and longest-path
-resolution; an exact collision is rejected as `DUPLICATE_COMMAND`.
+`accountCommands.names` contains only `'account list'`, and `accountCommands.definitions` contains one definition. Canonical and alias paths participate in the same collision validation and longest-path resolution; an exact collision is rejected as `DUPLICATE_COMMAND`.
 
-When an alias invocation has an unexpected positional, the human-readable
-message uses the matched alias. Structured `UNEXPECTED_POSITIONAL` details keep
-`command` canonical and add `matchedPath` for that alias invocation.
+When an alias invocation has an unexpected positional, the human-readable message uses the matched alias. Structured `UNEXPECTED_POSITIONAL` details keep `command` canonical and add `matchedPath` for that alias invocation.
 
 ## Create A Commands Object Directly
 
-`createCommands(...)` is the direct alternative to
-`createCommand().registry(...)`.
+`createCommands(...)` is the direct alternative to `createCommand().registry(...)`.
 
 ```ts
 const commands = createCommands([
@@ -148,14 +131,11 @@ commands.names;
 commands.registry;
 ```
 
-This is useful when command definitions are already created elsewhere and the
-application does not need the `createCommand()` object. It is not better for
-normal code; it is just a more direct construction form.
+This is useful when command definitions are already created elsewhere and the application does not need the `createCommand()` object. It is not better for normal code; it is just a more direct construction form.
 
 ## Resolve From Positionals
 
-Use `commands.resolve(...)` when arguments are already split into command path
-tokens.
+Use `commands.resolve(...)` when arguments are already split into command path tokens.
 
 ```ts
 const resolved = commands.resolve([
@@ -175,14 +155,11 @@ The resolved command name is:
 jobs run
 ```
 
-No options are parsed in this form. That is intentional: it is useful for help
-renderers that already have command tokens, but it is not enough to validate a
-terminal call.
+No options are parsed in this form. That is intentional: it is useful for help renderers that already have command tokens, but it is not enough to validate a terminal call.
 
 ## Resolve From Raw Arguments
 
-Use `commands.resolveFromArgs(...)` or standalone
-`resolveCommandFromArgs(...)` when raw terminal arguments may contain options.
+Use `commands.resolveFromArgs(...)` or standalone `resolveCommandFromArgs(...)` when raw terminal arguments may contain options.
 
 ```ts
 import { resolveCommandFromArgs } from 'icore';
@@ -202,10 +179,7 @@ const sameResolved = resolveCommandFromArgs(commands.registry, [
 ]);
 ```
 
-This form asks each command schema how to split options from command tokens. It
-is a better fit for real argv input than `resolve(...)`. During one non-strict
-resolution, each canonical command definition is parsed at most once,
-regardless of how many alias paths it owns.
+This form asks each command schema how to split options from command tokens. It is a better fit for real argv input than `resolve(...)`. During one non-strict resolution, each canonical command definition is parsed at most once, regardless of how many alias paths it owns.
 
 Default resolution preserves option-first input:
 
@@ -217,8 +191,7 @@ await accountCommands.prepare([
 ]);
 ```
 
-Strict resolution searches canonical and alias paths before parsing, so the
-path must begin with the first argument:
+Strict resolution searches canonical and alias paths before parsing, so the path must begin with the first argument:
 
 ```ts
 await accountCommands.prepare([
@@ -230,9 +203,7 @@ await accountCommands.prepare([
 });
 ```
 
-The option-first form is rejected with `strict: true`. Parsing global or
-bootstrap options does not itself reorder argv; an application should enable
-strict mode only when command-first syntax is its public contract.
+The option-first form is rejected with `strict: true`. Parsing global or bootstrap options does not itself reorder argv; an application should enable strict mode only when command-first syntax is its public contract.
 
 ## Use The Standalone Resolver
 
@@ -247,13 +218,11 @@ const resolved = resolveCommand(registry, [
 ]);
 ```
 
-Prefer `commands.resolve(...)` when you already have a `commands` object. Use
-the standalone function when a custom registry object is passed around.
+Prefer `commands.resolve(...)` when you already have a `commands` object. Use the standalone function when a custom registry object is passed around.
 
 ## Guard Command Names
 
-`isCommandName(...)` narrows unknown input to the command names registered in a
-registry.
+`isCommandName(...)` narrows unknown input to the command names registered in a registry.
 
 ```ts
 import { isCommandName } from 'icore';
@@ -267,7 +236,4 @@ function renderHelpPage(name: unknown): string {
 }
 ```
 
-This is safer than comparing against string literals in several places. The
-cost is that the guard checks only canonical command names. Alias paths remain
-available on command definitions and through `matchedPath`; the guard does not
-validate options or execute anything.
+This is safer than comparing against string literals in several places. The cost is that the guard checks only canonical command names. Alias paths remain available on command definitions and through `matchedPath`; the guard does not validate options or execute anything.
