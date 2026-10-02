@@ -1388,25 +1388,21 @@ describe('two-phase command execution', () => {
 
     const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
 
-    if (isPreparedCommandName(prepared, 'accounts')) {
-      const payload: CommandPayload<typeof accountCommand> = prepared.payload;
-      const context: CommandContext<typeof accountCommand> = {
-        prefix: 'account'
-      };
-      const result: CommandResult<typeof accountCommand> = await runPreparedCommand(
-        prepared,
-        context
-      );
-
-      assert.strictEqual(payload.accountId, 'account-id');
-      assert.strictEqual(result, 'account:account-id');
-    } else if (isPreparedCommandName(prepared, 'projects')) {
-      const payload: CommandPayload<typeof projectCommand> = prepared.payload;
-
-      assert.strictEqual(payload.projectId, 'project-id');
-    } else {
-      assert.fail('Expected a known command');
+    if (!isPreparedCommandName(prepared, 'accounts')) {
+      assert.fail('Expected accounts command');
     }
+
+    const payload: CommandPayload<typeof accountCommand> = prepared.payload;
+    const context: CommandContext<typeof accountCommand> = {
+      prefix: 'account'
+    };
+    const result: CommandResult<typeof accountCommand> = await runPreparedCommand(
+      prepared,
+      context
+    );
+
+    assert.strictEqual(payload.accountId, 'account-id');
+    assert.strictEqual(result, 'account:account-id');
   });
 
   test('runs prepared commands with parsed input and runtime context', async () => {

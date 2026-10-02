@@ -197,22 +197,26 @@ describe('parseOptions', () => {
     }
   });
 
-  test('rejects non-integer and out-of-range numbers', () => {
-    const schema = {
-      depth: {
-        type: 'number',
-        integer: true,
-        min: 1
-      }
-    } as const;
-
+  test('rejects non-integer numbers', () => {
     assert.throws(
-      () => parseOptions(schema, { depth: '1.5' }),
+      () => parseOptions({
+        depth: {
+          type: 'number',
+          integer: true
+        }
+      }, { depth: '1.5' }),
       /Expected '--depth' as integer/
     );
+  });
 
+  test('rejects numbers below the minimum', () => {
     assert.throws(
-      () => parseOptions(schema, { depth: '0' }),
+      () => parseOptions({
+        depth: {
+          type: 'number',
+          min: 1
+        }
+      }, { depth: '0' }),
       /Expected '--depth' to be greater than or equal to 1/
     );
   });

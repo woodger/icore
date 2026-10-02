@@ -10,9 +10,11 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+## [2.2.4] - 2026-10-02
+
 ### Changed
 
-- Updated the development toolchain to Oxlint 1.85.0, `oxlint-tsgolint` 7.0.2002, and `@types/node` 26.6.2.
+- Updated the development toolchain to Oxlint 1.86.0, `oxlint-tsgolint` 7.0.2003, and `@types/node` 26.6.4.
 
 ### Fixed
 
@@ -22,6 +24,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Rendered missing own record fields as empty table and CSV cells instead of reading inherited properties.
 - Rendered large text tables without exceeding the JavaScript function argument limit.
 - Rejected non-string async output chunks during writing, consistently for built-in and caller-owned terminal flows.
+- Corrected consumer lifecycle examples for aggregate errors, cleanup failures, and writable-stream lifecycle hooks.
 
 ## [2.2.3] - 2026-08-12
 
@@ -406,6 +409,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[2.2.4]: https://www.npmjs.com/package/icore/v/2.2.4
 [2.2.3]: https://www.npmjs.com/package/icore/v/2.2.3
 [2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2
 [2.2.1]: https://www.npmjs.com/package/icore/v/2.2.1

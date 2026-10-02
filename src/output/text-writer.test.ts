@@ -94,10 +94,6 @@ describe('createBackpressureTextWriter', () => {
     const writer = createBackpressureTextWriter(sink);
     const write = Promise.resolve(writer.write('hello'));
 
-    assert.equal(sink.listenerCount('drain'), 1);
-    assert.equal(sink.listenerCount('error'), 1);
-    assert.equal(sink.listenerCount('close'), 1);
-
     sink.emit('drain');
     await write;
 

@@ -348,15 +348,22 @@ describe('createTerminalProgress', () => {
   });
 });
 
-describe('terminal progress formatting', () => {
-  test('formats counts and compact durations deterministically', () => {
+describe('formatTerminalCount', () => {
+  test('formats counts with English grouping separators', () => {
     assert.equal(formatTerminalCount(1_250_000), '1,250,000');
+  });
+});
+
+describe('formatTerminalDuration', () => {
+  test('formats compact durations', () => {
     assert.equal(formatTerminalDuration(0), '0s');
     assert.equal(formatTerminalDuration(61_000), '1m 1s');
     assert.equal(formatTerminalDuration(3_660_000), '1h 1m');
     assert.equal(formatTerminalDuration(90_000_000), '1d 1h');
   });
+});
 
+describe('renderTerminalProgress', () => {
   test('renders the default English progress line', () => {
     assert.equal(renderTerminalProgress({
       label: 'Syncing',

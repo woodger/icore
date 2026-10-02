@@ -1,6 +1,6 @@
 {
   "name": "icore",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "Typed CLI command mechanics for Node.js that keep argument parsing separate from application logic",
   "keywords": [
     "cli",
@@ -36,10 +36,10 @@
     "lint": "oxlint src"
   },
   "devDependencies": {
-    "@types/node": "^26.5.0",
+    "@types/node": "^26.6.4",
     "fwa": "^2.1.4",
-    "oxlint": "^1.82.0",
-    "oxlint-tsgolint": "^7.0.2001",
+    "oxlint": "^1.86.0",
+    "oxlint-tsgolint": "^7.0.2003",
     "typescript": "^7.0.2"
   }
 }
