@@ -29,24 +29,24 @@ const progress = new TerminalProgressReporter({
   stdout: process.stdout
 });
 
-let failure: unknown;
+let failure: { error: unknown } | undefined;
 
 try {
   await runApplication({ progress });
 }
 catch (error) {
-  failure = error;
+  failure = { error };
 }
 
 try {
   await progress.close();
 }
 catch (error) {
-  failure ??= error;
+  failure ??= { error };
 }
 
 if (failure !== undefined) {
-  process.exitCode = await app.reportError(failure, {
+  process.exitCode = await app.reportError(failure.error, {
     phase: 'external'
   });
 }
@@ -131,19 +131,14 @@ Use these when a custom facade owns channel composition. For normal CLI code, `c
 ```ts
 import { createBackpressureTextWriter } from 'icore';
 
-const writer = createBackpressureTextWriter({
-  write(chunk) {
-    return process.stdout.write(chunk);
-  },
-  once(event, listener) {
-    process.stdout.once(event, listener);
-  }
-});
+const writer = createBackpressureTextWriter(process.stdout);
 
 await writer.write('large chunk\n');
 ```
 
 This is useful for streaming commands. It is more code than direct `process.stdout.write(...)`, but it prevents a fast producer from ignoring a slow consumer.
+
+Passing the stream directly preserves its event hooks, so a backpressured write rejects if the stream emits `error` or `close` before `drain`.
 
 ## Use Promise-Returning Sinks
 

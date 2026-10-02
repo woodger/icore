@@ -145,20 +145,32 @@ const app = createTerminalApp({
   output: createOutput(),
   errorPolicy: {
     renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
+      const errors = error instanceof AggregateError
+        ? error.errors
+        : [error];
 
-      return `${message}\n`;
+      return errors.map((cause: unknown) => {
+        const message = cause instanceof Error
+          ? cause.message
+          : String(cause);
+
+        return `${message}\n`;
+      }).join('');
     },
     resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
+      const primaryError = error instanceof AggregateError
+        ? error.errors[0]
+        : error;
+
+      return isUsageError(primaryError) ? 2 : 1;
     }
   }
 });
 ```
 
 每次 CLI invocation 只创建一次 `command`、`commands`、`presentation`、 `output` 和 `app`。资源实例不属于这次组合；只有在 `app.prepare(...)` 确定所选命令后才创建它们。
+
+Error policy 会输出 `AggregateError` 的每个成员，并将第一个成员作为主要错误来选择 exit code。Runner 将命令错误放在第一位，cleanup 错误放在第二位，因此两条 diagnostics 都会显示，同时保留命令的 exit code。
 
 ## 在不重写 argv 的情况下解析全局快捷方式
 

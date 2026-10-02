@@ -145,20 +145,32 @@ const app = createTerminalApp({
   output: createOutput(),
   errorPolicy: {
     renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
+      const errors = error instanceof AggregateError
+        ? error.errors
+        : [error];
 
-      return `${message}\n`;
+      return errors.map((cause: unknown) => {
+        const message = cause instanceof Error
+          ? cause.message
+          : String(cause);
+
+        return `${message}\n`;
+      }).join('');
     },
     resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
+      const primaryError = error instanceof AggregateError
+        ? error.errors[0]
+        : error;
+
+      return isUsageError(primaryError) ? 2 : 1;
     }
   }
 });
 ```
 
 Создавайте `command`, `commands`, `presentation`, `output` и `app` один раз на один CLI invocation. Экземпляры ресурсов не входят в эту композицию; создавайте их только после того, как `app.prepare(...)` определит выбранную команду.
+
+Error policy выводит каждый элемент `AggregateError` и выбирает код выхода по первому элементу как основной ошибке. Runner помещает ошибку команды первой, а ошибку cleanup — второй: обе диагностики видны, при этом код выхода команды сохраняется.
 
 ## Parsing глобальных shortcuts без изменения argv
 

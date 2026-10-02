@@ -143,20 +143,32 @@ const app = createTerminalApp({
   output: createOutput(),
   errorPolicy: {
     renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
+      const errors = error instanceof AggregateError
+        ? error.errors
+        : [error];
 
-      return `${message}\n`;
+      return errors.map((cause: unknown) => {
+        const message = cause instanceof Error
+          ? cause.message
+          : String(cause);
+
+        return `${message}\n`;
+      }).join('');
     },
     resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
+      const primaryError = error instanceof AggregateError
+        ? error.errors[0]
+        : error;
+
+      return isUsageError(primaryError) ? 2 : 1;
     }
   }
 });
 ```
 
 Create `command`, `commands`, `presentation`, `output`, and `app` once for one CLI invocation. Resource instances are not part of this composition; create them only after `app.prepare(...)` identifies the selected command.
+
+The error policy renders every member of an `AggregateError` and uses its first member as the primary failure for exit-code selection. The runner puts the command failure first and the cleanup failure second, so both diagnostics are visible without replacing the command's exit code.
 
 ## Parse Global Shortcuts Without Rewriting Argv
 

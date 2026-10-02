@@ -100,6 +100,8 @@ finally {
 
 Resource creation and cleanup stay application-owned. The terminal app only runs the prepared command and applies the same output behavior as `app.run(...)`.
 
+`runPrepared(...)` reports command and output errors before returning, so this example runs cleanup after error reporting. When progress or resources must be closed before diagnostics, use the [production lifecycle recipe](terminal-app.md#own-resources-cleanup-and-error-ordering), which executes through `app.commands.run(...)` and reports captured failures after cleanup.
+
 ## Write Prepared Output
 
 Use `app.writePreparedOutput(...)` when the application needs to inspect the raw command result before terminal output is written.
