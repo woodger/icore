@@ -14,6 +14,15 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 - Updated the development toolchain to Oxlint 1.85.0, `oxlint-tsgolint` 7.0.2002, and `@types/node` 26.6.2.
 
+### Fixed
+
+- Continued non-strict command resolution after usage parsing failures in unrelated schemas while preserving selected-command and definition errors.
+- Correlated prepared-command facade context and result types with the selected command, rejecting incompatible contexts after narrowing.
+- Rejected writes to already destroyed or ended Node streams instead of waiting indefinitely for drain.
+- Rendered missing own record fields as empty table and CSV cells instead of reading inherited properties.
+- Rendered large text tables without exceeding the JavaScript function argument limit.
+- Rejected non-string async output chunks during writing, consistently for built-in and caller-owned terminal flows.
+
 ## [2.2.3] - 2026-08-12
 
 ### Changed

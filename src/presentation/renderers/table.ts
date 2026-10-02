@@ -21,12 +21,16 @@ export function renderTextTable(rows: readonly TextTableRow[]): string {
     return '';
   }
 
-  const columnCount = Math.max(...rows.map((row) => row.length));
-  const widths = Array.from({ length: columnCount }, (unusedValue, columnIndex) => {
-    void unusedValue;
+  const widths: number[] = [];
 
-    return Math.max(...rows.map((row) => (row[columnIndex] ?? '').length));
-  });
+  for (const row of rows) {
+    for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
+      widths[columnIndex] = Math.max(
+        widths[columnIndex] ?? 0,
+        (row[columnIndex] ?? '').length
+      );
+    }
+  }
 
   return [
     ...rows.map((row) =>

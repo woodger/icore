@@ -181,6 +181,8 @@ const sameResolved = resolveCommandFromArgs(commands.registry, [
 
 This form asks each command schema how to split options from command tokens. It is a better fit for real argv input than `resolve(...)`. During one non-strict resolution, each canonical command definition is parsed at most once, regardless of how many alias paths it owns.
 
+A usage parsing failure in an unrelated schema does not prevent another schema from resolving valid input. Parsing errors for the selected command and invalid schema definitions are still rejected; when no candidate resolves, a captured parsing failure is reported.
+
 Default resolution preserves option-first input:
 
 ```ts

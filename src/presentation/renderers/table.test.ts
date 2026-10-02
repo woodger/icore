@@ -21,4 +21,20 @@ describe('renderTextTable', () => {
   test('renders empty rows as an empty string', () => {
     assert.equal(renderTextTable([]), '');
   });
+
+  test('renders large tables without a function argument limit', () => {
+    const rowCount = 150_000;
+    const rows = Array.from({ length: rowCount }, () => ['x']);
+
+    assert.equal(renderTextTable(rows), 'x\n'.repeat(rowCount));
+  });
+
+  test('aligns uneven rows including empty rows', () => {
+    assert.equal(renderTextTable([
+      [],
+      ['id'],
+      ['a', 'name'],
+      ['long', 'b']
+    ]), '\nid\na     name\nlong  b\n');
+  });
 });

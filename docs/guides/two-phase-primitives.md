@@ -134,6 +134,8 @@ finally {
 
 Only terminal output belongs here: ready text, streaming text, presentation results, or no output. Strings are written exactly as provided; include `\n` when line output is desired. If the raw result remains `unknown` at this boundary, narrow it with `isTerminalCommandOutput(...)` before writing. Long-running handles require an explicit transfer of context and cleanup ownership; use the [production lifecycle recipe](terminal-app.md#own-resources-cleanup-and-error-ordering) for that case.
 
+The guard checks the stream's iterable shape; each chunk is validated as a string during writing. A non-string chunk rejects `writePreparedOutput(...)`. Built-in terminal execution reports that failure in the `write` phase.
+
 ## Prepare From A Registry
 
 `prepareCommandFromArgs(...)` is the standalone primitive behind `commands.prepare(...)`.
@@ -194,6 +196,8 @@ if (isPreparedCommandName(prepared, 'jobs run')) {
 ```
 
 Use this when several commands reuse one preparation flow but need different runtime setup. The guard is intentionally narrow: it checks the prepared command name, not arbitrary metadata.
+
+After narrowing, `commands.run(...)` and `app.runPrepared(...)` require that command's context. `commands.run(...)` also preserves its concrete result type. Narrow first when commands have different context requirements.
 
 ## Run From A Registry
 

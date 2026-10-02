@@ -140,6 +140,8 @@ This is useful for streaming commands. It is more code than direct `process.stdo
 
 Passing the stream directly preserves its event hooks, so a backpressured write rejects if the stream emits `error` or `close` before `drain`.
 
+Already destroyed or ended Node streams reject before writing, rather than waiting for a drain event that cannot occur.
+
 ## Use Promise-Returning Sinks
 
 Sinks can also return a promise from `write(...)`.

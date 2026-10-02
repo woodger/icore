@@ -1,5 +1,6 @@
 import assert from 'node:assert';
-import { EventEmitter } from 'node:events';
+import { EventEmitter, once } from 'node:events';
+import { Writable } from 'node:stream';
 import { describe, test } from 'node:test';
 import { createBackpressureTextWriter } from './text-writer';
 
@@ -134,6 +135,49 @@ describe('createBackpressureTextWriter', () => {
     assert.equal(sink.listenerCount('drain'), 0);
     assert.equal(sink.listenerCount('error'), 0);
     assert.equal(sink.listenerCount('close'), 0);
+  });
+
+  test('rejects writes after a Node stream has closed', async () => {
+    const sink = new Writable({
+      write(chunk, encoding, callback) {
+        void chunk;
+        void encoding;
+        callback();
+      }
+    });
+    const closed = once(sink, 'close');
+
+    sink.destroy();
+    await closed;
+
+    const writer = createBackpressureTextWriter(sink);
+
+    await assert.rejects(
+      Promise.resolve(writer.write('after close')),
+      /Writable sink closed before write/
+    );
+  });
+
+  test('rejects writes after a Node stream has ended without closing', async () => {
+    const sink = new Writable({
+      autoDestroy: false,
+      write(chunk, encoding, callback) {
+        void chunk;
+        void encoding;
+        callback();
+      }
+    });
+    const finished = once(sink, 'finish');
+
+    sink.end();
+    await finished;
+
+    const writer = createBackpressureTextWriter(sink);
+
+    await assert.rejects(
+      Promise.resolve(writer.write('after end')),
+      /Writable sink closed before write/
+    );
   });
 
   test('does not require drain support for simple sinks', async () => {

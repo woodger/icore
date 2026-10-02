@@ -157,7 +157,10 @@ function recordsToTextRows(records: readonly PresentationRecord[]): TextTableRow
   return [
     keys,
     ...records.map((record) =>
-      keys.map((key) => formatPresentationCell(record[key]))
+      keys.map((key) => Object.hasOwn(record, key)
+        ? formatPresentationCell(record[key])
+        : ''
+      )
     )
   ];
 }
@@ -185,7 +188,10 @@ function recordsToCsvRows(records: readonly PresentationRecord[]): CsvRow[] {
   return [
     keys,
     ...records.map((record) =>
-      keys.map((key) => toCsvCell(record[key]))
+      keys.map((key) => Object.hasOwn(record, key)
+        ? toCsvCell(record[key])
+        : ''
+      )
     )
   ];
 }

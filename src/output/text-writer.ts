@@ -27,6 +27,8 @@ type TextSinkLifecycleEvent = 'drain' | 'error' | 'close';
 type TextSinkLifecycleListener = (() => void) | ((error: unknown) => void);
 
 type EventedBackpressureTextSink = BackpressureTextSink & {
+  readonly destroyed?: boolean;
+  readonly writableEnded?: boolean;
   once(
     event: TextSinkLifecycleEvent,
     listener: TextSinkLifecycleListener
@@ -44,12 +46,20 @@ type EventedBackpressureTextSink = BackpressureTextSink & {
  * resumed after their next `drain` event when they expose a drain hook; without
  * that hook, `false` is treated as synchronous completion. EventEmitter-
  * compatible sinks reject when they emit `error` or `close` before draining.
+ * Node-style sinks that are already destroyed or ended reject before writing.
  */
 export function createBackpressureTextWriter(
   sink: BackpressureTextSink
 ): TextWriter {
   return {
     async write(chunk: string): Promise<void> {
+      if (
+        isEventedBackpressureTextSink(sink)
+        && (sink.destroyed === true || sink.writableEnded === true)
+      ) {
+        throw new Error('Writable sink closed before write');
+      }
+
       const writeResult = sink.write(chunk);
 
       if (isPromiseLike(writeResult)) {
