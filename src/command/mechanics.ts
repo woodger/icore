@@ -15,7 +15,11 @@ import {
   parseArgv,
   type ParsedArgv
 } from '../argv/parser';
-import { IcoreError } from '../errors/icore-error';
+import {
+  IcoreError,
+  isIcoreError,
+  type AnyIcoreError
+} from '../errors/icore-error';
 import { parseOptionsDetailed } from '../options/parser';
 import type {
   InferOptions,
@@ -215,10 +219,10 @@ export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
     options?: CommandResolutionOptions
   ): Promise<PreparedCommand<TCommands[number]>>;
   /** Runs a prepared command. */
-  run(
-    prepared: PreparedCommand<TCommands[number]>,
-    context: CommandContext<TCommands[number]>
-  ): Promise<CommandResult<TCommands[number]>>;
+  run<TPrepared extends PreparedCommand<TCommands[number]>>(
+    prepared: TPrepared,
+    context: CommandContext<TPrepared['command']>
+  ): Promise<CommandResult<TPrepared['command']>>;
   /** Resolves, prepares, and runs. */
   runFromArgs(
     args: readonly string[],
@@ -462,8 +466,13 @@ export function createCommands<
     prepare(args, options) {
       return prepareCommandFromArgs(registry, args, options);
     },
-    run(prepared, context) {
-      return runPreparedCommand(prepared, context);
+    run<TPrepared extends PreparedCommand<TCommands[number]>>(
+      prepared: TPrepared,
+      context: CommandContext<TPrepared['command']>
+    ) {
+      return runPreparedCommand(prepared, context) as Promise<
+        CommandResult<TPrepared['command']>
+      >;
     },
     runFromArgs(args, context, options) {
       return runCommandFromRegistry(registry, args, context, options);
@@ -548,22 +557,7 @@ export function resolveCommandFromArgs<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): ResolvedCommand<TCommands[number]> {
-  const parsedByCommand = new Map<TCommands[number], ParsedArgv>();
-
-  for (const route of commandRoutes(registry)) {
-    const argv = parseCommandArgs(
-      route.command,
-      args,
-      parsedByCommand
-    );
-    const resolved = resolveCommandRoute(route, argv.positionals);
-
-    if (resolved !== undefined) {
-      return resolved;
-    }
-  }
-
-  throw createUnknownCommandError(parseArgv(args).positionals);
+  return resolveCommandArgs(registry, args).resolved;
 }
 
 /**
@@ -580,7 +574,28 @@ export async function prepareCommandFromArgs<
     return prepareCommandFromArgsStrict(registry, args);
   }
 
-  const parsedByCommand = new Map<TCommands[number], ParsedArgv>();
+  const { resolved, argv } = resolveCommandArgs(registry, args);
+
+  return prepareResolvedCommand(
+    resolved,
+    argv.options
+  ) as Promise<PreparedCommand<TCommands[number]>>;
+}
+
+function resolveCommandArgs<
+  const TCommands extends readonly AnyCommandDefinition[]
+>(
+  registry: CommandRegistry<TCommands>,
+  args: readonly string[]
+): {
+  resolved: ResolvedCommand<TCommands[number]>;
+  argv: ParsedArgv;
+} {
+  const parsedByCommand = new Map<
+    TCommands[number],
+    ParsedArgv | AnyIcoreError
+  >();
+  let parsingFailure: AnyIcoreError | undefined;
 
   for (const route of commandRoutes(registry)) {
     const argv = parseCommandArgs(
@@ -588,14 +603,28 @@ export async function prepareCommandFromArgs<
       args,
       parsedByCommand
     );
+
+    if (isIcoreError(argv)) {
+      if (commandPathMatchesArgs(route.matchedPath, args)) {
+        throw argv;
+      }
+
+      parsingFailure ??= argv;
+      continue;
+    }
+
     const resolved = resolveCommandRoute(route, argv.positionals);
 
     if (resolved !== undefined) {
-      return prepareResolvedCommand(
+      return {
         resolved,
-        argv.options
-      ) as Promise<PreparedCommand<TCommands[number]>>;
+        argv
+      };
     }
+  }
+
+  if (parsingFailure !== undefined) {
+    throw parsingFailure;
   }
 
   throw createUnknownCommandError(parseArgv(args).positionals);
@@ -840,8 +869,8 @@ function commandRoutes<
 function parseCommandArgs<TCommand extends AnyCommandDefinition>(
   command: TCommand,
   args: readonly string[],
-  parsedByCommand: Map<TCommand, ParsedArgv>
-): ParsedArgv {
+  parsedByCommand: Map<TCommand, ParsedArgv | AnyIcoreError>
+): ParsedArgv | AnyIcoreError {
   // Canonical and alias routes share one definition, so route matching must
   // not parse the same argv again for every accepted path.
   const cached = parsedByCommand.get(command);
@@ -850,11 +879,22 @@ function parseCommandArgs<TCommand extends AnyCommandDefinition>(
     return cached;
   }
 
-  const argv = parseArgv(args, command.options);
+  try {
+    const argv = parseArgv(args, command.options);
 
-  parsedByCommand.set(command, argv);
+    parsedByCommand.set(command, argv);
 
-  return argv;
+    return argv;
+  }
+  catch (error) {
+    if (!isIcoreError(error) || error.category !== 'usage') {
+      throw error;
+    }
+
+    parsedByCommand.set(command, error);
+
+    return error;
+  }
 }
 
 function findStrictCommandRoute<

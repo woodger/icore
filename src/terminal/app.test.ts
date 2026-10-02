@@ -3,7 +3,9 @@ import { describe, test } from 'node:test';
 import {
   createCommand,
   createCommands,
-  defineCommand
+  defineCommand,
+  isPreparedCommandName,
+  type PreparedCommand
 } from '../command/mechanics';
 import { createOutput } from '../output/facade';
 import { createPresentation } from '../presentation/facade';
@@ -230,6 +232,44 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, '');
   });
 
+  test('runs narrowed prepared commands with their own runtime context', async () => {
+    const memory = createMemoryOutput();
+    const account = defineCommand({
+      path: ['accounts'],
+      options: {},
+      handle({ context }: { context: { accountId: string } }) {
+        return `${context.accountId}\n`;
+      }
+    });
+    const project = defineCommand({
+      path: ['projects'],
+      options: {},
+      handle({ context }: { context: { projectId: string } }) {
+        return `${context.projectId}\n`;
+      }
+    });
+    const app = createTerminalApp({
+      commands: createCommands([account, project] as const),
+      output: memory.output
+    });
+    const prepared = await app.prepare(['accounts']);
+
+    if (!isPreparedCommandName(prepared, 'accounts')) {
+      assert.fail('Expected accounts command');
+    }
+
+    assert.equal(await app.runPrepared(prepared, { accountId: 'account-id' }), 0);
+    assert.equal(memory.read().stdout, 'account-id\n');
+    assert.equal(memory.read().stderr, '');
+
+    function assertContextContract(selected: PreparedCommand<typeof account>): void {
+      // @ts-expect-error A narrowed account command cannot receive project context.
+      void app.runPrepared(selected, { projectId: 'project-id' });
+    }
+
+    void assertContextContract;
+  });
+
   test('writes prepared command errors to stderr and returns a non-zero exit code', async () => {
     const memory = createMemoryOutput();
     const command = createCommand();
@@ -445,6 +485,71 @@ describe('createTerminalApp', () => {
       memory.read().stderr,
       'Expected terminal command output\n'
     );
+  });
+
+  test('rejects non-string stream chunks during writing and closes the producer', async () => {
+    for (const invalidChunk of [123, undefined, null, false, {}]) {
+      const memory = createMemoryOutput();
+      let closed = false;
+      let phase: string | undefined;
+      const commands = createCommands([
+        defineCommand({
+          path: ['stream'],
+          options: {},
+          handle() {
+            return (async function* streamOutput() {
+              try {
+                yield 'before\n';
+                yield invalidChunk;
+                yield 'after\n';
+              }
+              finally {
+                closed = true;
+              }
+            })();
+          }
+        })
+      ] as const);
+      const app = createTerminalApp({
+        commands,
+        output: memory.output,
+        errorPolicy: {
+          renderError(error, context) {
+            assert.ok(error instanceof TypeError);
+            phase = context.phase;
+
+            return `${error.message}\n`;
+          }
+        }
+      });
+
+      assert.equal(await app.run(['stream'], undefined), 1);
+      assert.equal(phase, 'write');
+      assert.equal(memory.read().stdout, 'before\n');
+      assert.equal(memory.read().stderr, 'Expected terminal output chunk to be a string\n');
+      assert.equal(closed, true);
+    }
+  });
+
+  test('rejects non-string chunks when writing caller-obtained output', async () => {
+    const memory = createMemoryOutput();
+    const app = createTerminalApp({
+      commands: createCommands([
+        defineCommand({ path: ['stream'], options: {}, handle() {} })
+      ] as const),
+      output: memory.output
+    });
+    const prepared = await app.prepare(['stream']);
+    const result: unknown = (async function* streamOutput() {
+      yield undefined;
+    })();
+
+    assert.ok(isTerminalCommandOutput(result));
+    await assert.rejects(
+      app.writePreparedOutput(prepared, result),
+      /Expected terminal output chunk to be a string/
+    );
+    assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
   });
 
   test('writes command errors to stderr and returns a non-zero exit code', async () => {

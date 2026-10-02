@@ -58,6 +58,30 @@ describe('renderPresentationResult', () => {
     assert.equal(JSON.parse(output).id, 'account-1');
   });
 
+  test('leaves missing own fields blank in tables even when prototype properties exist', () => {
+    const output = renderPresentationResult({
+      type: 'records',
+      value: [
+        { id: 'a', constructor: 'owned', toString: 'explicit' },
+        { id: 'b' }
+      ]
+    });
+
+    assert.equal(output, 'id  constructor  toString\na   owned        explicit\nb\n');
+  });
+
+  test('leaves missing own fields blank in csv even when prototype properties exist', () => {
+    const output = renderPresentationResult({
+      type: 'records',
+      value: [
+        { id: 'a', constructor: 'owned', toString: 'explicit' },
+        { id: 'b' }
+      ]
+    }, 'csv');
+
+    assert.equal(output, 'id,constructor,toString\na,owned,explicit\nb,,\n');
+  });
+
   test('keeps text and empty results format-independent', () => {
     assert.equal(renderPresentationResult({
       type: 'text',

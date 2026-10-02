@@ -46,7 +46,9 @@ export type TerminalCommandOutput =
   | PresentationResult
   | undefined;
 
-/** Checks whether an unknown value has a supported terminal output shape. */
+/**
+ * Checks the terminal output shape; stream chunks are validated during writing.
+ */
 export function isTerminalCommandOutput(
   value: unknown
 ): value is TerminalCommandOutput {
@@ -165,9 +167,9 @@ export type TerminalApp<
     options?: CommandResolutionOptions
   ): Promise<PreparedCommand<TCommands[number]>>;
   /** Runs an already prepared command through terminal rendering and output. */
-  runPrepared(
-    prepared: PreparedCommand<TCommands[number]>,
-    context: CommandContext<TCommands[number]>
+  runPrepared<TPrepared extends PreparedCommand<TCommands[number]>>(
+    prepared: TPrepared,
+    context: CommandContext<TPrepared['command']>
   ): Promise<number>;
   /**
    * Renders and writes already obtained terminal output.
@@ -238,9 +240,9 @@ export function createTerminalApp<
     await writeTerminalOutput(renderedOutput, output);
   }
 
-  async function runPrepared(
-    prepared: TPrepared,
-    context: CommandContext<TCommands[number]>
+  async function runPrepared<TSelected extends TPrepared>(
+    prepared: TSelected,
+    context: CommandContext<TSelected['command']>
   ): Promise<number> {
     return runPreparedTerminalCommand(prepared, context);
   }
@@ -369,6 +371,10 @@ async function writeTerminalOutput(
   }
 
   for await (const chunk of result) {
+    if (typeof chunk !== 'string') {
+      throw new TypeError('Expected terminal output chunk to be a string');
+    }
+
     await output.write(chunk);
   }
 }

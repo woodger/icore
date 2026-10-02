@@ -1,18 +1,10 @@
 # Custom Command Flow
 
-Use this shape when the application wants command mechanics without the terminal
-application boundary. The application prepares a command, creates its runtime
-context, and then runs the prepared command explicitly.
+Use this shape when the application wants command mechanics without the terminal application boundary. The application prepares a command, creates its runtime context, and then runs the prepared command explicitly.
 
-This is useful when command parsing happens before runtime dependencies are
-available. For example, the application can validate arguments, select a
-command, and only then open a database connection or create an API client. The
-tradeoff is that the application must own output rendering and error handling
-itself.
+This is useful when command parsing happens before runtime dependencies are available. For example, the application can validate arguments, select a command, and only then open a database connection or create an API client. The tradeoff is that the application must own output rendering and error handling itself.
 
-If the application wants the same explicit resource lifecycle while retaining
-`TerminalApp` output and error policy, use the
-[production terminal lifecycle](terminal-app.md) instead.
+If the application wants the same explicit resource lifecycle while retaining `TerminalApp` output and error policy, use the [production terminal lifecycle](terminal-app.md) instead.
 
 Put the command registry close to the code that owns the command contract:
 
@@ -54,12 +46,9 @@ const commands = command.registry([
 ] as const);
 ```
 
-The `prepare` hook is intentionally small. It normalizes command input before
-runtime context exists, but it should not perform application work. Keeping that
-split makes failed argument parsing cheap and deterministic.
+The `prepare` hook is intentionally small. It normalizes command input before runtime context exists, but it should not perform application work. Keeping that split makes failed argument parsing cheap and deterministic.
 
-When application startup needs a separate preparation step, prepare first and
-run later:
+When application startup needs a separate preparation step, prepare first and run later:
 
 ```ts
 async function runTwoPhase(args: readonly string[]): Promise<string> {
@@ -73,9 +62,7 @@ async function runTwoPhase(args: readonly string[]): Promise<string> {
 }
 ```
 
-The two-phase form is the safest choice when application context is expensive
-or has side effects. If preparation fails, the runtime context never needs to be
-created.
+The two-phase form is the safest choice when application context is expensive or has side effects. If preparation fails, the runtime context never needs to be created.
 
 When the application does not need that split, run from raw terminal arguments:
 
@@ -89,8 +76,7 @@ async function runFromArgs(args: readonly string[]): Promise<string> {
 }
 ```
 
-`runFromArgs(...)` is more compact and works well for simple applications. It is
-less flexible because parsing, preparation, and execution happen as one step.
+`runFromArgs(...)` is more compact and works well for simple applications. It is less flexible because parsing, preparation, and execution happen as one step.
 
 Pass the same arguments a user would type in the terminal:
 

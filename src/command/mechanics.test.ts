@@ -645,6 +645,36 @@ describe('command registry', () => {
     assert.strictEqual(resolved.matchedPath, command.aliases?.[0]);
   });
 
+  test('resolves raw arguments after a parsing failure in another command schema', () => {
+    const other = defineCommand({
+      path: ['other'],
+      aliases: [['unused']],
+      options: { label: { type: 'boolean' } },
+      handle() {}
+    });
+    const search = defineCommand({
+      path: ['search'],
+      aliases: [['find']],
+      options: { label: { type: 'string', required: true } },
+      handle({ options }) {
+        return options.label;
+      }
+    });
+
+    for (const definitions of [[other, search], [search, other]] as const) {
+      const registry = defineCommandRegistry(definitions);
+
+      assert.strictEqual(
+        resolveCommandFromArgs(registry, ['search', '--label', '--label']).command,
+        search
+      );
+      assert.strictEqual(
+        resolveCommandFromArgs(registry, ['--label', '--label', 'find']).command,
+        search
+      );
+    }
+  });
+
   test('runs resolved command from registry', async () => {
     const commandRegistry = defineCommandRegistry([
       defineCommand({
@@ -748,6 +778,87 @@ describe('command registry', () => {
 });
 
 describe('two-phase command execution', () => {
+  test('prepares dash-prefixed values independently of other command schemas', async () => {
+    const other = defineCommand({
+      path: ['other'],
+      options: { label: { type: 'boolean' } },
+      handle() {}
+    });
+    const search = defineCommand({
+      path: ['search'],
+      options: { label: { type: 'string', required: true } },
+      handle({ options }) {
+        return options.label;
+      }
+    });
+
+    for (const definitions of [[other, search], [search, other]] as const) {
+      const commands = createCommands(definitions);
+
+      for (const args of [
+        ['search', '--label', '--label'],
+        ['--label', '--label', 'search']
+      ]) {
+        const prepared = await commands.prepare(args);
+
+        assert.strictEqual(prepared.name, 'search');
+        assert.strictEqual(prepared.options.label, '--label');
+        assert.strictEqual(await commands.run(prepared, undefined), '--label');
+      }
+    }
+  });
+
+  test('preserves the selected command parsing error after other schemas fail', async () => {
+    const commands = createCommands([
+      defineCommand({
+        path: ['other'],
+        options: { label: { type: 'boolean' } },
+        handle() {}
+      }),
+      defineCommand({
+        path: ['search'],
+        options: {
+          label: { type: 'string' },
+          verbose: { type: 'boolean' }
+        },
+        handle() {}
+      })
+    ] as const);
+
+    await assert.rejects(
+      commands.prepare(['search', '--label', '--label', '--verbose', '--verbose']),
+      (error) => {
+        assert.ok(error instanceof IcoreError);
+        assert.strictEqual(error.code, 'DUPLICATE_ARGUMENT');
+        assert.strictEqual(error.message, "Unexpected duplicate argument '--verbose'");
+
+        return true;
+      }
+    );
+  });
+
+  test('rejects invalid definitions while looking for another command', async () => {
+    const commands = createCommands([
+      defineCommand({
+        path: ['other'],
+        options: { label: { type: 'boolean', alias: 'invalid' } },
+        handle() {}
+      }),
+      defineCommand({
+        path: ['search'],
+        options: {},
+        handle() {}
+      })
+    ] as const);
+
+    await assert.rejects(commands.prepare(['search']), (error) => {
+      assert.ok(error instanceof IcoreError);
+      assert.strictEqual(error.code, 'INVALID_OPTION_ALIAS');
+
+      return true;
+    });
+  });
+
   test('rejects unknown options after command path during prepare', async () => {
     let handled = false;
     const commandRegistry = defineCommandRegistry([
@@ -1277,25 +1388,21 @@ describe('two-phase command execution', () => {
 
     const prepared = await prepareCommandFromArgs(commandRegistry, ['accounts']);
 
-    if (isPreparedCommandName(prepared, 'accounts')) {
-      const payload: CommandPayload<typeof accountCommand> = prepared.payload;
-      const context: CommandContext<typeof accountCommand> = {
-        prefix: 'account'
-      };
-      const result: CommandResult<typeof accountCommand> = await runPreparedCommand(
-        prepared,
-        context
-      );
-
-      assert.strictEqual(payload.accountId, 'account-id');
-      assert.strictEqual(result, 'account:account-id');
-    } else if (isPreparedCommandName(prepared, 'projects')) {
-      const payload: CommandPayload<typeof projectCommand> = prepared.payload;
-
-      assert.strictEqual(payload.projectId, 'project-id');
-    } else {
-      assert.fail('Expected a known command');
+    if (!isPreparedCommandName(prepared, 'accounts')) {
+      assert.fail('Expected accounts command');
     }
+
+    const payload: CommandPayload<typeof accountCommand> = prepared.payload;
+    const context: CommandContext<typeof accountCommand> = {
+      prefix: 'account'
+    };
+    const result: CommandResult<typeof accountCommand> = await runPreparedCommand(
+      prepared,
+      context
+    );
+
+    assert.strictEqual(payload.accountId, 'account-id');
+    assert.strictEqual(result, 'account:account-id');
   });
 
   test('runs prepared commands with parsed input and runtime context', async () => {
@@ -1411,6 +1518,40 @@ describe('two-phase command execution', () => {
     } else {
       assert.fail('Expected accounts command');
     }
+  });
+
+  test('runs narrowed prepared commands through the facade with their own context and result', async () => {
+    const account = defineCommand({
+      path: ['accounts'],
+      options: {},
+      handle({ context }: { context: { accountId: string } }) {
+        return context.accountId;
+      }
+    });
+    const project = defineCommand({
+      path: ['projects'],
+      options: {},
+      handle({ context }: { context: { projectId: number } }) {
+        return context.projectId;
+      }
+    });
+    const commands = createCommands([account, project] as const);
+    const prepared = await commands.prepare(['accounts']);
+
+    if (!isPreparedCommandName(prepared, 'accounts')) {
+      assert.fail('Expected accounts command');
+    }
+
+    const result: string = await commands.run(prepared, { accountId: 'account-id' });
+
+    assert.strictEqual(result, 'account-id');
+
+    function assertContextContract(selected: PreparedCommand<typeof account>): void {
+      // @ts-expect-error A narrowed account command cannot receive project context.
+      void commands.run(selected, { projectId: 42 });
+    }
+
+    void assertContextContract;
   });
 
   test('runCommand calls prepare hooks before handlers', async () => {

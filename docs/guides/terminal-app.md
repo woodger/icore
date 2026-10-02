@@ -2,9 +2,7 @@
 
 English | [Русский](../ru/guides/terminal-app.md) | [简体中文](../zh/guides/terminal-app.md)
 
-The [README quick start](../../readme.md#quick-start) uses `app.run(...)` because
-that is the clearest entrypoint for a small CLI with an already available
-context.
+The [README quick start](../../readme.md#quick-start) uses `app.run(...)` because that is the clearest entrypoint for a small CLI with an already available context.
 
 Use the explicit lifecycle in this guide when the application:
 
@@ -27,15 +25,11 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup precedes error reporting so progress and resources are settled before
-stderr diagnostics are written. Runtime resources remain open through
-`writePreparedOutput(...)` because terminal output may be an async stream that
-still depends on them.
+Cleanup precedes error reporting so progress and resources are settled before stderr diagnostics are written. Runtime resources remain open through `writePreparedOutput(...)` because terminal output may be an async stream that still depends on them.
 
 ## Compose Commands And Terminal Services Once
 
-Bind shared application contracts once and keep command-specific schema, path,
-payload, aliases, and result inference:
+Bind shared application contracts once and keep command-specific schema, path, payload, aliases, and result inference:
 
 ```ts
 import {
@@ -149,28 +143,36 @@ const app = createTerminalApp({
   output: createOutput(),
   errorPolicy: {
     renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
+      const errors = error instanceof AggregateError
+        ? error.errors
+        : [error];
 
-      return `${message}\n`;
+      return errors.map((cause: unknown) => {
+        const message = cause instanceof Error
+          ? cause.message
+          : String(cause);
+
+        return `${message}\n`;
+      }).join('');
     },
     resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
+      const primaryError = error instanceof AggregateError
+        ? error.errors[0]
+        : error;
+
+      return isUsageError(primaryError) ? 2 : 1;
     }
   }
 });
 ```
 
-Create `command`, `commands`, `presentation`, `output`, and `app` once for one
-CLI invocation. Resource instances are not part of this composition; create
-them only after `app.prepare(...)` identifies the selected command.
+Create `command`, `commands`, `presentation`, `output`, and `app` once for one CLI invocation. Resource instances are not part of this composition; create them only after `app.prepare(...)` identifies the selected command.
+
+The error policy renders every member of an `AggregateError` and uses its first member as the primary failure for exit-code selection. The runner puts the command failure first and the cleanup failure second, so both diagnostics are visible without replacing the command's exit code.
 
 ## Parse Global Shortcuts Without Rewriting Argv
 
-Declare short aliases in the bootstrap option schema. `parseArgv(...)` maps
-`-h` and `-v` to their canonical names, while
-`parseOptionsSubsetDetailed(...)` validates only bootstrap-owned options:
+Declare short aliases in the bootstrap option schema. `parseArgv(...)` maps `-h` and `-v` to their canonical names, while `parseOptionsSubsetDetailed(...)` validates only bootstrap-owned options:
 
 ```ts
 import {
@@ -206,13 +208,9 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-Pass the original `args` to `app.prepare(...)`; do not rebuild argv from the
-subset result. Command-specific options remain available to the selected
-command schema.
+Pass the original `args` to `app.prepare(...)`; do not rebuild argv from the subset result. Command-specific options remain available to the selected command schema.
 
-Include every bootstrap option whose type affects token ownership. For example,
-declaring boolean `--insecure` prevents a following command segment from being
-mistaken for its value during shortcut parsing.
+Include every bootstrap option whose type affects token ownership. For example, declaring boolean `--insecure` prevents a following command segment from being mistaken for its value during shortcut parsing.
 
 ## Own Resources, Cleanup, And Error Ordering
 
@@ -251,16 +249,11 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` should register cleanup immediately after each
-resource is created and roll back partially created resources if initialization
-fails.
+`createInvocationScope(...)` should register cleanup immediately after each resource is created and roll back partially created resources if initialization fails.
 
-The [metadata-driven help recipe](practical-cli-patterns.md#build-help-from-command-metadata)
-shows how `renderHelp(...)` can derive its canonical command inventory from
-`commands.definitions` without duplicating aliases.
+The [metadata-driven help recipe](practical-cli-patterns.md#build-help-from-command-metadata) shows how `renderHelp(...)` can derive its canonical command inventory from `commands.definitions` without duplicating aliases.
 
-The runner keeps the phase of the primary failure, merges a cleanup failure,
-and reports only after cleanup:
+The runner keeps the phase of the primary failure, merges a cleanup failure, and reports only after cleanup:
 
 ```ts
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
@@ -451,45 +444,26 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` performs both rendering and writing. An external
-caller cannot distinguish those failures, so this recipe reports its rejection
-as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths can
-distinguish `render` from `write` internally.
+`writePreparedOutput(...)` performs both rendering and writing. An external caller cannot distinguish those failures, so this recipe reports its rejection as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths can distinguish `render` from `write` internally.
 
-The bound `CliCommandResult` is an upper bound. The regular command still
-retains its concrete presentation result, while `watchUsersCommand` retains its
-concrete `LongRunningCommandResult`.
+The bound `CliCommandResult` is an upper bound. The regular command still retains its concrete presentation result, while `watchUsersCommand` retains its concrete `LongRunningCommandResult`.
 
-`transferLongRunningLifecycle(...)` is application policy. It must return only
-after registering signal handling and cleanup for both the handle and scope.
-On success the runner clears `scope`, so the invocation `finally` no longer
-owns it. If transfer throws, it must close the handle without taking scope
-ownership; the invocation `finally` then closes the scope. The transferred
-lifecycle also owns finishing interactive output before writing later
-diagnostics.
+`transferLongRunningLifecycle(...)` is application policy. It must return only after registering signal handling and cleanup for both the handle and scope. On success the runner clears `scope`, so the invocation `finally` no longer owns it. If transfer throws, it must close the handle without taking scope ownership; the invocation `finally` then closes the scope. The transferred lifecycle also owns finishing interactive output before writing later diagnostics.
 
-Only results accepted by `isTerminalCommandOutput(...)` reach
-`writePreparedOutput(...)`. This keeps custom handles, process signals, and
-long-running resource ownership outside the terminal app boundary.
+Only results accepted by `isTerminalCommandOutput(...)` reach `writePreparedOutput(...)`. This keeps custom handles, process signals, and long-running resource ownership outside the terminal app boundary.
 
 ## Choose Presentation Ownership
 
 Use one of two presentation routes:
 
-- When one flat projection is correct for JSON, table, and CSV, return a view
-  from `createPresentation()`.
-- When JSON needs a complete nested report while table or CSV needs selected
-  columns and domain formatting, select `renderJson(...)`,
-  `renderTextTable(...)`, or `renderCsv(...)` directly in the Consumer.
+- When one flat projection is correct for JSON, table, and CSV, return a view from `createPresentation()`.
+- When JSON needs a complete nested report while table or CSV needs selected columns and domain formatting, select `renderJson(...)`, `renderTextTable(...)`, or `renderCsv(...)` directly in the Consumer.
 
-See [Presentation And Output](presentation-output.md) for the format decision
-and [Presentation Primitives](presentation-primitives.md) for the lower-level
-contracts.
+See [Presentation And Output](presentation-output.md) for the format decision and [Presentation Primitives](presentation-primitives.md) for the lower-level contracts.
 
 ## Keep The Compact Path For Simple Applications
 
-When context already exists and handlers return terminal-supported output,
-prefer the compact path:
+When context already exists and handlers return terminal-supported output, prefer the compact path:
 
 ```ts
 process.exitCode = await app.run(args, context, {
@@ -497,5 +471,4 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-The explicit recipe is for application-owned lifecycle work. It is not required
-ceremony for every CLI.
+The explicit recipe is for application-owned lifecycle work. It is not required ceremony for every CLI.

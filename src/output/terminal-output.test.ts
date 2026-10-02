@@ -60,7 +60,7 @@ describe('createTerminalOutput', () => {
     terminal.lines.finishLine();
     await waitForTurn();
 
-    assert.deepStrictEqual(chunks, ['help\n']);
+    assert.equal(chunks.join(''), 'help\n');
     assert.equal(terminal.lines.isInteractive, true);
     assert.equal(terminal.lines.columns, 80);
 
@@ -68,20 +68,24 @@ describe('createTerminalOutput', () => {
     await regularWrite;
     await terminal.lines.flush();
 
-    assert.deepStrictEqual(chunks, [
-      'help\n',
-      '\u001B[1G\u001B[2Kprogress',
-      '\n'
-    ]);
+    assert.equal(chunks.join(''), 'help\n\u001B[1G\u001B[2Kprogress\n');
   });
 
-  test('enqueues replaceLine as one atomic sink write', async () => {
-    const chunks: string[] = [];
+  test('keeps line replacement contiguous with later stdout during backpressure', async () => {
+    let stdout = '';
+    let backpressured = true;
+    const replacementWrite = createDeferred();
     const terminal = createTerminalOutput({
       stdout: {
         isTTY: true,
         write(chunk) {
-          chunks.push(chunk);
+          stdout += chunk;
+
+          if (backpressured) {
+            backpressured = false;
+
+            return replacementWrite.promise;
+          }
 
           return true;
         }
@@ -89,11 +93,19 @@ describe('createTerminalOutput', () => {
     });
 
     terminal.lines.replaceLine('working');
+    await waitForTurn();
+
+    const laterWrite = Promise.resolve(terminal.output.write('\nmessage\n'));
+
+    await waitForTurn();
+
+    assert.equal(stdout.includes('message'), false);
+
+    replacementWrite.resolve();
+    await laterWrite;
     await terminal.lines.flush();
 
-    assert.deepStrictEqual(chunks, [
-      '\u001B[1G\u001B[2Kworking'
-    ]);
+    assert.equal(stdout, '\u001B[1G\u001B[2Kworking\nmessage\n');
   });
 
   test('leaves non-interactive line policy to the caller', async () => {

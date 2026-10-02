@@ -69,12 +69,9 @@ src/bootstrap/help.spec.ts          # covers the help/ directory
 src/bootstrap/help/index.test.ts    # covers a barrel-only index.ts
 ```
 
-An exception is allowed only if the file is actually a runtime entrypoint
-or a package entrypoint with its own behavior. In that case, the test must
-verify the entrypoint behavior itself, not the internal files of the directory.
+An exception is allowed only if the file is actually a runtime entrypoint or a package entrypoint with its own behavior. In that case, the test must verify the entrypoint behavior itself, not the internal files of the directory.
 
-If `index.ts` contains only re-exports, a separate test for it is not needed.
-Files that contain logic must be tested.
+If `index.ts` contains only re-exports, a separate test for it is not needed. Files that contain logic must be tested.
 
 ## Imports In Tests
 
@@ -94,12 +91,9 @@ import { renderCliHelp } from './index';
 import { renderCliHelp } from '../help';
 ```
 
-The second example is forbidden if `../help` resolves to a directory or barrel,
-not to a specific file.
+The second example is forbidden if `../help` resolves to a directory or barrel, not to a specific file.
 
-An integration test may go through a public entrypoint if it verifies
-observable entrypoint behavior: exit code, stdout/stderr, dispatch, wiring, or
-public API contract.
+An integration test may go through a public entrypoint if it verifies observable entrypoint behavior: exit code, stdout/stderr, dispatch, wiring, or public API contract.
 
 ## Isolation
 
@@ -325,13 +319,8 @@ A bad test is worse than no test: it creates false confidence and makes code har
 
 Helpers in tests are almost always undesirable.
 
-A helper is allowed only if it removes technical noise and does not hide the meaning of the scenario.
-If a helper is more complex than the test itself, it must be removed.
-If a large helper, fixture builder, or conditional test logic is needed for a check, this may signal that production code is poorly separated or that the test is at the wrong level.
-A direct test with explicit data is preferable to abstract test infrastructure.
+A helper is allowed only if it removes technical noise and does not hide the meaning of the scenario. If a helper is more complex than the test itself, it must be removed. If a large helper, fixture builder, or conditional test logic is needed for a check, this may signal that production code is poorly separated or that the test is at the wrong level. A direct test with explicit data is preferable to abstract test infrastructure.
 
 ## Coverage Boundaries
 
-There is no need to try to cover the entire public method or contract with one large test.
-If composite behavior sections are already checked separately, an additional large test appears unnecessary.
-It is allowed to leave some sections without direct coverage if they are already indirectly protected by other tests.
+There is no need to try to cover the entire public method or contract with one large test. If composite behavior sections are already checked separately, an additional large test appears unnecessary. It is allowed to leave some sections without direct coverage if they are already indirectly protected by other tests.

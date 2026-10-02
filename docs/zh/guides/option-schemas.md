@@ -4,19 +4,15 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-使用 option schemas 描述命令的公共参数。schema 决定用户可以在终端输入
-什么，以及 command handler 会收到哪些类型化值。
+使用 option schemas 描述命令的公共参数。schema 决定用户可以在终端输入什么，以及 command handler 会收到哪些类型化值。
 
-schema 有意保持精简：它涵盖基本 CLI 类型和 validation rules，而应用特有的
-parsing 留在应用中。这样既能保持 icore 可复用，也不会让 domain rules 渗入
-command mechanics。
+schema 有意保持精简：它涵盖基本 CLI 类型和 validation rules，而应用特有的 parsing 留在应用中。这样既能保持 icore 可复用，也不会让 domain rules 渗入 command mechanics。
 
 ## 从一条命令开始
 
 将命令放在拥有其行为的 application code 附近。
 
-对大多数命令而言，这比集中维护一个“所有选项”文件更合适。读者可以在
-同一位置看到公共 CLI 契约和 handler。
+对大多数命令而言，这比集中维护一个“所有选项”文件更合适。读者可以在同一位置看到公共 CLI 契约和 handler。
 
 ```ts
 import {
@@ -64,16 +60,13 @@ const reportCommand = command.define({
 });
 ```
 
-该命令现在接受一个必填 string option、一个带 choices 的 string option、
-一个 boolean option 和一个受约束的 number option。
+该命令现在接受一个必填 string option、一个带 choices 的 string option、一个 boolean option 和一个受约束的 number option。
 
-`as const` 很重要，因为它会保留 literal choices，供 TypeScript 推导类型。
-如果省略，handler 在 runtime 仍可工作，但推导出的类型会更宽、作用更小。
+`as const` 很重要，因为它会保留 literal choices，供 TypeScript 推导类型。如果省略，handler 在 runtime 仍可工作，但推导出的类型会更宽、作用更小。
 
 ## 一次性绑定应用命令类型
 
-当应用的所有命令共享 context、result 和 metadata 契约时，请使用
-`createCommand.withTypes<...>()`：
+当应用的所有命令共享 context、result 和 metadata 契约时，请使用 `createCommand.withTypes<...>()`：
 
 ```ts
 import { createCommand } from 'icore';
@@ -120,22 +113,13 @@ const statusCommand = command.define({
 });
 ```
 
-Result binding 是上界：示例 handler 的返回值仍会被推导为 `string`，而不是
-更宽的 `string | void`。schema、literal canonical 与 alias paths，以及
-prepared payload 也都会保持为 `statusCommand` 的具体类型。
+Result binding 是上界：示例 handler 的返回值仍会被推导为 `string`，而不是更宽的 `string | void`。schema、literal canonical 与 alias paths，以及 prepared payload 也都会保持为 `statusCommand` 的具体类型。
 
-如果命令可以不带 metadata，请不要指定 `metadataRequired`。该设置只影响由
-这个 bound builder 创建的 definitions；普通 `createCommand()` 和其他 builders
-会保留原有契约。
+如果命令可以不带 metadata，请不要指定 `metadataRequired`。该设置只影响由这个 bound builder 创建的 definitions；普通 `createCommand()` 和其他 builders 会保留原有契约。
 
-如果应用没有 command metadata 契约，请在 bindings 中指定
-`metadata: undefined`，并省略 `metadataRequired`。共享绑定仍然是显式的，
-但 command definitions 不会被要求包含 metadata 属性。
+如果应用没有 command metadata 契约，请在 bindings 中指定 `metadata: undefined`，并省略 `metadataRequired`。共享绑定仍然是显式的，但 command definitions 不会被要求包含 metadata 属性。
 
-Bindings 描述彼此独立的 application-level types。如果 metadata 依赖确切的
-option schema，请对每条命令使用 `satisfies` 检查这种关系，或保留一个小型的
-application-owned wrapper。Bound builder 不会创建 context、resources、clients、
-signals 或 long-running handles；它们的 lifecycle 仍由应用拥有。
+Bindings 描述彼此独立的 application-level types。如果 metadata 依赖确切的 option schema，请对每条命令使用 `satisfies` 检查这种关系，或保留一个小型的 application-owned wrapper。Bound builder 不会创建 context、resources、clients、 signals 或 long-running handles；它们的 lifecycle 仍由应用拥有。
 
 ## 从终端运行
 
@@ -173,8 +157,7 @@ node dist/cli.js reports list -p alpha -l 5
 }
 ```
 
-Defaults 有助于保持命令行为稳定，但同时也是公共契约的一部分。只有当隐式值
-明确且安全时才应使用它们。
+Defaults 有助于保持命令行为稳定，但同时也是公共契约的一部分。只有当隐式值明确且安全时才应使用它们。
 
 ## 使用布尔值取反
 
@@ -185,11 +168,9 @@ node dist/cli.js reports list --project alpha --archived
 node dist/cli.js reports list --project alpha --no-archived
 ```
 
-第一条命令向 handler 传入 `archived: true`，第二条传入
-`archived: false`。
+第一条命令向 handler 传入 `archived: true`，第二条传入 `archived: false`。
 
-这种形式比支持 `--archived=false` 更明确，也不会产生 `0`、`no` 或 `off`
-这类有歧义的文本值。
+这种形式比支持 `--archived=false` 更明确，也不会产生 `0`、`no` 或 `off` 这类有歧义的文本值。
 
 不要传入显式 boolean values：
 
@@ -198,15 +179,13 @@ node dist/cli.js reports list --project alpha --archived=true
 node dist/cli.js reports list --project alpha --archived=false
 ```
 
-两种形式都会被拒绝。Boolean options 使用 flag syntax，而不是 `true` / `false`
-值。
+两种形式都会被拒绝。Boolean options 使用 flag syntax，而不是 `true` / `false` 值。
 
 ## 将布尔选项限制为仅标志语法
 
 对于仅表示“启用此行为”的选项，请使用 `syntax: 'flag'`。
 
-这是更严格的契约，适用于 `--dry-run` 等选项；此时 flag 缺失本身已有清晰
-含义。
+这是更严格的契约，适用于 `--dry-run` 等选项；此时 flag 缺失本身已有清晰含义。
 
 ```ts
 const schema = {
@@ -233,11 +212,9 @@ node dist/cli.js reports list --dry-run=false
 
 ## 复用模式的共享部分
 
-当多条命令使用相同的公共 options 时，请保留小型 schema fragments，并在
-命令边界处合并它们。
+当多条命令使用相同的公共 options 时，请保留小型 schema fragments，并在命令边界处合并它们。
 
-这样既能减少重复，也不会隐藏 command-specific intent。如果一个可复用
-schema 需要为不同命令设置大量例外，它就不再是合适的抽象。
+这样既能减少重复，也不会隐藏 command-specific intent。如果一个可复用 schema 需要为不同命令设置大量例外，它就不再是合适的抽象。
 
 ```ts
 import { mergeOptionsSchema } from 'icore';
@@ -263,8 +240,6 @@ const outputOptions = {
 const options = mergeOptionsSchema(pagingOptions, outputOptions);
 ```
 
-如果选项名重复，后面的 schema 会覆盖前面的 schema。请确保这种行为是有意
-的，并且在 command definition 附近清晰可见。
+如果选项名重复，后面的 schema 会覆盖前面的 schema。请确保这种行为是有意的，并且在 command definition 附近清晰可见。
 
-组合 shared schemas、global shortcuts 和 compatibility options 的更大型应用
-模式见 [practical-cli-patterns.md](practical-cli-patterns.md)。
+组合 shared schemas、global shortcuts 和 compatibility options 的更大型应用模式见 [practical-cli-patterns.md](practical-cli-patterns.md)。
