@@ -1,43 +1,41 @@
-# Настройка запуска команды и очистки ресурсов
+# Set Up Command Execution And Cleanup
 
-[English](../../guides/terminal-app.md) | Русский | [简体中文](../../zh/guides/terminal-app.md)
+English | [Русский](../ru/examples/terminal-app.md) | [简体中文](../zh/examples/terminal-app.md)
 
-> Русский перевод английской версии. При расхождении актуальной считается английская версия.
+The [README quick start](../../readme.md#quick-start) uses `app.run(...)` when the application already has everything the command needs.
 
-В [быстром старте README](../readme.md#быстрый-старт) используется `app.run(...)`, когда у приложения уже есть всё необходимое команде.
+Use the steps in this example when the application:
 
-Используйте шаги из этого руководства, когда приложение:
+- handles global `--help` or `--version` before validating a command;
+- chooses a database connection or API client after the command is known;
+- creates and closes its own resources, manages progress output, or runs long-running work itself;
+- still uses `TerminalApp` to format output and apply its error rules.
 
-- обрабатывает глобальные `--help` или `--version` до проверки команды;
-- выбирает подключение к базе данных или API-клиент после выбора команды;
-- само создаёт и закрывает свои ресурсы, управляет индикатором прогресса или долгоживущими задачами;
-- при этом использует `TerminalApp` для форматирования вывода и правил обработки ошибок.
-
-Последовательность действий:
+The sequence is:
 
 ```text
-parse global shortcuts
+check global --help and --version
 → app.prepare()
-→ inspect metadata and payload
-→ create selected resources
+→ read the selected command's data
+→ create its resources
 → app.commands.run()
-→ terminal result: finish interactive output → app.writePreparedOutput()
-  or long-running result: transfer handle, scope, and interactive output
-→ cleanup
+→ command output: finish interactive output → app.writePreparedOutput()
+  or long-running work: transfer its resources and interactive output
+→ close resources
 → app.reportError() when a failure was captured
 ```
 
-Закрывайте индикатор прогресса и ресурсы до сообщения об ошибке, чтобы диагностика появлялась только после очистки. Не закрывайте выбранные ресурсы до окончания `writePreparedOutput(...)`: вывод может быть асинхронным потоком, который всё ещё их использует.
+Close progress output and resources before reporting an error, so diagnostics appear only after cleanup. Keep selected resources open through `writePreparedOutput(...)`: terminal output may be an asynchronous stream that still uses them.
 
-## Один типизированный конструктор команд
+## Create One Typed Command Builder
 
-`createCommand.withTypes<...>()` задаёт общие типы для всех команд. Создайте его один раз, если у команд совпадают:
+`createCommand.withTypes<...>()` sets types shared by every command. Create it once when commands share:
 
-- `context` — данные, которые приложение передаёт функции команды;
-- `result` — допустимый набор значений, которые эта функция может вернуть;
-- `metadata` — постоянная информация о команде, например её описание.
+- `context`: data the application passes to the command function;
+- `result`: the range of values that function may return;
+- `metadata`: static command information, such as its description.
 
-Каждая команда всё равно сама задаёт имя, опции, псевдонимы, данные из `prepare` и конкретный тип результата:
+Each command still declares its own name, options, aliases, data returned from `prepare`, and specific result type:
 
 ```ts
 // Define the commands, output, and error handling used by the CLI.
@@ -180,13 +178,13 @@ const app = createTerminalApp({
 });
 ```
 
-Создавайте `command`, `commands`, `presentation`, `output` и `app` один раз при запуске CLI. Не создавайте подключение к базе данных или API-клиент заранее: дождитесь, пока `app.prepare(...)` определит выбранную команду.
+Create `command`, `commands`, `presentation`, `output`, and `app` once when the CLI starts. Do not create database or API resources yet; wait until `app.prepare(...)` identifies the selected command.
 
-Правила обработки ошибок выводят каждый элемент `AggregateError` и выбирают код выхода по первому. Если завершаются ошибкой и команда, и очистка, этот пример помещает ошибку команды первой, а ошибку очистки — второй: оба сообщения видны, а код выхода команды сохраняется.
+The error policy writes every member of an `AggregateError` and uses the first one to choose the exit code. When both operations fail, this example puts the command error first and the cleanup error second, so both messages are shown while the command's exit code is retained.
 
-## Обработка глобальных справки и версии без изменения аргументов
+## Handle Global Help And Version Without Rewriting Arguments
 
-Опишите `-h` и `-v` среди опций, которые обрабатываются до выбора команды. `parseArgv(...)` сопоставит их с `help` и `version`, а `parseOptionsSubsetDetailed(...)` проверит только эти начальные опции:
+Describe `-h` and `-v` among the options handled before a command is selected. `parseArgv(...)` maps them to `help` and `version`, while `parseOptionsSubsetDetailed(...)` checks only those initial options:
 
 ```ts
 // Parse global flags without consuming options for the selected command.
@@ -223,13 +221,13 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-Передавайте в `app.prepare(...)` исходный `args`; не собирайте аргументы заново из результата частичного разбора. Выбранная команда всё равно должна получить свои опции.
+Pass the original `args` to `app.prepare(...)`; do not rebuild arguments from the partial parsing result. The selected command must still receive its own options.
 
-Включайте каждую начальную опцию, тип которой сообщает разборщику, поглощает ли она следующий аргумент. Например, логическая опция `--insecure` не позволит принять следующий сегмент команды за её значение.
+Include each initial option whose type tells the parser whether it consumes the next argument. Declaring `--insecure` as boolean, for example, prevents the parser from treating the next command segment as its value.
 
-## Создание ресурсов, очистка и сообщение об ошибке
+## Create Resources, Clean Up, Then Report Errors
 
-Приложение предоставляет собственное форматирование справки и объект, который закрывает ресурсы:
+The application supplies its own help formatter and an object that closes resources:
 
 ```ts
 // Keep help formatting and resource cleanup in application code.
@@ -265,11 +263,11 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` должен регистрировать закрытие сразу после создания каждого ресурса. Если инициализация завершится ошибкой, он должен закрыть уже созданные ресурсы.
+`createInvocationScope(...)` should register cleanup immediately after creating each resource. If initialization fails, it should close resources that were already created.
 
-[Пример построения справки](practical-cli-patterns.md#построение-справки-из-описаний-команд) показывает, как `renderHelp(...)` получает список основных имён команд из `commands.definitions`, не повторяя псевдонимы.
+The [help example](practical-cli-patterns.md#build-help-from-command-descriptions) shows how `renderHelp(...)` can read the list of main command names from `commands.definitions` without repeating aliases.
 
-Следующий код запоминает этап первой ошибки, объединяет её с ошибкой очистки и сообщает о них после очистки:
+The code below records the stage where the first error occurred, combines it with a cleanup error, and reports after cleanup:
 
 ```ts
 // Track a failure until all resources are closed.
@@ -470,26 +468,26 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` форматирует вывод и записывает его. Код вне `TerminalApp` не может определить, на каком из этих шагов произошла ошибка, поэтому это руководство сообщает о ней как о `write`. Встроенные пути `app.run(...)` и `app.runPrepared(...)` различают `render` и `write` внутри.
+`writePreparedOutput(...)` formats output and writes it. Code outside `TerminalApp` cannot tell which of those steps failed, so this example reports its rejection as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths distinguish `render` from `write` internally.
 
-`CliCommandResult` задаёт только самый широкий допустимый тип результата для приложения. Обычная команда сохраняет свой конкретный результат вывода, а `watchUsersCommand` — конкретный `LongRunningCommandResult`.
+`CliCommandResult` only sets the broadest result type allowed for the application. A regular command still keeps its specific output result, while `watchUsersCommand` keeps its specific `LongRunningCommandResult`.
 
-`transferLongRunningLifecycle(...)` относится к коду приложения. Функция должна зарегистрировать обработку сигналов и очистку для задачи и `scope` до возврата управления. При успехе `runCli(...)` очищает `scope`, поэтому блок `finally` вызова его не закрывает. Если передача завершается ошибкой, функция должна закрыть задачу, но не брать на себя `scope`; его затем закроет блок `finally` вызова. Переданная работа также должна завершить интерактивный вывод до записи последующей диагностики.
+`transferLongRunningLifecycle(...)` belongs to the application. It must register signal handling and cleanup for the handle and `scope` before returning. On success, `runCli(...)` clears `scope`, so the invocation's `finally` block does not close it. If transfer throws, it must close the handle without taking responsibility for `scope`; the invocation's `finally` block then closes `scope`. The transferred work must also finish interactive output before later diagnostics are written.
 
-До `writePreparedOutput(...)` доходят только значения, принятые `isTerminalCommandOutput(...)`. Приложение само отвечает за особые задачи, сигналы процесса и ресурсы долгоживущей работы.
+Only values accepted by `isTerminalCommandOutput(...)` reach `writePreparedOutput(...)`. The application keeps responsibility for custom handles, process signals, and resources used by long-running work.
 
-## Выбор способа форматирования вывода
+## Choose How To Format Output
 
-Выберите один из двух способов подготовки вывода:
+Choose one of two output paths:
 
-- Когда JSON, таблица и CSV используют одни и те же поля верхнего уровня, возвращайте значение вывода, созданное через `createPresentation()`.
-- Когда JSON требует полный вложенный отчёт, а таблица или CSV — выбранные столбцы и форматирование приложения, вызывайте `renderJson(...)`, `renderTextTable(...)` или `renderCsv(...)` прямо в приложении.
+- When JSON, table, and CSV use the same top-level fields, return an output value created with `createPresentation()`.
+- When JSON needs a complete nested report while table or CSV needs selected columns and application-specific formatting, call `renderJson(...)`, `renderTextTable(...)`, or `renderCsv(...)` directly in the application.
 
-Выбор формата описан в [Форматировании и записи вывода](../../guides/presentation-output.md), а прямые API — в [Подготовке данных для вывода](../../guides/presentation-primitives.md).
+See [Format And Write Output](presentation-output.md) for choosing a format and [Create Output Values](presentation-primitives.md) for the direct APIs.
 
-## Используйте `app.run(...)`, когда команду можно запустить сразу
+## Use `app.run(...)` When The Command Can Run Immediately
 
-Используйте `app.run(...)`, когда всё нужное команде уже готово, а она возвращает вывод, который может записать `TerminalApp`:
+Use `app.run(...)` when everything the command needs is already available and it returns output that `TerminalApp` can write:
 
 ```ts
 // Use the one-call API when application data is already available.
@@ -498,4 +496,4 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-Используйте описанные выше шаги, только когда приложение само создаёт или закрывает ресурсы вокруг выполнения команды.
+Use the steps above only when the application creates or closes resources around command execution.

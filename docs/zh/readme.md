@@ -23,7 +23,7 @@ npm install icore
 
 ## 快速开始
 
-创建命令，将它们放入[命令注册表](../guides/command-resolution.md#create-a-commands-object-from-existing-definitions)，然后把注册表传给 `createTerminalApp()`：
+创建命令，将它们放入[命令注册表](../examples/command-resolution.md#create-a-commands-object-from-existing-definitions)，然后把注册表传给 `createTerminalApp()`：
 
 ```ts
 import {
@@ -78,36 +78,36 @@ HELLO, ALICE!
 
 `app.run(...)` 会验证参数、执行选中的命令、格式化结果并写入终端。使用 `strict: true` 时，必须先写命令名和子命令，再写选项：`users get --id 42`。
 
-如果应用自行处理全局 `--help` 或 `--version`、在选中命令后创建资源，或需要在命令执行前后关闭资源，请参阅[配置命令执行和资源清理](guides/terminal-app.md)。
+如果应用自行处理全局 `--help` 或 `--version`、在选中命令后创建资源，或需要在命令执行前后关闭资源，请参阅[配置命令执行和资源清理](examples/terminal-app.md)。
 
 ## 选择 API
 
-| 应用需要什么 | 从这里开始 | 指南 |
+| 应用需要什么 | 从这里开始 | 示例 |
 | --- | --- | --- |
 | 立即执行命令 | `app.run(...)` | [快速开始](#快速开始) |
-| 处理全局选项，或创建和关闭资源 | `app.prepare(...)` 和 `app.commands.run(...)` | [配置命令执行和资源清理](guides/terminal-app.md) |
-| 描述命令及其选项 | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [描述命令选项](guides/option-schemas.md) |
-| 在创建应用服务前准备命令 | `commands.prepare()` 和 `commands.run()` | [手动准备并执行命令](../guides/custom-command-flow.md) |
-| 在 JSON、表格和 CSV 中使用相同字段 | `createPresentation()` | [格式化并写入输出](../guides/presentation-output.md) |
-| 为 JSON、表格和 CSV 准备不同的数据 | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [格式化并写入输出](../guides/presentation-output.md) |
-| 直接写入标准输出或标准错误 | `createOutput()` | [写入输出](../guides/output-writers.md) |
-| 直接解析参数或查找命令 | `parseArgv()`、`resolveCommand()` 和相关导出 | [直接 API](../guides/readme.md#direct-apis) |
+| 处理全局选项，或创建和关闭资源 | `app.prepare(...)` 和 `app.commands.run(...)` | [配置命令执行和资源清理](examples/terminal-app.md) |
+| 描述命令及其选项 | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [描述命令选项](examples/option-schemas.md) |
+| 在创建应用服务前准备命令 | `commands.prepare()` 和 `commands.run()` | [手动准备并执行命令](../examples/custom-command-flow.md) |
+| 在 JSON、表格和 CSV 中使用相同字段 | `createPresentation()` | [格式化并写入输出](../examples/presentation-output.md) |
+| 为 JSON、表格和 CSV 准备不同的数据 | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [格式化并写入输出](../examples/presentation-output.md) |
+| 直接写入标准输出或标准错误 | `createOutput()` | [写入输出](../examples/output-writers.md) |
+| 直接解析参数或查找命令 | `parseArgv()`、`resolveCommand()` 和相关导出 | [直接 API](../examples/readme.md#direct-apis) |
 
 ## 错误
 
 `IcoreError` 表示无效的命令行参数或无效的命令定义。使用 `isIcoreError(...)` 检查此类错误，并用 `isUsageError(...)` 识别由用户输入造成的错误。对于应用自己的输入规则，请抛出 `CliUsageError`。当前的错误类型和代码定义在[错误源文件](https://github.com/woodger/icore/tree/main/src/errors)中。
 
-## 指南
+## 示例
 
-部分详细指南暂时只有英文版；以下链接用中文说明其内容。
+部分详细示例暂时只有英文版；以下链接用中文说明其内容。
 
-- [配置命令执行和资源清理](guides/terminal-app.md) — 全局选项、资源创建和清理、输出与错误处理。
-- [描述命令选项](guides/option-schemas.md) — 字符串、布尔值、数值、允许值、默认值、别名和 TypeScript 类型推导。
-- [常用 CLI 模式](guides/practical-cli-patterns.md) — 帮助和版本命令、公共选项与兼容性别名。
-- [参数语法](../guides/cli-argument-syntax.md) — 命令行参数支持和不支持的写法。
-- [手动准备并执行命令](../guides/custom-command-flow.md) — 不通过终端应用来准备和执行命令。
-- [格式化并写入输出](../guides/presentation-output.md) — 渲染结果并写入标准输出或标准错误。
-- [直接 API](../guides/readme.md#direct-apis) — 不通过终端应用来解析命令、输出和表示数据。
+- [配置命令执行和资源清理](examples/terminal-app.md) — 全局选项、资源创建和清理、输出与错误处理。
+- [描述命令选项](examples/option-schemas.md) — 字符串、布尔值、数值、允许值、默认值、别名和 TypeScript 类型推导。
+- [常用 CLI 模式](examples/practical-cli-patterns.md) — 帮助和版本命令、公共选项与兼容性别名。
+- [参数语法](../examples/cli-argument-syntax.md) — 命令行参数支持和不支持的写法。
+- [手动准备并执行命令](../examples/custom-command-flow.md) — 不通过终端应用来准备和执行命令。
+- [格式化并写入输出](../examples/presentation-output.md) — 渲染结果并写入标准输出或标准错误。
+- [直接 API](../examples/readme.md#direct-apis) — 不通过终端应用来解析命令、输出和表示数据。
 
 发布历史见 [CHANGELOG.md](../../CHANGELOG.md)，项目决策见 [docs/roadmap.md](../roadmap.md)。
 

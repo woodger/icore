@@ -1,16 +1,18 @@
-# Common CLI Patterns
+# 实用 CLI 模式
 
-English | [Русский](../ru/guides/practical-cli-patterns.md) | [简体中文](../zh/guides/practical-cli-patterns.md)
+[English](../../examples/practical-cli-patterns.md) | [Русский](../../ru/examples/practical-cli-patterns.md) | 简体中文
 
-These examples show how an application can use `icore` for common command-line behavior. The command names are neutral, but the examples apply to applications with many commands, shared options, help and version commands, and older option names.
+> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-## Global Help And Version
+这些示例展示应用如何使用 `icore` 完成常见的命令行工作。命令名称是中性的，但示例适用于拥有许多命令、共享选项、帮助和版本命令以及旧选项名称的应用。
 
-In a CLI with many commands, `--help`, `-h`, `--version`, and `-v` often work before a command is selected. They should not require values needed only by one command.
+## 全局帮助和版本
 
-`icore` does not handle these flags automatically because an application decides what help and version mean. Handle them before selecting a command. The global flags can then bypass validation for a specific command, while regular commands still use the command registry and their own option definitions.
+在拥有许多命令的 CLI 中，`--help`、`-h`、`--version` 和 `-v` 通常在选择命令前生效。它们不应要求只由某一条命令使用的值。
 
-Parse these flags before using the command registry to run an application command:
+`icore` 不会自动处理这些标志，因为应用自己决定帮助和版本的含义。请在选择命令前处理它们。这样全局标志可以绕过某条命令的验证，而普通命令仍使用命令注册表和自己的选项定义。
+
+请在使用命令注册表运行应用命令前解析这些标志：
 
 ```ts
 // Parse only the options that work before a command is selected.
@@ -52,13 +54,13 @@ function parseBootstrapInput(args: readonly string[]) {
 }
 ```
 
-The option definition gives `-h` and `-v` their meanings: `parseArgv(...)` maps them to `help` and `version`. The application does not need to rewrite the arguments or define separate `h` and `v` options.
+选项定义赋予 `-h` 和 `-v` 含义：`parseArgv(...)` 将它们映射为 `help` 和 `version`。应用不需要重写参数，也不需要分别定义 `h` 和 `v` 选项。
 
-Only the global flags are checked here. Options for a command appear in `rest`, but normally stay in the original arguments passed to `app.prepare(...)`. Do not rebuild command arguments from the partial result. Otherwise global parsing can reject, reorder, or discard valid command options before a command is selected.
+这里只检查全局标志。命令选项会在 `rest` 中返回以供查看，但通常仍应保留在传给 `app.prepare(...)` 的原始参数中。不要根据部分结果重建命令参数，否则全局解析可能在选择命令前错误地拒绝、重排或丢弃有效选项。
 
-Include every global option whose type tells the parser whether it takes the next argument. Here `offline` is boolean, so parsing does not treat the following command segment as its value.
+包含每个类型能告诉解析器是否会占用下一个参数的全局选项。本例将 `offline` 声明为布尔值，因此解析不会把后续命令段作为它的值。
 
-The user can ask for top-level help:
+用户可以请求顶层帮助：
 
 ```bash
 workspace-cli --help
@@ -66,7 +68,7 @@ workspace-cli -h
 workspace-cli help
 ```
 
-The application prints its command list:
+应用输出命令列表：
 
 ```text
 Usage:
@@ -79,14 +81,14 @@ Commands:
   jobs run
 ```
 
-The user can ask for command help without providing required command options:
+用户可以在不提供命令必填选项的情况下请求命令帮助：
 
 ```bash
 workspace-cli jobs run --help
 workspace-cli help jobs run
 ```
 
-The application prints only that command:
+应用只输出该命令：
 
 ```text
 jobs run - Run a job
@@ -99,7 +101,7 @@ Options:
   --dry-run        Validate input without running the job
 ```
 
-Version can be both a command and a global flag:
+版本既可以是命令，也可以是全局标志：
 
 ```bash
 workspace-cli version
@@ -107,7 +109,7 @@ workspace-cli --version
 workspace-cli -v
 ```
 
-The application prints its version, Node.js version, and platform:
+应用输出自身版本、Node.js 版本和平台：
 
 ```text
 workspace-cli 1.4.0
@@ -115,23 +117,23 @@ node v24.13.1
 platform linux x64
 ```
 
-Invalid boolean values are still rejected before command execution:
+无效的布尔值仍会在命令执行前被拒绝：
 
 ```bash
 workspace-cli --help=false
 ```
 
-The terminal shows:
+终端显示：
 
 ```text
 Expected '--help' as boolean flag
 ```
 
-## Make Help And Version Regular Commands
+## 将帮助和版本作为普通命令
 
-Help and version can use the same command registry as the rest of the application. The command below accepts extra positional arguments, so `help jobs run` can name another command:
+帮助和版本可以与应用其余部分使用同一个命令注册表。下面的命令接受额外的位置参数，因此 `help jobs run` 可以指向另一条命令：
 
-This keeps `help` and `version` visible as public commands instead of hard-coding them outside the registry. The application still needs to handle `--help`, `-h`, `--version`, and `-v` before command selection if it supports those forms.
+这样 `help` 和 `version` 仍是可见的公共命令，而不是在注册表外单独定义。如果应用支持 `--help`、`-h`、`--version` 和 `-v`，它仍需在选择命令前处理它们。
 
 ```ts
 // Keep help and version as regular commands in the registry.
@@ -161,11 +163,11 @@ const versionCommand = command.define({
 });
 ```
 
-This makes the routing of help and version commands visible. The application still supplies the help text and version text.
+这样帮助和版本命令的路由清楚可见。帮助和版本文本仍由应用提供。
 
-## Build Help From Command Descriptions
+## 根据命令说明构建帮助
 
-Keep help text with each command definition, then build the command list from `commands.definitions`. The list contains each main command once, so aliases do not create duplicate entries:
+将帮助文本保存在每个命令定义中，再从 `commands.definitions` 构建命令列表。列表中每条主命令只出现一次，因此别名不会产生重复条目：
 
 ```ts
 // Store help text on command definitions and build entries from them.
@@ -218,15 +220,15 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 }));
 ```
 
-Use `commandHelpEntries` for top-level and group help. For help about one command, compare the requested name with `definition.path` and `definition.aliases`, but show the main name from `definition.path`.
+使用 `commandHelpEntries` 生成顶层和分组帮助。对于某条命令的帮助，将请求的名称与 `definition.path`、`definition.aliases` 匹配，但显示 `definition.path` 中的主名称。
 
-`icore` exposes command definitions and typed descriptions, but the application chooses the help layout, wording, grouping, and whether aliases are shown.
+`icore` 会公开命令定义和带类型的说明，但帮助的布局、措辞、分组和是否显示别名由应用决定。
 
-## Options Used By Several Commands
+## 多条命令使用的选项
 
-Commands often reuse connection settings, output settings, or flags. Keep those option definitions small and merge them with the options for one command:
+命令经常复用连接设置、输出设置或标志。请保持这些选项定义小而明确，并把它们与单条命令的选项合并：
 
-Share an option definition when the same options appear in several commands. If only one command uses an option, define it directly on that command.
+当相同选项出现在多条命令中时，共享选项定义很有用。如果一个选项只被一条命令使用，就直接在该命令中定义。
 
 ```ts
 // Combine common options with options specific to `jobs list`.
@@ -270,13 +272,13 @@ const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
 } as const);
 ```
 
-The user can combine shared options with options for one command:
+用户可以组合共享选项和命令自己的选项：
 
 ```bash
 workspace-cli jobs list --profile staging --format json --status failed --limit 10
 ```
 
-The command function receives:
+命令函数会收到：
 
 ```text
 {
@@ -289,11 +291,11 @@ The command function receives:
 }
 ```
 
-## Keep An Old Option Name During Migration
+## 重命名时保留旧选项名称
 
-When a public CLI option is renamed, keep the old name near the new name and resolve a call that contains both explicitly:
+重命名公共 CLI 选项时，请将旧名称放在新名称附近，并明确处理同时传入两个名称的调用：
 
-Existing users may depend on the old name. Keep it visible in code, print a warning when it is used, and reject calls that pass both names.
+现有用户可能依赖旧名称。请在代码中保留它，使用时输出警告，并拒绝同时传入两个名称的调用。
 
 ```ts
 // Accept either name, but reject a call that provides both.
@@ -332,74 +334,74 @@ function resolveItemId(options: ItemIdOptions): string {
 }
 ```
 
-The new option prints no warning:
+新选项名称不输出警告：
 
 ```bash
 workspace-cli catalog get --item-id=item-42
 ```
 
-The old option can still work while the application prints a warning to standard error:
+旧选项名称仍可工作，同时应用向标准错误输出警告：
 
 ```bash
 workspace-cli catalog get --legacy-id=item-42
 ```
 
-The terminal can show:
+终端可以显示：
 
 ```text
 Warning: '--legacy-id' is deprecated; use '--item-id' instead.
 ```
 
-Using both names is rejected:
+同时使用两个名称会被拒绝：
 
 ```bash
 workspace-cli catalog get --item-id=item-42 --legacy-id=item-42
 ```
 
-The terminal shows:
+终端显示：
 
 ```text
 Use either '--item-id' or deprecated '--legacy-id', not both
 ```
 
-## Argument Cases To Understand
+## 需要了解的参数情况
 
-Boolean flags do not consume the next argument as a value:
+布尔标志不会把下一个参数当作值：
 
-This prevents `--offline false` from silently meaning something other than the supported boolean form.
+这可以防止 `--offline false` 悄悄表示与支持的布尔形式不同的含义。
 
 ```bash
 workspace-cli jobs list --offline false
 ```
 
-The parser sees `offline: true` and leaves `false` as a positional argument. If the command does not allow extra positional arguments, validation rejects it.
+解析器得到 `offline: true`，并将 `false` 留作位置参数。如果命令不允许额外的位置参数，验证会拒绝它。
 
-String and number options defined for a command can consume values that start with a dash:
+命令定义的字符串和数值选项可以接收以短横线开头的值：
 
-This is why parsing receives the command's option definition. Without it, `-draft` or `-1` could be mistaken for another option.
+这就是解析需要命令选项定义的原因。没有它时，`-draft` 或 `-1` 可能被误认为另一个选项。
 
 ```bash
 workspace-cli search --query -draft --limit -1
 ```
 
-This is useful for search text and signed numbers. Validation can still reject the parsed value later, for example when `limit` has `min: 1`.
+这对搜索文本和有符号数字很有用。验证仍可在之后拒绝解析后的值，例如 `limit` 设置了 `min: 1` 时。
 
-The option terminator turns every following argument into positional input:
+选项终止符会将其后的每个参数变成位置参数：
 
-Use it when the application needs text that looks like an option.
+当应用需要看起来像选项的文本时，请使用它。
 
 ```bash
 workspace-cli search -- --query -draft --offline
 ```
 
-`--query`, `-draft`, and `--offline` are no longer parsed as options.
+`--query`、`-draft` 和 `--offline` 不再被解析为选项。
 
-Using both a long option and its short name is rejected:
+同时使用长选项和它的短名称会被拒绝：
 
-Rejecting duplicates avoids hidden rules about which value wins.
+拒绝重复项可以避免隐藏的“哪个值优先”规则。
 
 ```bash
 workspace-cli jobs list --offline -o
 ```
 
-This is a duplicate when `offline` declares `alias: 'o'`.
+当 `offline` 声明了 `alias: 'o'` 时，这就是重复项。

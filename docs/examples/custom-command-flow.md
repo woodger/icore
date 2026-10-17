@@ -1,6 +1,6 @@
 # Prepare And Run Commands Yourself
 
-Use this guide when the application needs to validate arguments and select a command before it creates the values needed by that command. The application then prepares the command and runs it itself, without `TerminalApp` formatting output or handling errors.
+Use this example when the application needs to validate arguments and select a command before it creates the values needed by that command. The application then prepares the command and runs it itself, without `TerminalApp` formatting output or handling errors.
 
 This is useful when argument parsing should happen before the application opens a database connection or creates an API client. The application must then format output and handle errors itself.
 

@@ -1,8 +1,8 @@
-# Guides
+# Examples
 
-English | [Русский](../ru/guides/readme.md) | [简体中文](../zh/guides/readme.md)
+English | [Русский](../ru/examples/readme.md) | [简体中文](../zh/examples/readme.md)
 
-These guides show how an application uses `icore`. Start with the task you need to perform; the lower sections cover APIs used when the application needs more control.
+These examples show how an application uses `icore`. Start with the task you need to perform; the lower sections cover APIs used when the application needs more control.
 
 ## Build A Terminal Application
 

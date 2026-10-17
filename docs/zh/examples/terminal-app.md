@@ -1,12 +1,12 @@
 # 配置命令执行和资源清理
 
-[English](../../guides/terminal-app.md) | [Русский](../../ru/guides/terminal-app.md) | 简体中文
+[English](../../examples/terminal-app.md) | [Русский](../../ru/examples/terminal-app.md) | 简体中文
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
 [README 快速开始](../readme.md#快速开始)在应用已具备命令所需的一切时使用 `app.run(...)`。
 
-当应用需要完成以下工作时，请使用本指南中的步骤：
+当应用需要完成以下工作时，请使用本示例中的步骤：
 
 - 在验证命令前处理全局 `--help` 或 `--version`；
 - 在知道要运行哪条命令后选择数据库连接或 API 客户端；
@@ -470,7 +470,7 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` 会格式化输出并写入它。`TerminalApp` 外的代码无法知道哪一步失败，因此本指南将其拒绝报告为 `write`。内置的 `app.run(...)` 和 `app.runPrepared(...)` 会在内部区分 `render` 与 `write`。
+`writePreparedOutput(...)` 会格式化输出并写入它。`TerminalApp` 外的代码无法知道哪一步失败，因此本示例将其拒绝报告为 `write`。内置的 `app.run(...)` 和 `app.runPrepared(...)` 会在内部区分 `render` 与 `write`。
 
 `CliCommandResult` 只定义应用允许的最宽结果类型。普通命令仍保留具体的输出结果，而 `watchUsersCommand` 保留具体的 `LongRunningCommandResult`。
 
@@ -485,7 +485,7 @@ void runCli(process.argv.slice(2))
 - 当 JSON、表格和 CSV 使用同一组顶层字段时，返回通过 `createPresentation()` 创建的输出值。
 - 当 JSON 需要完整的嵌套报告，而表格或 CSV 需要选定列和应用自己的格式化时，直接在应用中调用 `renderJson(...)`、`renderTextTable(...)` 或 `renderCsv(...)`。
 
-格式选择见[格式化并写入输出](../../guides/presentation-output.md)，直接 API 见[准备输出数据](../../guides/presentation-primitives.md)。
+格式选择见[格式化并写入输出](../../examples/presentation-output.md)，直接 API 见[准备输出数据](../../examples/presentation-primitives.md)。
 
 ## 当命令可以立即运行时使用 `app.run(...)`
 

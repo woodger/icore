@@ -1,6 +1,6 @@
 # Распространённые приёмы для CLI
 
-[English](../../guides/practical-cli-patterns.md) | Русский | [简体中文](../../zh/guides/practical-cli-patterns.md)
+[English](../../examples/practical-cli-patterns.md) | Русский | [简体中文](../../zh/examples/practical-cli-patterns.md)
 
 > Русский перевод английской версии. При расхождении актуальной считается английская версия.
 

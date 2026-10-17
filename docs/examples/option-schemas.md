@@ -1,6 +1,6 @@
 # Define Command Options
 
-English | [Русский](../ru/guides/option-schemas.md) | [简体中文](../zh/guides/option-schemas.md)
+English | [Русский](../ru/examples/option-schemas.md) | [简体中文](../zh/examples/option-schemas.md)
 
 Use an option definition to describe a command's public arguments. It states what a user can type in the terminal and which typed values the function that runs the command receives.
 

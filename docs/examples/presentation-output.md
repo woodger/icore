@@ -1,6 +1,6 @@
 # Format And Write Output
 
-Use this guide when the application runs commands itself but still wants `icore` to format output and write to standard output or standard error.
+Use this example when the application runs commands itself but still wants `icore` to format output and write to standard output or standard error.
 
 This is useful when application code already has its own command runner or framework. `icore` can format the result without running the command.
 

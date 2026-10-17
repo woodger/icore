@@ -1,6 +1,6 @@
 # 描述命令选项
 
-[English](../../guides/option-schemas.md) | [Русский](../../ru/guides/option-schemas.md) | 简体中文
+[English](../../examples/option-schemas.md) | [Русский](../../ru/examples/option-schemas.md) | 简体中文
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 

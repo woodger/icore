@@ -21,7 +21,7 @@ npm install icore
 
 ## Quick Start
 
-Create commands, collect them in a [command registry](docs/guides/command-resolution.md#create-a-commands-object-from-existing-definitions), and pass the registry to `createTerminalApp()`:
+Create commands, collect them in a [command registry](docs/examples/command-resolution.md#create-a-commands-object-from-existing-definitions), and pass the registry to `createTerminalApp()`:
 
 ```ts
 import {
@@ -76,34 +76,34 @@ The `options` object describes arguments accepted after `hello`. The `handle` fu
 
 `app.run(...)` validates the arguments, runs the selected command, formats its result, and writes it to the terminal. With `strict: true`, the command name and any subcommands must come before options: `users get --id 42`.
 
-When the application handles global `--help` or `--version`, opens resources after selecting a command, or must close resources around execution, follow [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md).
+When the application handles global `--help` or `--version`, opens resources after selecting a command, or must close resources around execution, follow [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md).
 
 ## Choose An API
 
-| What the application needs | Start with | Guide |
+| What the application needs | Start with | Example |
 | --- | --- | --- |
 | Run a command immediately | `app.run(...)` | [Quick Start](#quick-start) |
-| Handle global flags or create and close resources | `app.prepare(...)` and `app.commands.run(...)` | [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md) |
-| Define commands and their options | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Define Command Options](docs/guides/option-schemas.md) |
-| Prepare a command before creating application services | `commands.prepare()` and `commands.run()` | [Prepare And Run Commands Yourself](docs/guides/custom-command-flow.md) |
-| Use the same record fields for JSON, table, and CSV | `createPresentation()` | [Format And Write Output](docs/guides/presentation-output.md) |
-| Choose separate data for JSON, table, and CSV | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Format And Write Output](docs/guides/presentation-output.md) |
-| Write directly to standard output or standard error | `createOutput()` | [Write Output](docs/guides/output-writers.md) |
-| Parse arguments or resolve a command directly | `parseArgv()`, `resolveCommand()`, and related exports | [Direct APIs](docs/guides/readme.md#direct-apis) |
+| Handle global flags or create and close resources | `app.prepare(...)` and `app.commands.run(...)` | [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md) |
+| Define commands and their options | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Define Command Options](docs/examples/option-schemas.md) |
+| Prepare a command before creating application services | `commands.prepare()` and `commands.run()` | [Prepare And Run Commands Yourself](docs/examples/custom-command-flow.md) |
+| Use the same record fields for JSON, table, and CSV | `createPresentation()` | [Format And Write Output](docs/examples/presentation-output.md) |
+| Choose separate data for JSON, table, and CSV | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Format And Write Output](docs/examples/presentation-output.md) |
+| Write directly to standard output or standard error | `createOutput()` | [Write Output](docs/examples/output-writers.md) |
+| Parse arguments or resolve a command directly | `parseArgv()`, `resolveCommand()`, and related exports | [Direct APIs](docs/examples/readme.md#direct-apis) |
 
 ## Errors
 
 `IcoreError` describes invalid command lines and invalid command definitions. Use `isIcoreError(...)` to inspect one and `isUsageError(...)` to identify errors caused by user input. For application-specific input rules, throw `CliUsageError`. The current error types and codes are defined in [the error source files](https://github.com/woodger/icore/tree/main/src/errors).
 
-## Guides
+## Examples
 
-- [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md) explains global flags, resource creation and cleanup, output, and error handling.
-- [Define Command Options](docs/guides/option-schemas.md) explains strings, booleans, numbers, allowed values, defaults, aliases, and inferred TypeScript types.
-- [Common CLI Patterns](docs/guides/practical-cli-patterns.md) covers help and version commands, shared options, and compatibility aliases.
-- [Argument Syntax](docs/guides/cli-argument-syntax.md) lists accepted command-line forms and rejected forms.
-- [Prepare And Run Commands Yourself](docs/guides/custom-command-flow.md) shows how to use command preparation and execution without a terminal application.
-- [Format And Write Output](docs/guides/presentation-output.md) explains how to render results and write them to standard output or standard error.
-- [Direct APIs](docs/guides/readme.md#direct-apis) links to direct command resolution, output, and presentation APIs.
+- [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md) explains global flags, resource creation and cleanup, output, and error handling.
+- [Define Command Options](docs/examples/option-schemas.md) explains strings, booleans, numbers, allowed values, defaults, aliases, and inferred TypeScript types.
+- [Common CLI Patterns](docs/examples/practical-cli-patterns.md) covers help and version commands, shared options, and compatibility aliases.
+- [Argument Syntax](docs/examples/cli-argument-syntax.md) lists accepted command-line forms and rejected forms.
+- [Prepare And Run Commands Yourself](docs/examples/custom-command-flow.md) shows how to use command preparation and execution without a terminal application.
+- [Format And Write Output](docs/examples/presentation-output.md) explains how to render results and write them to standard output or standard error.
+- [Direct APIs](docs/examples/readme.md#direct-apis) links to direct command resolution, output, and presentation APIs.
 
 Release history is in [CHANGELOG.md](CHANGELOG.md). Design decisions are in [docs/roadmap.md](docs/roadmap.md).
 

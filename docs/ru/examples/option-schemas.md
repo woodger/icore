@@ -1,6 +1,6 @@
 # Описание опций команд
 
-[English](../../guides/option-schemas.md) | Русский | [简体中文](../../zh/guides/option-schemas.md)
+[English](../../examples/option-schemas.md) | Русский | [简体中文](../../zh/examples/option-schemas.md)
 
 > Русский перевод английской версии. При расхождении актуальной считается английская версия.
 
