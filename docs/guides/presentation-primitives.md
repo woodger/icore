@@ -9,6 +9,7 @@ Use `presentation.render(...)` when one output value works for every format. Cal
 Use `presentation.empty()` when a command succeeds without terminal output. Use `presentation.text(...)` when the command already owns final text.
 
 ```ts
+// Create values for no output and for final text.
 import { createPresentation } from 'icore';
 
 const presentation = createPresentation();
@@ -24,6 +25,7 @@ These values work in every format. Rendering them as `table`, `json`, or `csv` d
 Use `record(...)` and `records(...)` when JSON, table, and CSV use the same top-level fields.
 
 ```ts
+// Use records when every format shows the same fields.
 const oneJob = presentation.record({
   id: 'job-42',
   status: 'running'
@@ -47,6 +49,7 @@ presentation.render(manyJobs, 'json');
 `PresentationRecord` has a string index signature, while a regular TypeScript interface does not. Map application objects to object literals to select output fields without a cast:
 
 ```ts
+// Select only the fields that belong in output.
 interface JobReportRow {
   id: string;
   status: string;
@@ -78,6 +81,7 @@ For an empty `records([])` value, JSON renders as an empty array while table and
 Use `table(...)` when the application already owns prepared text cells. Use `csv(...)` when the application already owns CSV scalar rows.
 
 ```ts
+// Supply prepared cells when the application controls columns and values.
 const table = presentation.table([
   ['id', 'status'],
   ['job-41', 'done'],
@@ -100,6 +104,7 @@ Text-table cells are plain text. Width calculation uses JavaScript string length
 Use `presentation.formats`, `presentationFormats`, and `isPresentationFormat(...)` when application code accepts a format option.
 
 ```ts
+// Validate a requested format against the formats supported by the renderer.
 import {
   isPresentationFormat,
   presentationFormats
@@ -120,6 +125,7 @@ This keeps the allowed formats aligned with the renderer. Do not copy the string
 `presentation.render(...)` calls `renderPresentationResult(...)`.
 
 ```ts
+// Render the same output value through either API.
 import { renderPresentationResult } from 'icore';
 
 const view = presentation.records([
@@ -140,6 +146,7 @@ Prefer `presentation.render(...)` in application code. The standalone function i
 Use `isPresentationResult(...)` before rendering unknown command output.
 
 ```ts
+// Check unknown output before sending it to a renderer.
 import { isPresentationResult } from 'icore';
 
 function renderUnknown(value: unknown): string {
@@ -158,6 +165,7 @@ This is useful when code receives an unknown value. Inside a command function, r
 `createPresentation()` exposes renderers for code that already has input for a specific format.
 
 ```ts
+// Call a renderer directly when its input is already prepared.
 const jsonText = presentation.renderers.json.render({
   ok: true
 });
@@ -181,6 +189,7 @@ const csvText = presentation.renderers.csv.render([
 The standalone functions do the same work:
 
 ```ts
+// Standalone renderers accept data for each format directly.
 import {
   renderCsv,
   renderCsvRow,
@@ -203,6 +212,7 @@ renderCsv([
 With direct renderers, the application chooses the format. They are useful for adapters and tests, and when each format needs different data. For example, JSON can preserve a complete nested report while a table exposes selected columns with application-specific cell formatting:
 
 ```ts
+// Keep the full report in JSON and choose table columns separately.
 const jsonText = renderJson(report);
 const tableText = renderTextTable([
   ['id', 'status'],

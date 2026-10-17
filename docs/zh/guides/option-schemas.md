@@ -15,6 +15,7 @@
 对大多数命令而言，这比集中维护一个“所有选项”文件更清楚。读者能在同一处看到命令行接口和执行命令的函数。
 
 ```ts
+// Describe the options accepted by `reports list`.
 import {
   createCommand,
   type InferOptions
@@ -47,6 +48,7 @@ const reportOptions = {
   }
 } as const;
 
+// Infer the object passed to the command function.
 type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
@@ -73,6 +75,7 @@ const reportCommand = command.define({
 - `metadata`：命令的固定信息，例如描述。
 
 ```ts
+// Share these types only when every command uses them.
 import { createCommand } from 'icore';
 
 type CliCommandContext = {
@@ -192,6 +195,7 @@ node dist/cli.js reports list --project alpha --archived=false
 这是更严格的规则，适用于 `--dry-run` 等选项；此时不带标志本身已有清晰含义。
 
 ```ts
+// Accept only the flag form for this option.
 const schema = {
   'dry-run': {
     type: 'boolean',
@@ -221,6 +225,7 @@ node dist/cli.js reports list --dry-run=false
 这样既能减少重复，也不会隐藏命令的特有部分。如果复用一个选项定义需要很多例外，就应把它留在命令旁边。
 
 ```ts
+// Combine reusable paging options with reusable output options.
 import { mergeOptionsSchema } from 'icore';
 
 const pagingOptions = {

@@ -87,6 +87,7 @@ Short names work only when the option definition declares them.
 For a boolean alias:
 
 ```ts
+// Declare the short `-v` name for `--verbose`.
 const options = {
   verbose: {
     type: 'boolean',
@@ -112,6 +113,7 @@ The command function receives:
 For a string or number alias, put the value in the next token:
 
 ```ts
+// Give string and number options their own short names.
 const options = {
   name: {
     type: 'string',

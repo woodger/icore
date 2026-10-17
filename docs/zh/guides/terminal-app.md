@@ -40,6 +40,7 @@ parse global shortcuts
 每条命令仍会自行声明名称、选项、别名、`prepare` 返回的数据和具体的结果类型：
 
 ```ts
+// Define the commands, output, and error handling used by the CLI.
 import {
   createCommand,
   createOutput,
@@ -58,6 +59,7 @@ type CurrentUserContext = {
   currentUser: string;
 };
 
+// A long-running command returns a handle for application code to manage.
 type LongRunningCommandHandle = {
   completed: Promise<void>;
   close(): Promise<void>;
@@ -95,6 +97,7 @@ const insecureOptions = {
   }
 } as const;
 
+// Each command receives the current user, returns CLI output, and declares its description and resources.
 const command = createCommand.withTypes<{
   context: CurrentUserContext;
   result: CliCommandResult;
@@ -108,6 +111,7 @@ declare function startUserWatcher(
   context: CurrentUserContext
 ): LongRunningCommandHandle;
 
+// This command returns a record for terminal output.
 const currentUserCommand = command.define({
   path: ['users', 'current'],
   options: mergeOptionsSchema(
@@ -125,6 +129,7 @@ const currentUserCommand = command.define({
   }
 });
 
+// This command starts work that continues after the command returns.
 const watchUsersCommand = command.define({
   path: ['users', 'watch'],
   options: insecureOptions,
@@ -145,6 +150,7 @@ const commands = command.registry([
   watchUsersCommand
 ] as const);
 
+// Let the terminal app format output and report errors consistently.
 const app = createTerminalApp({
   commands,
   presentation,
@@ -183,6 +189,7 @@ CLI 启动时只创建一次 `command`、`commands`、`presentation`、`output` 
 在选择命令前处理的选项中描述 `-h` 和 `-v`。`parseArgv(...)` 会把它们映射为 `help` 和 `version`，而 `parseOptionsSubsetDetailed(...)` 只检查这些初始选项：
 
 ```ts
+// Parse global flags without consuming options for the selected command.
 import {
   parseArgv,
   parseOptionsSubsetDetailed
@@ -225,6 +232,7 @@ function parseGlobalInput(args: readonly string[]) {
 应用提供自己的帮助格式化函数和关闭资源的对象：
 
 ```ts
+// Keep help formatting and resource cleanup in application code.
 type InvocationScope = {
   context: CurrentUserContext;
   /**
@@ -264,6 +272,7 @@ declare function renderVersion(): string;
 下面的代码记录第一个错误发生的阶段，将它与清理错误合并，并在清理后报告：
 
 ```ts
+// Track a failure until all resources are closed.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
 type FailurePhase = 'execute' | 'write' | 'external';
 
@@ -272,6 +281,7 @@ type InvocationFailure = {
   phase: FailurePhase;
 };
 
+// Use the selected command's list of resources.
 function selectResources(prepared: Prepared): readonly ResourceName[] {
   const selection = prepared.command.metadata.resources;
 
@@ -280,6 +290,7 @@ function selectResources(prepared: Prepared): readonly ResourceName[] {
     : selection;
 }
 
+// Keep the first failure and add a cleanup failure when both occur.
 function mergeCleanupFailure(
   primary: InvocationFailure | undefined,
   cleanupError: unknown
@@ -300,6 +311,7 @@ function mergeCleanupFailure(
   };
 }
 
+// Print the error after cleanup and name the step where it happened.
 async function reportPreparedFailure(
   failure: InvocationFailure,
   args: readonly string[],
@@ -328,6 +340,7 @@ async function reportPreparedFailure(
   });
 }
 
+// Write global help or version through the same error handling.
 async function writeBootstrapOutput(
   render: () => string,
   args: readonly string[]
@@ -345,6 +358,7 @@ async function writeBootstrapOutput(
   }
 }
 
+// Handle global flags before preparing the selected command.
 async function runCli(args: readonly string[]): Promise<number> {
   let globalInput: ReturnType<typeof parseGlobalInput>;
 
@@ -383,6 +397,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     });
   }
 
+  // Keep selected resources open until output is written or work is transferred.
   let scope: InvocationScope | undefined;
   let failure: InvocationFailure | undefined;
   let phase: FailurePhase = 'external';
@@ -398,6 +413,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'execute';
     const result = await app.commands.run(prepared, scope.context);
 
+    // Long-running work takes over its own cleanup before this function returns.
     if (isLongRunningCommandResult(result)) {
       phase = 'external';
       transferLongRunningLifecycle({
@@ -410,6 +426,7 @@ async function runCli(args: readonly string[]): Promise<number> {
       return 0;
     }
 
+    // Finish the interactive line before writing ordinary command output.
     phase = 'external';
     await scope.finishInteractiveOutput();
 
@@ -427,6 +444,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     };
   }
   finally {
+    // Close resources even when preparation, execution, or writing fails.
     try {
       await scope?.close();
     }
@@ -474,6 +492,7 @@ void runCli(process.argv.slice(2))
 当命令所需的一切都已准备好，并且命令返回 `TerminalApp` 可以写入的输出时，使用 `app.run(...)`：
 
 ```ts
+// Use the one-call API when application data is already available.
 process.exitCode = await app.run(args, context, {
   strict: true
 });

@@ -13,6 +13,7 @@ Put a command near the application code that implements it:
 For most commands, this is clearer than a central file containing every option. A reader can see the command-line interface and the function that runs the command together.
 
 ```ts
+// Describe the options accepted by `reports list`.
 import {
   createCommand,
   type InferOptions
@@ -45,6 +46,7 @@ const reportOptions = {
   }
 } as const;
 
+// Infer the object passed to the command function.
 type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
@@ -71,6 +73,7 @@ Use `createCommand.withTypes<...>()` only when every command uses the same types
 - `metadata`: static command information, such as its description.
 
 ```ts
+// Share these types only when every command uses them.
 import { createCommand } from 'icore';
 
 type CliCommandContext = {
@@ -190,6 +193,7 @@ Use `syntax: 'flag'` for options that should only mean "enable this behavior":
 This is stricter. It suits options such as `--dry-run`, where the flag being absent already has a clear meaning.
 
 ```ts
+// Accept only the flag form for this option.
 const schema = {
   'dry-run': {
     type: 'boolean',
@@ -219,6 +223,7 @@ When several commands use the same public options, keep small option definitions
 This avoids duplication without hiding what is specific to a command. Keep an option definition local when reuse would require many exceptions.
 
 ```ts
+// Combine reusable paging options with reusable output options.
 import { mergeOptionsSchema } from 'icore';
 
 const pagingOptions = {

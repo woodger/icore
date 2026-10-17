@@ -7,6 +7,7 @@ This is useful when application code already has its own command runner or frame
 Create the formatting and output objects where the application writes to the terminal:
 
 ```ts
+// Create objects that format and write terminal output.
 import {
   createOutput,
   createPresentation
@@ -21,6 +22,7 @@ Keeping these objects where terminal output is written keeps standard-output and
 Build an output value from application data:
 
 ```ts
+// Map application data to fields shared by every output format.
 const result = presentation.records([
   {
     id: 'job-1',
@@ -38,6 +40,7 @@ The records already contain the fields to show. `records(...)` is a good fit onl
 Format the value and write it to standard output. Write operational messages to standard error:
 
 ```ts
+// Write data to stdout and a status message to stderr.
 await output.write(presentation.render(result, 'table'));
 await output.error('Rendered job table\n');
 ```
@@ -47,6 +50,7 @@ Write command output intended for another program to standard output and operati
 When formats need different data, prepare the data for each format and call the renderer directly instead:
 
 ```ts
+// Prepare table and CSV rows, then select the requested renderer.
 import {
   renderCsv,
   renderJson,

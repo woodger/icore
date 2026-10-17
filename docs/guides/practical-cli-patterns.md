@@ -13,6 +13,7 @@ In a CLI with many commands, `--help`, `-h`, `--version`, and `-v` often work be
 Parse these flags before using the command registry to run an application command:
 
 ```ts
+// Parse only the options that work before a command is selected.
 import {
   parseArgv,
   parseOptionsSubsetDetailed,
@@ -133,6 +134,7 @@ Help and version can use the same command registry as the rest of the applicatio
 This keeps `help` and `version` visible as public commands instead of hard-coding them outside the registry. The application still needs to handle `--help`, `-h`, `--version`, and `-v` before command selection if it supports those forms.
 
 ```ts
+// Keep help and version as regular commands in the registry.
 import { createCommand } from 'icore';
 
 const command = createCommand();
@@ -166,6 +168,7 @@ This makes the routing of help and version commands visible. The application sti
 Keep help text with each command definition, then build the command list from `commands.definitions`. The list contains each main command once, so aliases do not create duplicate entries:
 
 ```ts
+// Store help text on command definitions and build entries from them.
 import { createCommand } from 'icore';
 
 type CliCommandMetadata = {
@@ -226,6 +229,7 @@ Commands often reuse connection settings, output settings, or flags. Keep those 
 Share an option definition when the same options appear in several commands. If only one command uses an option, define it directly on that command.
 
 ```ts
+// Combine common options with options specific to `jobs list`.
 import {
   mergeOptionsSchema,
   type OptionsSchema
@@ -292,6 +296,7 @@ When a public CLI option is renamed, keep the old name near the new name and res
 Existing users may depend on the old name. Keep it visible in code, print a warning when it is used, and reject calls that pass both names.
 
 ```ts
+// Accept either name, but reject a call that provides both.
 import { CliUsageError } from 'icore';
 
 const itemIdOptions = {

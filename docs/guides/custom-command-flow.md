@@ -9,6 +9,7 @@ When the application needs to create and close resources while still using `Term
 Put the command registry close to the code that owns the command contract:
 
 ```ts
+// Define the command before the application creates data for it.
 import {
   createCommand,
   type PreparedCommand
@@ -29,6 +30,7 @@ const greetCommand = command.define({
     }
   } as const,
   prepare({ options }) {
+    // Normalize input before creating application services.
     return {
       normalizedName: options.name.trim()
     };
@@ -51,11 +53,13 @@ Keep `prepare` small. It turns command input into prepared data before the appli
 When application startup needs a separate preparation step, prepare first and run later:
 
 ```ts
+// Validate and prepare input before creating the greeting data.
 async function runTwoPhase(args: readonly string[]): Promise<string> {
   const prepared: PreparedCommand<typeof greetCommand> = await commands.prepare(args, {
     strict: true
   });
 
+  // Run the prepared command with data supplied by the application.
   return commands.run(prepared, {
     greeting: 'Hello'
   });
@@ -67,6 +71,7 @@ This two-step form is useful when values passed to the command are expensive to 
 When the application does not need that split, run from raw terminal arguments:
 
 ```ts
+// Combine parsing, preparation, and execution when no setup is needed between them.
 async function runFromArgs(args: readonly string[]): Promise<string> {
   return commands.runFromArgs(args, {
     greeting: 'Hello'
@@ -81,6 +86,7 @@ async function runFromArgs(args: readonly string[]): Promise<string> {
 Pass the same arguments a user would type in the terminal:
 
 ```ts
+// Pass the same terminal arguments to both execution forms.
 const args = [
   'greet',
   '--name',

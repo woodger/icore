@@ -9,6 +9,7 @@ For a regular terminal application, start with `createTerminalApp()` or `createC
 `defineCommand(...)` is the direct form of `command.define(...)`.
 
 ```ts
+// Define commands directly, then place them in a registry.
 import {
   createCommands,
   defineCommand,
@@ -43,11 +44,13 @@ const runJobCommand = defineCommand({
   }
 });
 
+// The registry is the input for standalone resolution functions.
 const registry = defineCommandRegistry([
   listJobsCommand,
   runJobCommand
 ] as const);
 
+// Infer the public name from one command definition.
 type PublicCommandName = CommandName<typeof runJobCommand>;
 ```
 
@@ -56,6 +59,7 @@ Use this form when application code needs the command registry itself. Call `cre
 The inferred `PublicCommandName` is:
 
 ```ts
+// This type is inferred from the command path above.
 type PublicCommandName = 'jobs run';
 ```
 
@@ -64,6 +68,7 @@ type PublicCommandName = 'jobs run';
 Put older or alternate paths on the main command definition. They use the same options, `prepare` function, description, and command function; they do not create additional commands.
 
 ```ts
+// Keep alternate names on the command that implements the behavior.
 const listAccountsCommand = defineCommand({
   path: ['account', 'list'],
   aliases: [
@@ -82,6 +87,7 @@ const listAccountsCommand = defineCommand({
   }
 });
 
+// Resolve the main path and an alternate path through one commands object.
 const accountCommands = createCommands([
   listAccountsCommand
 ] as const);
@@ -102,6 +108,7 @@ type AcceptedAccountPath =
 `name` and `path` always describe the main command. `matchedPath` records the name used for this call:
 
 ```ts
+// Compare the main path with the alternate path that the user typed.
 canonical.name;        // 'account list'
 canonical.path;        // ['account', 'list']
 canonical.matchedPath; // ['account', 'list']
@@ -122,6 +129,7 @@ When a call using an alternate name has an unexpected positional argument, the m
 `createCommands(...)` creates the same commands object as `createCommand().registry(...)`.
 
 ```ts
+// Build a commands object from definitions declared elsewhere.
 const commands = createCommands([
   listJobsCommand,
   runJobCommand
@@ -138,6 +146,7 @@ Use this when command definitions are already created elsewhere and application 
 Use `commands.resolve(...)` when command name and subcommands are already separate arguments.
 
 ```ts
+// Resolve a command when its positional arguments are already separate.
 const resolved = commands.resolve([
   'jobs',
   'run'
@@ -162,6 +171,7 @@ This function does not parse options. It is useful for help code that already ha
 Use `commands.resolveFromArgs(...)` or standalone `resolveCommandFromArgs(...)` when raw terminal arguments may contain options.
 
 ```ts
+// Both forms resolve a command from raw terminal arguments.
 import { resolveCommandFromArgs } from 'icore';
 
 const resolved = commands.resolveFromArgs([
@@ -186,6 +196,7 @@ A parsing error in an unrelated command's options does not prevent another comma
 Default resolution preserves option-first input:
 
 ```ts
+// Default mode accepts an option before the command name.
 await accountCommands.prepare([
   '--format=json',
   'users',
@@ -196,6 +207,7 @@ await accountCommands.prepare([
 With `strict: true`, command names and alternate names are checked before options, so the command name must be the first argument:
 
 ```ts
+// Strict mode requires the command name before its options.
 await accountCommands.prepare([
   'users',
   'get-accounts',
@@ -212,6 +224,7 @@ With `strict: true`, the option-first form is rejected. Parsing global options d
 `resolveCommand(...)` does the same command-name lookup as `commands.resolve(...)`.
 
 ```ts
+// Resolve through a registry without creating a commands object.
 import { resolveCommand } from 'icore';
 
 const resolved = resolveCommand(registry, [
@@ -227,6 +240,7 @@ Use `commands.resolve(...)` when code already has a `commands` object. Use the s
 `isCommandName(...)` checks whether an unknown value is one of the command names in a registry.
 
 ```ts
+// Render top-level help unless the value names a known command.
 import { isCommandName } from 'icore';
 
 function renderHelpPage(name: unknown): string {

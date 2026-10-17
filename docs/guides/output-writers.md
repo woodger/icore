@@ -22,13 +22,14 @@ The application defines its own progress-reporter interface. For example:
 ```ts
 import { createOutput, createTerminalApp } from 'icore';
 
-// These two names are supplied by the consuming project.
+// Create ordinary output channels and the application's terminal app.
 const output = createOutput();
 const app = createTerminalApp({ commands, output });
 const progress = new TerminalProgressReporter({
   stdout: process.stdout
 });
 
+// Keep the first failure until progress output is closed.
 let failure: { error: unknown } | undefined;
 
 try {
@@ -57,6 +58,7 @@ if (failure !== undefined) {
 ## Write Command Output And Errors
 
 ```ts
+// Send command output to stdout and diagnostics to stderr.
 import { createOutput } from 'icore';
 
 const output = createOutput();
@@ -72,6 +74,7 @@ Command results go to standard output, and diagnostics go to standard error. Thi
 Use `output.stdout.write(...)` and `output.stderr.write(...)` when another component needs a specific channel.
 
 ```ts
+// Write directly when a component needs a specific channel.
 await output.stdout.write('regular command output\n');
 await output.stderr.write('warning: using cached data\n');
 ```
@@ -83,6 +86,7 @@ Use this only when the receiving code needs to know which channel it writes to.
 Pass custom sinks to `createOutput(...)` when tests or applications need to capture text.
 
 ```ts
+// Capture both channels without replacing global process streams.
 let stdout = '';
 let stderr = '';
 
@@ -110,6 +114,7 @@ This keeps the output dependency explicit and avoids mocking `process.stdout` gl
 `createStdoutWriter(...)` and `createStderrWriter(...)` create individual text writers.
 
 ```ts
+// Create separate writers when assembling output manually.
 import {
   createStderrWriter,
   createStdoutWriter
@@ -129,6 +134,7 @@ Use these when code assembles its own output object. For normal CLI code, `creat
 `createBackpressureTextWriter(...)` wraps a text destination and waits when the destination cannot accept more text yet.
 
 ```ts
+// Wait when stdout cannot accept the next chunk yet.
 import { createBackpressureTextWriter } from 'icore';
 
 const writer = createBackpressureTextWriter(process.stdout);
@@ -147,6 +153,7 @@ Already destroyed or ended Node streams reject before writing, rather than waiti
 Sinks can also return a promise from `write(...)`.
 
 ```ts
+// Use a promise-returning destination outside Node streams.
 const writer = createBackpressureTextWriter({
   async write(chunk) {
     await sendToRemoteConsole(chunk);

@@ -38,6 +38,7 @@ Close progress output and resources before reporting an error, so diagnostics ap
 Each command still declares its own name, options, aliases, data returned from `prepare`, and specific result type:
 
 ```ts
+// Define the commands, output, and error handling used by the CLI.
 import {
   createCommand,
   createOutput,
@@ -56,6 +57,7 @@ type CurrentUserContext = {
   currentUser: string;
 };
 
+// A long-running command returns a handle for application code to manage.
 type LongRunningCommandHandle = {
   completed: Promise<void>;
   close(): Promise<void>;
@@ -93,6 +95,7 @@ const insecureOptions = {
   }
 } as const;
 
+// Each command receives the current user, returns CLI output, and declares its description and resources.
 const command = createCommand.withTypes<{
   context: CurrentUserContext;
   result: CliCommandResult;
@@ -106,6 +109,7 @@ declare function startUserWatcher(
   context: CurrentUserContext
 ): LongRunningCommandHandle;
 
+// This command returns a record for terminal output.
 const currentUserCommand = command.define({
   path: ['users', 'current'],
   options: mergeOptionsSchema(
@@ -123,6 +127,7 @@ const currentUserCommand = command.define({
   }
 });
 
+// This command starts work that continues after the command returns.
 const watchUsersCommand = command.define({
   path: ['users', 'watch'],
   options: insecureOptions,
@@ -143,6 +148,7 @@ const commands = command.registry([
   watchUsersCommand
 ] as const);
 
+// Let the terminal app format output and report errors consistently.
 const app = createTerminalApp({
   commands,
   presentation,
@@ -181,6 +187,7 @@ The error policy writes every member of an `AggregateError` and uses the first o
 Describe `-h` and `-v` among the options handled before a command is selected. `parseArgv(...)` maps them to `help` and `version`, while `parseOptionsSubsetDetailed(...)` checks only those initial options:
 
 ```ts
+// Parse global flags without consuming options for the selected command.
 import {
   parseArgv,
   parseOptionsSubsetDetailed
@@ -223,6 +230,7 @@ Include each initial option whose type tells the parser whether it consumes the 
 The application supplies its own help formatter and an object that closes resources:
 
 ```ts
+// Keep help formatting and resource cleanup in application code.
 type InvocationScope = {
   context: CurrentUserContext;
   /**
@@ -262,6 +270,7 @@ The [help example](practical-cli-patterns.md#build-help-from-command-description
 The code below records the stage where the first error occurred, combines it with a cleanup error, and reports after cleanup:
 
 ```ts
+// Track a failure until all resources are closed.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
 type FailurePhase = 'execute' | 'write' | 'external';
 
@@ -270,6 +279,7 @@ type InvocationFailure = {
   phase: FailurePhase;
 };
 
+// Use the selected command's list of resources.
 function selectResources(prepared: Prepared): readonly ResourceName[] {
   const selection = prepared.command.metadata.resources;
 
@@ -278,6 +288,7 @@ function selectResources(prepared: Prepared): readonly ResourceName[] {
     : selection;
 }
 
+// Keep the first failure and add a cleanup failure when both occur.
 function mergeCleanupFailure(
   primary: InvocationFailure | undefined,
   cleanupError: unknown
@@ -298,6 +309,7 @@ function mergeCleanupFailure(
   };
 }
 
+// Print the error after cleanup and name the step where it happened.
 async function reportPreparedFailure(
   failure: InvocationFailure,
   args: readonly string[],
@@ -326,6 +338,7 @@ async function reportPreparedFailure(
   });
 }
 
+// Write global help or version through the same error handling.
 async function writeBootstrapOutput(
   render: () => string,
   args: readonly string[]
@@ -343,6 +356,7 @@ async function writeBootstrapOutput(
   }
 }
 
+// Handle global flags before preparing the selected command.
 async function runCli(args: readonly string[]): Promise<number> {
   let globalInput: ReturnType<typeof parseGlobalInput>;
 
@@ -381,6 +395,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     });
   }
 
+  // Keep selected resources open until output is written or work is transferred.
   let scope: InvocationScope | undefined;
   let failure: InvocationFailure | undefined;
   let phase: FailurePhase = 'external';
@@ -396,6 +411,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'execute';
     const result = await app.commands.run(prepared, scope.context);
 
+    // Long-running work takes over its own cleanup before this function returns.
     if (isLongRunningCommandResult(result)) {
       phase = 'external';
       transferLongRunningLifecycle({
@@ -408,6 +424,7 @@ async function runCli(args: readonly string[]): Promise<number> {
       return 0;
     }
 
+    // Finish the interactive line before writing ordinary command output.
     phase = 'external';
     await scope.finishInteractiveOutput();
 
@@ -425,6 +442,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     };
   }
   finally {
+    // Close resources even when preparation, execution, or writing fails.
     try {
       await scope?.close();
     }
@@ -472,6 +490,7 @@ See [Format And Write Output](presentation-output.md) for choosing a format and 
 Use `app.run(...)` when everything the command needs is already available and it returns output that `TerminalApp` can write:
 
 ```ts
+// Use the one-call API when application data is already available.
 process.exitCode = await app.run(args, context, {
   strict: true
 });

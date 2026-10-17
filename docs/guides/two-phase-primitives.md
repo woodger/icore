@@ -7,6 +7,7 @@ Start with the commands object. Use the direct functions only when application c
 The snippets below use this setup:
 
 ```ts
+// Define a command and the data the application supplies when it runs.
 import {
   createCommand,
   createTerminalApp,
@@ -28,6 +29,7 @@ const runJobCommand = command.define({
     }
   } as const,
   prepare({ options }) {
+    // Normalize input before the application creates services.
     return {
       jobId: options['job-id'].trim()
     };
@@ -54,6 +56,7 @@ const app = createTerminalApp({
 `app.prepare(...)` validates command input before the application creates values that the selected command needs.
 
 ```ts
+// Validate input and read details of the selected command.
 const prepared = await app.prepare([
   'jobs',
   'run',
@@ -79,6 +82,7 @@ This is useful when the selected command determines which connections or API cli
 `app.runPrepared(...)` keeps output formatting, standard-output and standard-error writing, and exit-code handling in `createTerminalApp()` after the application creates the values needed by the selected command.
 
 ```ts
+// Create application data after preparation, then run the command.
 const prepared = await app.prepare([
   'jobs',
   'run',
@@ -107,6 +111,7 @@ The application creates and closes resources. The terminal app only runs the pre
 Use `app.writePreparedOutput(...)` when the application needs to inspect the raw command result before terminal output is written.
 
 ```ts
+// Run the command yourself and confirm that its result can be written.
 const prepared = await app.prepare([
   'jobs',
   'run',
@@ -141,6 +146,7 @@ The guard checks the stream's iterable shape; each chunk is validated as a strin
 `prepareCommandFromArgs(...)` is the direct form of `commands.prepare(...)`.
 
 ```ts
+// Prepare a command from a registry without a commands object.
 import {
   prepareCommandFromArgs,
   type CommandPayload
@@ -165,6 +171,7 @@ Use this when code has a registry but not a `commands` object.
 `runPreparedCommand(...)` executes a command that was already resolved and validated.
 
 ```ts
+// Infer the command's input and result types before running it.
 import {
   runPreparedCommand,
   type CommandContext,
@@ -188,6 +195,7 @@ Use this when creating values for a command has side effects. Prepare first, the
 `isPreparedCommandName(...)` checks a prepared command's name.
 
 ```ts
+// Check the command name before reading command-specific options.
 import { isPreparedCommandName } from 'icore';
 
 if (isPreparedCommandName(prepared, 'jobs run')) {
@@ -204,6 +212,7 @@ After this check, `commands.run(...)` and `app.runPrepared(...)` require the val
 `runCommandFromRegistry(...)` is the direct form of `commands.runFromArgs(...)`.
 
 ```ts
+// Validate, prepare, and run a registry command in one call.
 import { runCommandFromRegistry } from 'icore';
 
 const output = await runCommandFromRegistry(
@@ -230,6 +239,7 @@ This combines validation, preparation, and execution in one call. Use it when ap
 Use `command.run(...)` or standalone `runCommand(...)` for focused execution of one command.
 
 ```ts
+// Compare the method and standalone forms for one known command.
 import { runCommand } from 'icore';
 
 const outputFromFacade = await command.run(runJobCommand, [
@@ -262,6 +272,7 @@ This is useful for tests and small tools. It does not select a command from a re
 `parseOptionsDetailed(...)` returns parsed values and a map that records which options the user typed.
 
 ```ts
+// Read parsed options and learn which options the user supplied.
 import {
   parseOptionsDetailed,
   type InferProvidedOptions
@@ -310,6 +321,7 @@ This matters when options have default values. The command can distinguish a use
 `parseOptionsSubsetDetailed(...)` validates only options in one option definition and leaves the rest untouched.
 
 ```ts
+// Validate only `format` and leave other values for later code.
 import { parseOptionsSubsetDetailed } from 'icore';
 
 const parsed = parseOptionsSubsetDetailed({
