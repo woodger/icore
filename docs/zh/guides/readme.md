@@ -25,10 +25,6 @@
 - [Presentation Primitives（英文）](../../guides/presentation-primitives.md) 展示显式 presentation views、renderers 和 format guards。
 - [Output Writers（英文）](../../guides/output-writers.md) 展示 stdout/stderr writer primitives、自定义 sink 接线和由应用拥有的交互式 output 边界。
 
-## 旧版兼容性
-
-- [Interactive Output And Progress（英文）](../../guides/interactive-output.md) 仅为迁移说明 `2.x` 分支中已弃用的 terminal output 与 progress contracts。新代码应采用 [Output Writers（英文）](../../guides/output-writers.md) 中由应用拥有的模式。
-
 ## 兼容性与重构候选项
 
 部分示例有意展示仍然有用、但不推荐作为新应用代码首选的公共 API。相关取舍会在方法使用位置附近说明。

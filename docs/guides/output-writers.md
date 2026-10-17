@@ -4,7 +4,7 @@
 
 Prefer semantic methods first. Direct writer primitives are useful in tests, streaming adapters, and custom terminal boundaries.
 
-Interactive lines and progress are application-owned. The deprecated `createTerminalOutput()` and `createTerminalProgress()` contracts remain exported only for `2.x` compatibility; see the [legacy migration guide](interactive-output.md) when maintaining existing code.
+Interactive lines and progress are application-owned.
 
 ## Application-Owned Interactive Output
 

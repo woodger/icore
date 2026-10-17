@@ -10,6 +10,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the deprecated terminal output and progress compatibility APIs. Applications now own interactive terminal output and progress lifecycle directly.
+
 ## [2.2.4] - 2026-10-02
 
 ### Changed

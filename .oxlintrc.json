@@ -98,40 +98,7 @@
     ],
     "typescript/no-array-delete": "error",
     "typescript/no-base-to-string": "error",
-    "typescript/no-deprecated": [
-      "error",
-      {
-        "allow": [
-          {
-            "from": "file",
-            "name": [
-              "createTerminalOutput",
-              "TerminalCapabilities",
-              "TerminalLineOutput",
-              "TerminalOutput",
-              "TerminalOutputOptions",
-              "TerminalTextSink"
-            ],
-            "path": "src/output/terminal-output.ts"
-          },
-          {
-            "from": "file",
-            "name": [
-              "createTerminalProgress",
-              "formatTerminalCount",
-              "formatTerminalDuration",
-              "renderTerminalProgress",
-              "TerminalProgress",
-              "TerminalProgressOptions",
-              "TerminalProgressRenderer",
-              "TerminalProgressSnapshot",
-              "TerminalProgressState"
-            ],
-            "path": "src/terminal/progress.ts"
-          }
-        ]
-      }
-    ],
+    "typescript/no-deprecated": "error",
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-empty-object-type": "error",
     "typescript/no-explicit-any": "error",

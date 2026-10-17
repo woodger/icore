@@ -116,8 +116,6 @@ schema 决定 handler 的选项类型。必填选项和具有默认值的选项�
 | 显式写入 stdout/stderr | `createOutput()` | [Output Writers（英文）](../guides/output-writers.md) |
 | parser 与 resolver primitives | `parseArgv()`、`resolveCommand()` 及相关 exports | [Primitive Mechanics（英文）](../guides/readme.md#primitive-mechanics) |
 
-`createTerminalOutput()` 和 `createTerminalProgress()` 在 `2.x` 分支中仍作为已弃用的 compatibility exports 提供。新 Consumer 不应使用它们：interactive output 与 progress rendering 应由应用拥有。`createOutput()` 会处理 sink 的 backpressure，但不会把 application-owned progress 与普通输出串行化。推荐的边界见 [application-owned output guide（英文）](../guides/output-writers.md#application-owned-interactive-output)，保留的 [migration guide（英文）](../guides/interactive-output.md) 则说明旧版契约。
-
 终端应用提供以下主要 lifecycle 操作：
 
 - `app.run(args, context, options?)` 执行 prepare、execute、render 和 write；

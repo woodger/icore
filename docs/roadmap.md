@@ -15,12 +15,9 @@ This document records directional decisions that are useful for contributors but
 - `isIcoreError(...)` and `isUsageError(...)` recognize compatible branded errors from duplicate package copies through stable runtime brands.
 - Serialized errors crossing JSON, IPC, or worker boundaries require a separate application protocol; in-process error guards do not reconstruct them.
 
-## Legacy interactive terminal output and progress
+## Interactive terminal output and progress
 
 - `createOutput()` is the supported output boundary. Interactive line output, progress state, rendering, non-TTY policy, process signals, and resource lifecycle belong to the consuming application.
-- `createTerminalOutput()` and `createTerminalProgress()` are frozen `2.x` compatibility exports. They are not used by the ecosystem Consumers and receive no new capabilities.
-- The package exposes only its root entrypoint through an explicit `exports` map, so internal terminal modules are not a replacement public API.
-- The next major release removes the legacy root exports.
 - A separate `icore-terminal` package is not planned until at least two Consumers require the same stable interactive contract.
 
 ## Command path aliases

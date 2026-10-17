@@ -116,8 +116,6 @@ HELLO, ALICE!
 | Явная запись в stdout/stderr | `createOutput()` | [Output Writers (English)](../guides/output-writers.md) |
 | Примитивы parser-а и resolver-а | `parseArgv()`, `resolveCommand()` и связанные exports | [Primitive Mechanics (English)](../guides/readme.md#primitive-mechanics) |
 
-`createTerminalOutput()` и `createTerminalProgress()` остаются доступными как deprecated compatibility exports ветки `2.x`. Не используйте их в новых Consumer-ах: interactive output и progress rendering должны принадлежать приложению. `createOutput()` учитывает backpressure sink-а, но не сериализует application-owned progress вместе с обычным выводом. Рекомендуемая граница описана в [application-owned output guide (English)](../guides/output-writers.md#application-owned-interactive-output), а сохранённый [migration guide (English)](../guides/interactive-output.md) описывает legacy-контракт.
-
 Терминальное приложение предоставляет основные lifecycle-операции:
 
 - `app.run(args, context, options?)` выполняет prepare, execute, render и write;

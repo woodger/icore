@@ -25,10 +25,6 @@
 - [Presentation Primitives (English)](../../guides/presentation-primitives.md) показывает явные presentation views, renderers и format guards.
 - [Output Writers (English)](../../guides/output-writers.md) показывает stdout/stderr writer primitives, подключение custom sink и application-owned boundary интерактивного output.
 
-## Legacy compatibility
-
-- [Interactive Output And Progress (English)](../../guides/interactive-output.md) описывает deprecated-контракты terminal output и progress ветки `2.x` только для миграции. Новый код должен следовать application-owned pattern из [Output Writers (English)](../../guides/output-writers.md).
-
 ## Кандидаты на compatibility и переработку
 
 Некоторые примеры намеренно показывают публичные API, которые полезны, но не рекомендуются как первый выбор для нового application code. Trade-off отмечен рядом с использованием метода.

@@ -23,10 +23,6 @@ These guides show application code for consuming projects. They explain what to 
 - [presentation-primitives.md](presentation-primitives.md) shows explicit presentation views, renderers, and format guards.
 - [output-writers.md](output-writers.md) shows stdout/stderr writer primitives, custom sink wiring, and the application-owned interactive output boundary.
 
-## Legacy Compatibility
-
-- [interactive-output.md](interactive-output.md) documents the deprecated `2.x` terminal output and progress contracts for migration only. New code should follow the application-owned pattern in `output-writers.md`.
-
 ## Compatibility And Rework Candidates
 
 Some examples intentionally show public APIs that are useful but not preferred as the first choice for new application code. Those examples call out the tradeoff near the method usage.

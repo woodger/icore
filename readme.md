@@ -114,8 +114,6 @@ Start with the highest-level API that fits the application:
 | Explicit stdout/stderr writing | `createOutput()` | [Output Writers](docs/guides/output-writers.md) |
 | Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](docs/guides/readme.md#primitive-mechanics) |
 
-`createTerminalOutput()` and `createTerminalProgress()` remain available as deprecated `2.x` compatibility exports. Do not use them in new Consumers; keep interactive output and progress rendering in the consuming application. `createOutput()` preserves sink backpressure but does not serialize application-owned progress with regular output. The [application-owned output guide](docs/guides/output-writers.md#application-owned-interactive-output) describes the recommended boundary. The retained [migration guide](docs/guides/interactive-output.md) documents the legacy contract.
-
 The terminal application exposes the main lifecycle operations:
 
 - `app.run(args, context, options?)` prepares, executes, renders, and writes;

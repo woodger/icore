@@ -132,21 +132,6 @@ export {
   type BackpressureTextSink,
   type TextWriter
 } from './output/text-writer';
-
-/**
- * Legacy interactive terminal output compatibility surface.
- *
- * @deprecated Keep interactive line output in the consuming application. These
- * exports remain available during `2.x` and will be removed in the next major.
- */
-export {
-  createTerminalOutput,
-  type TerminalCapabilities,
-  type TerminalLineOutput,
-  type TerminalOutput,
-  type TerminalOutputOptions,
-  type TerminalTextSink
-} from './output/terminal-output';
 export {
   createTerminalApp,
   isTerminalCommandOutput,
@@ -157,22 +142,3 @@ export {
   type TerminalErrorPhase,
   type TerminalErrorPolicy
 } from './terminal/app';
-
-/**
- * Legacy terminal progress compatibility surface.
- *
- * @deprecated Keep progress state, rendering, and lifecycle in the consuming
- * application. These exports remain available during `2.x` and will be
- * removed in the next major.
- */
-export {
-  createTerminalProgress,
-  formatTerminalCount,
-  formatTerminalDuration,
-  renderTerminalProgress,
-  type TerminalProgress,
-  type TerminalProgressOptions,
-  type TerminalProgressRenderer,
-  type TerminalProgressSnapshot,
-  type TerminalProgressState
-} from './terminal/progress';
