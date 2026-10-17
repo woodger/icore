@@ -7,7 +7,7 @@ The [README quick start](../../readme.md#quick-start) uses `app.run(...)` becaus
 Use the explicit lifecycle in this guide when the application:
 
 - handles global help or version shortcuts before command validation;
-- chooses runtime resources from prepared command metadata or payload;
+- chooses database or API resources from prepared command metadata or payload;
 - owns resource cleanup, progress, or long-running handles;
 - still wants `TerminalApp` rendering, output, and error policy.
 
@@ -25,7 +25,7 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup precedes error reporting so progress and resources are settled before stderr diagnostics are written. Runtime resources remain open through `writePreparedOutput(...)` because terminal output may be an async stream that still depends on them.
+Cleanup precedes error reporting so progress and resources are settled before stderr diagnostics are written. Selected resources remain open through `writePreparedOutput(...)` because terminal output may be an async stream that still depends on them.
 
 ## Compose Commands And Terminal Services Once
 
@@ -224,7 +224,7 @@ type InvocationScope = {
    * `close()` also calls this when execution fails before final output.
    */
   finishInteractiveOutput(): Promise<void>;
-  /** Closes interactive output first, then runtime resources. */
+  /** Closes interactive output first, then selected resources. */
   close(): Promise<void>;
 };
 

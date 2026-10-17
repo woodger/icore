@@ -9,7 +9,7 @@
 Используйте явный lifecycle из этого руководства, когда приложение:
 
 - обрабатывает глобальные shortcuts help или version до command validation;
-- выбирает runtime-ресурсы по metadata или payload подготовленной команды;
+- выбирает ресурсы базы данных или API по metadata или payload подготовленной команды;
 - самостоятельно владеет cleanup ресурсов, progress или долгоживущими handles;
 - при этом использует rendering, output и error policy из `TerminalApp`.
 
@@ -27,7 +27,7 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup выполняется до error reporting, чтобы progress и resources были завершены до записи diagnostics в stderr. Runtime-ресурсы остаются открытыми до окончания `writePreparedOutput(...)`, потому что terminal output может быть асинхронным потоком, который всё ещё от них зависит.
+Cleanup выполняется до error reporting, чтобы progress и resources были завершены до записи diagnostics в stderr. Выбранные ресурсы остаются открытыми до окончания `writePreparedOutput(...)`, потому что terminal output может быть асинхронным потоком, который всё ещё от них зависит.
 
 ## Однократная композиция команд и terminal services
 
@@ -226,7 +226,7 @@ type InvocationScope = {
    * `close()` also calls this when execution fails before final output.
    */
   finishInteractiveOutput(): Promise<void>;
-  /** Closes interactive output first, then runtime resources. */
+  /** Closes interactive output first, then selected resources. */
   close(): Promise<void>;
 };
 

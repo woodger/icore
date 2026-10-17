@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Build, test, and run scripts are considered part of the runtime pipeline.
+Build, test, and run scripts are considered part of the build, test, and execution pipeline.
 
 They must not be changed without clear necessity.
 
@@ -20,7 +20,7 @@ Forbidden without a direct requirement:
 - add pretest/posttest hooks;
 - change command order;
 - add chained commands for convenience;
-- replace portable runtime logic with shell commands.
+- replace portable application logic with shell commands.
 
 Example of a correct minimal script:
 

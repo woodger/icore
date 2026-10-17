@@ -12,7 +12,7 @@ This document records directional decisions that are useful for contributors but
 - Application-owned semantic validation uses `CliUsageError`; `isUsageError(...)` recognizes it together with usage-category `IcoreError` instances without moving validation rules or exit-code policy into `icore`.
 - `IcoreErrorDetailsMap` is the public source of truth for structured details; semantic variants use explicit discriminators instead of unrelated optional fields.
 - `isIcoreError(...)` is the supported narrowing boundary for keeping an error code correlated with its details type.
-- `isIcoreError(...)` and `isUsageError(...)` recognize compatible branded errors from duplicate package copies through stable runtime brands.
+- `isIcoreError(...)` and `isUsageError(...)` recognize compatible branded errors from duplicate package copies through own properties keyed by their respective shared `Symbol.for(...)` symbols.
 - Serialized errors crossing JSON, IPC, or worker boundaries require a separate application protocol; in-process error guards do not reconstruct them.
 
 ## Interactive terminal output and progress

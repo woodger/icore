@@ -7,7 +7,7 @@ English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/re
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
 
-Small dependency-free command line interface and terminal presentation mechanics for [Node.js®](https://nodejs.org) applications.
+Small command line interface and terminal presentation mechanics for [Node.js®](https://nodejs.org) applications. Installing `icore` does not install additional npm packages.
 
 `icore` owns the path from `process.argv` to terminal output:
 
@@ -95,7 +95,7 @@ The schema determines the handler's option types. Required options and options w
 
 Applications that share command context, result, and metadata contracts can bind those types once with `createCommand.withTypes<...>()`. Per-command schema, path, aliases, prepared payload, and concrete result types remain inferred. See [Bind application command types once](docs/guides/option-schemas.md#bind-application-command-types-once).
 
-`app.run(...)` is the compact path. Applications that handle global shortcuts, select runtime resources after preparation, or own cleanup should continue with the [production terminal lifecycle](docs/guides/terminal-app.md).
+`app.run(...)` is the compact path. Applications that handle global shortcuts, select resources after preparation, or own cleanup should continue with the [production terminal lifecycle](docs/guides/terminal-app.md).
 
 `strict: true` rejects options placed before the command path. String output is written exactly as returned, so include `\n` when line output is intended. Default resolution continues to accept option-first input. Parsing bootstrap options does not reorder argv, so enable strict mode only when command-first syntax is part of the application's public CLI contract.
 
@@ -117,7 +117,7 @@ Start with the highest-level API that fits the application:
 The terminal application exposes the main lifecycle operations:
 
 - `app.run(args, context, options?)` prepares, executes, renders, and writes;
-- `app.prepare(args, options?)` validates input without runtime context;
+- `app.prepare(args, options?)` validates input before the application creates command context;
 - `app.runPrepared(prepared, context)` executes an already prepared command;
 - `app.writePreparedOutput(prepared, output)` writes caller-obtained output;
 - `app.reportError(error, context?)` applies the configured terminal error policy and returns a process-style exit code.

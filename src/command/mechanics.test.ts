@@ -1283,7 +1283,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(handled, false);
   });
 
-  test('returns command metadata before runtime context is created', async () => {
+  test('returns command metadata before command context is created', async () => {
     const command = defineCommand({
       path: ['users'],
       metadata: {
@@ -1306,7 +1306,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(prepared.command.metadata?.resource, 'database');
   });
 
-  test('returns typed prepare payload before runtime context is created', async () => {
+  test('returns typed prepare payload before command context is created', async () => {
     const options = {
       name: {
         type: 'string',
@@ -1405,7 +1405,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(result, 'account:account-id');
   });
 
-  test('runs prepared commands with parsed input and runtime context', async () => {
+  test('runs prepared commands with parsed input and command context', async () => {
     const options = {
       name: {
         type: 'string',

@@ -238,7 +238,7 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, '');
   });
 
-  test('runs narrowed prepared commands with their own runtime context', async () => {
+  test('runs narrowed prepared commands with their own command context', async () => {
     const memory = createMemoryOutput();
     const account = defineCommand({
       path: ['accounts'],

@@ -60,7 +60,7 @@ const reportCommand = command.define({
 
 The command now accepts one required string option, one string option with choices, one boolean option, and one bounded number option.
 
-The `as const` is important because it preserves literal choices for TypeScript inference. Without it, the handler would still work at runtime, but the inferred type would be wider and less useful.
+The `as const` is important because it preserves literal choices for TypeScript inference. Without it, the handler would still work when JavaScript executes, but the inferred type would be wider and less useful.
 
 ## Bind application command types once
 

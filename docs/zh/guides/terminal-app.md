@@ -9,7 +9,7 @@
 当应用满足以下情况时，请使用本指南中的显式 lifecycle：
 
 - 在 command validation 前处理全局 help 或 version shortcuts；
-- 根据 prepared command metadata 或 payload 选择 runtime resources；
+- 根据 prepared command metadata 或 payload 选择数据库或 API 资源；
 - 自行拥有 resource cleanup、progress 或 long-running handles；
 - 同时仍希望使用 `TerminalApp` 的 rendering、output 和 error policy。
 
@@ -27,7 +27,7 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向 stderr 写入 diagnostics。Runtime resources 会一直保持打开，直到 `writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些资源的异步流。
+Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向 stderr 写入 diagnostics。所选资源会一直保持打开，直到 `writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些资源的异步流。
 
 ## 一次性组合命令与终端服务
 
@@ -226,7 +226,7 @@ type InvocationScope = {
    * `close()` also calls this when execution fails before final output.
    */
   finishInteractiveOutput(): Promise<void>;
-  /** Closes interactive output first, then runtime resources. */
+  /** Closes interactive output first, then selected resources. */
   close(): Promise<void>;
 };
 

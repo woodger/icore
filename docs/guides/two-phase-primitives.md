@@ -51,7 +51,7 @@ const app = createTerminalApp({
 
 ## Prepare From A Terminal App
 
-`app.prepare(...)` lets an application validate command input before runtime context exists.
+`app.prepare(...)` lets an application validate command input before it creates command context.
 
 ```ts
 const prepared = await app.prepare([
@@ -70,13 +70,13 @@ prepared.options;
 prepared.provided;
 ```
 
-This is useful when the selected command decides which runtime resources to create. If preparation fails, the application can print an argument error without opening connections or starting background work.
+This is useful when the selected command decides which connections or API clients to create. If preparation fails, the application can print an argument error without opening connections or starting background work.
 
 `name` and `path` preserve canonical command identity. When the definition has command aliases, `matchedPath` records the canonical or alias path that selected the command.
 
 ## Run Prepared Through A Terminal App
 
-`app.runPrepared(...)` keeps terminal rendering, stdout/stderr writing, and exit code handling in `createTerminalApp()` after the application has created its own runtime context.
+`app.runPrepared(...)` keeps terminal rendering, stdout/stderr writing, and exit code handling in `createTerminalApp()` after the application has created the selected command's context.
 
 ```ts
 const prepared = await app.prepare([
@@ -195,7 +195,7 @@ if (isPreparedCommandName(prepared, 'jobs run')) {
 }
 ```
 
-Use this when several commands reuse one preparation flow but need different runtime setup. The guard is intentionally narrow: it checks the prepared command name, not arbitrary metadata.
+Use this when several commands reuse one preparation flow but need different command contexts. The guard is intentionally narrow: it checks the prepared command name, not arbitrary metadata.
 
 After narrowing, `commands.run(...)` and `app.runPrepared(...)` require that command's context. `commands.run(...)` also preserves its concrete result type. Narrow first when commands have different context requirements.
 
@@ -223,7 +223,7 @@ const output = await runCommandFromRegistry(
 );
 ```
 
-This is compact, but it removes the explicit gap between validation and runtime context creation. Use it when that gap does not matter.
+This is compact, but it removes the explicit gap between validation and command context creation. Use it when that gap does not matter.
 
 ## Run One Command Without A Registry
 

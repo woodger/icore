@@ -6,7 +6,7 @@ These examples show application-level patterns built on top of icore. They use n
 
 ## Global Help And Version Shortcuts
 
-In a larger CLI, `--help`, `-h`, `--version`, and `-v` often work before command execution. They should not require command-specific required options or runtime context.
+In a larger CLI, `--help`, `-h`, `--version`, and `-v` often work before command execution. They should not require command-specific required options or command context.
 
 This behavior is not automatic in icore because it is application policy, not command mechanics. Keeping it in the bootstrap runner is the most explicit choice: utility shortcuts can bypass command-specific validation, while regular commands still use the registry and their own schemas.
 
@@ -106,7 +106,7 @@ workspace-cli --version
 workspace-cli -v
 ```
 
-The application prints runtime information:
+The application prints its version, Node.js version, and platform:
 
 ```text
 workspace-cli 1.4.0

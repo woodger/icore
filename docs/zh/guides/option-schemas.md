@@ -62,7 +62,7 @@ const reportCommand = command.define({
 
 该命令现在接受一个必填 string option、一个带 choices 的 string option、一个 boolean option 和一个受约束的 number option。
 
-`as const` 很重要，因为它会保留 literal choices，供 TypeScript 推导类型。如果省略，handler 在 runtime 仍可工作，但推导出的类型会更宽、作用更小。
+`as const` 很重要，因为它会保留 literal choices，供 TypeScript 推导类型。如果省略，handler 在 JavaScript 执行时仍可工作，但推导出的类型会更宽、作用更小。
 
 ## 一次性绑定应用命令类型
 

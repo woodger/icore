@@ -8,7 +8,7 @@
 
 ## 全局 help 和 version 快捷方式
 
-在大型 CLI 中，`--help`、`-h`、`--version` 和 `-v` 经常需要在命令执行前生效。它们不应要求 command-specific required options 或 runtime context。
+在大型 CLI 中，`--help`、`-h`、`--version` 和 `-v` 经常需要在命令执行前生效。它们不应要求 command-specific required options 或 command context。
 
 icore 不会自动提供这种行为，因为它属于应用策略，而不是 command mechanics。将它明确放在 bootstrap runner 中最为清晰：utility shortcuts 可以绕过特定命令的 validation，普通命令则继续使用 registry 与自己的 schemas。
 
@@ -108,7 +108,7 @@ workspace-cli --version
 workspace-cli -v
 ```
 
-应用输出 runtime 信息：
+应用输出自身版本、Node.js 版本和平台：
 
 ```text
 workspace-cli 1.4.0

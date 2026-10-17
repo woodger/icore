@@ -90,7 +90,7 @@ A registry is needed only for dynamic selection from a set of known implementati
 Allowed:
 
 - there are several registered handlers/adapters;
-- selection happens by runtime key;
+- selection happens by an input key;
 - the set of entries is part of the contract;
 - duplicate switch/lookup logic has already appeared.
 
@@ -136,7 +136,6 @@ config/
 filesystem/
 diagnostics/
 formatting/
-runtime/
 ```
 
 If the role cannot be named more precisely, the abstraction is not ready yet.
@@ -192,8 +191,8 @@ Allowed:
 
 - extract repeated config parsing when it is used in several modules with the same reason to change;
 - create an adapter for filesystem access when business logic must not know about IO;
-- create a factory when runtime object creation requires lifecycle and several dependencies;
-- create a registry when there are several handlers and runtime dispatch.
+- create a factory when object creation requires lifecycle and several dependencies;
+- create a registry when several handlers are selected by an input key.
 
 Not allowed:
 

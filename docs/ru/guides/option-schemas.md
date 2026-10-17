@@ -62,7 +62,7 @@ const reportCommand = command.define({
 
 Теперь команда принимает одну обязательную string option, одну string option с choices, одну boolean option и одну ограниченную number option.
 
-`as const` важен, потому что сохраняет literal choices для вывода типов TypeScript. Без него handler продолжит работать в runtime, но выведенный тип будет шире и менее полезен.
+`as const` важен, потому что сохраняет literal choices для вывода типов TypeScript. Без него handler продолжит работать при выполнении JavaScript, но выведенный тип будет шире и менее полезен.
 
 ## Однократная привязка типов команд приложения
 

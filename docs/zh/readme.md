@@ -9,7 +9,7 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-一个面向 [Node.js®](https://nodejs.org) 应用的小型、无运行时依赖的命令行界面与终端呈现机制模块。
+一个面向 [Node.js®](https://nodejs.org) 应用的小型命令行界面与终端呈现机制模块。安装 `icore` 时不会安装额外的 npm 包。
 
 `icore` 负责从 `process.argv` 到终端输出的整条路径：
 
@@ -97,7 +97,7 @@ schema 决定 handler 的选项类型。必填选项和具有默认值的选项�
 
 具有共享 context、result 和 metadata 契约的应用可以通过 `createCommand.withTypes<...>()` 一次性绑定这些类型，同时仍会为每条命令推导 schema、path、aliases、准备后的 payload 和具体 result 类型。参见 [一次性绑定应用命令类型](guides/option-schemas.md#一次性绑定应用命令类型)。
 
-`app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择 runtime 资源或自行执行 cleanup，请使用 [生产级终端应用 lifecycle](guides/terminal-app.md)。
+`app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择资源或自行执行 cleanup，请使用 [生产级终端应用 lifecycle](guides/terminal-app.md)。
 
 `strict: true` 会拒绝 command path 之前的 options。字符串输出会原样写入，因此逐行输出时请在命令结果中添加 `\n`。默认解析仍接受 option-first input。Bootstrap parsing 不会重排 argv，因此只有当 command-first syntax 属于应用的公共 CLI 契约时，才应启用 strict mode。
 
@@ -119,7 +119,7 @@ schema 决定 handler 的选项类型。必填选项和具有默认值的选项�
 终端应用提供以下主要 lifecycle 操作：
 
 - `app.run(args, context, options?)` 执行 prepare、execute、render 和 write；
-- `app.prepare(args, options?)` 在没有 runtime context 时验证输入；
+- `app.prepare(args, options?)` 在应用创建 command context 前验证输入；
 - `app.runPrepared(prepared, context)` 执行已准备的命令；
 - `app.writePreparedOutput(prepared, output)` 写入 caller 得到的 output；
 - `app.reportError(error, context?)` 应用配置的 terminal error policy，并返回 process-style exit code。

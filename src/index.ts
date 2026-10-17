@@ -8,7 +8,7 @@
  * - re-exporting public presentation and semantic output contracts;
  * - re-exporting public terminal app composition contracts;
  *
- * This file must not contain parser, validator, or command runtime logic.
+ * This file must not contain parser, validator, or command execution logic.
  */
 
 export {
