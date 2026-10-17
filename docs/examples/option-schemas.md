@@ -12,6 +12,14 @@ Put a command near the application code that implements it:
 
 For most commands, this is clearer than a central file containing every option. A reader can see the command-line interface and the function that runs the command together.
 
+Example command:
+
+```bash
+node dist/cli.js reports list --project alpha --format json --archived --limit 5
+```
+
+The definition below describes `reports list` and its options:
+
 ```ts
 // Describe the options accepted by `reports list`.
 import {
@@ -58,6 +66,17 @@ const reportCommand = command.define({
     return JSON.stringify(options, null, 2) + '\n';
   }
 });
+```
+
+For that command line, the command function receives:
+
+```json
+{
+  "project": "alpha",
+  "format": "json",
+  "archived": true,
+  "limit": 5
+}
 ```
 
 The command accepts one required string, one string limited to listed values, one boolean, and one number within a range.
@@ -128,24 +147,7 @@ The type arguments describe separate values used by the application. If `metadat
 
 ## Run it from the terminal
 
-The user can pass long options:
-
-```bash
-node dist/cli.js reports list --project alpha --format json --archived --limit 5
-```
-
-The command function receives:
-
-```json
-{
-  "project": "alpha",
-  "format": "json",
-  "archived": true,
-  "limit": 5
-}
-```
-
-The user can pass declared short aliases:
+The same command also accepts declared short aliases:
 
 ```bash
 node dist/cli.js reports list -p alpha -l 5

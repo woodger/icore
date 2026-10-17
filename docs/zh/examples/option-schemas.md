@@ -14,6 +14,14 @@
 
 对大多数命令而言，这比集中维护一个“所有选项”文件更清楚。读者能在同一处看到命令行接口和执行命令的函数。
 
+命令示例：
+
+```bash
+node dist/cli.js reports list --project alpha --format json --archived --limit 5
+```
+
+下面定义 `reports list` 及其选项：
+
 ```ts
 // 说明 `reports list` 接受的选项。
 import {
@@ -60,6 +68,17 @@ const reportCommand = command.define({
     return JSON.stringify(options, null, 2) + '\n';
   }
 });
+```
+
+对于这条命令行，命令函数会收到：
+
+```json
+{
+  "project": "alpha",
+  "format": "json",
+  "archived": true,
+  "limit": 5
+}
 ```
 
 该命令接受一个必填字符串、一个限定为列出值的字符串、一个布尔值和一个范围受限的数值。
@@ -130,24 +149,7 @@ const statusCommand = command.define({
 
 ## 从终端运行
 
-用户可以传入长选项：
-
-```bash
-node dist/cli.js reports list --project alpha --format json --archived --limit 5
-```
-
-命令函数会收到：
-
-```json
-{
-  "project": "alpha",
-  "format": "json",
-  "archived": true,
-  "limit": 5
-}
-```
-
-用户也可以传入已声明的短别名：
+同一条命令也接受已声明的短别名：
 
 ```bash
 node dist/cli.js reports list -p alpha -l 5

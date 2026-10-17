@@ -14,6 +14,14 @@
 
 Для большинства команд это понятнее центрального файла «всех опций». Читатель видит рядом интерфейс командной строки и функцию, которая выполняет команду.
 
+Пример команды:
+
+```bash
+node dist/cli.js reports list --project alpha --format json --archived --limit 5
+```
+
+Ниже описаны команда `reports list` и её опции:
+
 ```ts
 // Опишите опции, которые принимает `reports list`.
 import {
@@ -60,6 +68,17 @@ const reportCommand = command.define({
     return JSON.stringify(options, null, 2) + '\n';
   }
 });
+```
+
+Для этой командной строки функция команды получает:
+
+```json
+{
+  "project": "alpha",
+  "format": "json",
+  "archived": true,
+  "limit": 5
+}
 ```
 
 Команда принимает одну обязательную строку, одну строку из списка значений, одно логическое значение и одно число в заданном диапазоне.
@@ -130,24 +149,7 @@ const statusCommand = command.define({
 
 ## Запуск из терминала
 
-Пользователь может передавать длинные опции:
-
-```bash
-node dist/cli.js reports list --project alpha --format json --archived --limit 5
-```
-
-Функция команды получает:
-
-```json
-{
-  "project": "alpha",
-  "format": "json",
-  "archived": true,
-  "limit": 5
-}
-```
-
-Пользователь может передавать объявленные короткие псевдонимы:
+Та же команда также принимает объявленные короткие псевдонимы:
 
 ```bash
 node dist/cli.js reports list -p alpha -l 5
