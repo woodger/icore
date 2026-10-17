@@ -341,6 +341,8 @@ type AnyCommandRoute = {
   matchedPath: CommandPath;
 };
 
+const minimumCommandPathLength = 1;
+
 const commandRoutesByRegistry = new WeakMap<
   object,
   readonly AnyCommandRoute[]
@@ -903,7 +905,7 @@ function findStrictCommandRoute<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): CommandRoute<TCommands[number]> | undefined {
-  assertNoOptionBeforeCommand(args, 1);
+  assertNoOptionBeforeCommand(args, minimumCommandPathLength);
 
   const routes = commandRoutes(registry);
   const matchedRoute = findMatchingRawCommandRoute(routes, args);
@@ -994,7 +996,7 @@ function findMatchingRawCommandRoute<TCommand extends AnyCommandDefinition>(
 function longestCommandPathLength<TCommand extends AnyCommandDefinition>(
   routes: readonly CommandRoute<TCommand>[]
 ): number {
-  return routes[0]?.matchedPath.length ?? 1;
+  return routes[0]?.matchedPath.length ?? minimumCommandPathLength;
 }
 
 function resolveCommandRoute<TCommand extends AnyCommandDefinition>(

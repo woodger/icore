@@ -8,13 +8,15 @@
  * This file must not contain domain-specific scalar formatting.
  */
 
+const jsonIndentationSpaces = 2;
+
 /**
  * Renders an already prepared value as pretty JSON with a trailing newline.
  *
  * Throws when the value has no top-level JSON representation.
  */
 export function renderJson(value: unknown): string {
-  const json = JSON.stringify(value, null, 2);
+  const json = JSON.stringify(value, null, jsonIndentationSpaces);
 
   if (json === undefined) {
     throw new TypeError('Expected a JSON-serializable value');

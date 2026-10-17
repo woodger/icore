@@ -34,6 +34,9 @@ import {
   type Output
 } from '../output/facade';
 
+const successExitCode = 0;
+const errorExitCode = 1;
+
 /**
  * Supported terminal output shapes for the terminal app boundary.
  *
@@ -285,7 +288,7 @@ export function createTerminalApp<
     try {
       await writeTerminalOutput(renderedOutput, output);
 
-      return 0;
+      return successExitCode;
     }
     catch (error) {
       return reportError(error, createPreparedErrorContext(
@@ -423,7 +426,7 @@ function renderTerminalError(error: unknown): string {
 }
 
 function resolveTerminalExitCode(): number {
-  return 1;
+  return errorExitCode;
 }
 
 function isAsyncIterable(value: unknown): value is AsyncIterable<string> {
