@@ -21,7 +21,11 @@ Not:
 Tests are written in TypeScript in `src/**/*.test.ts` or `src/**/*.spec.ts` and use standard Node.js modules:
 
 - `node:test`;
-- `node:assert`.
+- `node:assert` in strict mode:
+
+  ```ts
+  import { strict as assert } from 'node:assert';
+  ```
 
 Before running tests after changes in `src`, rebuild the project:
 

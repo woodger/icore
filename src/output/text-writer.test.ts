@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
 import { EventEmitter, once } from 'node:events';
 import { Writable } from 'node:stream';
 import { describe, test } from 'node:test';
