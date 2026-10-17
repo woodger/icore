@@ -119,7 +119,7 @@ When a call using an alternate name has an unexpected positional argument, the m
 
 ## Create A Commands Object From Existing Definitions
 
-`createCommands(...)` creates the same kind of commands object as `createCommand().registry(...)`.
+`createCommands(...)` creates the same commands object as `createCommand().registry(...)`.
 
 ```ts
 const commands = createCommands([

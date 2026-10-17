@@ -146,10 +146,10 @@ function assertBoundCommandInferenceContract(): void {
   };
   type CliCommandResult =
     | {
-      kind: 'empty';
+      type: 'empty';
     }
     | {
-      kind: 'text';
+      type: 'text';
       output: string;
     };
   type CliCommandMetadata = {
@@ -190,7 +190,7 @@ function assertBoundCommandInferenceContract(): void {
       const state: 'prepared' = payload.state;
 
       return {
-        kind: 'text',
+        type: 'text',
         output: [
           context.accountId,
           format,
@@ -210,7 +210,7 @@ function assertBoundCommandInferenceContract(): void {
     state: 'prepared'
   };
   const result: CommandResult<typeof getAccounts> = {
-    kind: 'text',
+    type: 'text',
     output: 'accounts'
   };
   const context: CommandContext<typeof getAccounts> = {
@@ -223,7 +223,7 @@ function assertBoundCommandInferenceContract(): void {
 
   acceptConcreteResult({
     // @ts-expect-error The concrete handler result excludes other bound variants.
-    kind: 'empty'
+    type: 'empty'
   });
 
   void canonicalPath;

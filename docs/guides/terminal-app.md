@@ -56,7 +56,7 @@ type LongRunningCommandHandle = {
 };
 
 type LongRunningCommandResult = {
-  kind: 'long-running';
+  type: 'long-running';
   handle: LongRunningCommandHandle;
 };
 
@@ -69,8 +69,8 @@ function isLongRunningCommandResult(
 ): result is LongRunningCommandResult {
   return typeof result === 'object'
     && result !== null
-    && 'kind' in result
-    && result.kind === 'long-running';
+    && 'type' in result
+    && result.type === 'long-running';
 }
 
 type CommandMetadata = {
@@ -126,7 +126,7 @@ const watchUsersCommand = command.define({
   },
   handle({ context }) {
     return {
-      kind: 'long-running',
+      type: 'long-running',
       handle: startUserWatcher(context)
     } satisfies LongRunningCommandResult;
   }
