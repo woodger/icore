@@ -15,7 +15,7 @@
 Для большинства команд это понятнее центрального файла «всех опций». Читатель видит рядом интерфейс командной строки и функцию, которая выполняет команду.
 
 ```ts
-// Describe the options accepted by `reports list`.
+// Опишите опции, которые принимает `reports list`.
 import {
   createCommand,
   type InferOptions
@@ -48,7 +48,7 @@ const reportOptions = {
   }
 } as const;
 
-// Infer the object passed to the command function.
+// Выведите тип объекта, который получает функция команды.
 type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
@@ -75,7 +75,7 @@ const reportCommand = command.define({
 - `metadata` — неизменяемые сведения о команде, например её описание.
 
 ```ts
-// Share these types only when every command uses them.
+// Используйте эти типы, только если они нужны всем командам.
 import { createCommand } from 'icore';
 
 type CliCommandContext = {
@@ -195,7 +195,7 @@ node dist/cli.js reports list --project alpha --archived=false
 Это более строгое правило. Оно подходит для опций вроде `--dry-run`, где отсутствие флага уже имеет понятный смысл.
 
 ```ts
-// Accept only the flag form for this option.
+// Принимайте для этой опции только форму флага.
 const schema = {
   'dry-run': {
     type: 'boolean',
@@ -225,7 +225,7 @@ node dist/cli.js reports list --dry-run=false
 Это сокращает дублирование и не скрывает особенности команды. Оставляйте описание опции рядом с командой, если для его повторного использования требуется много исключений.
 
 ```ts
-// Combine reusable paging options with reusable output options.
+// Объедините повторно используемые опции постраничной выдачи и формата вывода.
 import { mergeOptionsSchema } from 'icore';
 
 const pagingOptions = {

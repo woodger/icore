@@ -40,7 +40,7 @@ parse global shortcuts
 Каждая команда всё равно сама задаёт имя, опции, псевдонимы, данные из `prepare` и конкретный тип результата:
 
 ```ts
-// Define the commands, output, and error handling used by the CLI.
+// Опишите команды, вывод и обработку ошибок для CLI.
 import {
   createCommand,
   createOutput,
@@ -59,7 +59,7 @@ type CurrentUserContext = {
   currentUser: string;
 };
 
-// A long-running command returns a handle for application code to manage.
+// Команда с длительным выполнением возвращает объект, через который приложение управляет этой работой.
 type LongRunningCommandHandle = {
   completed: Promise<void>;
   close(): Promise<void>;
@@ -87,7 +87,7 @@ const insecureOptions = {
   }
 } as const;
 
-// Each command receives the current user, returns CLI output, and declares its description and resources.
+// Каждая команда получает текущего пользователя, возвращает вывод CLI и задаёт описание и ресурсы.
 const command = createCommand.withTypes<{
   context: CurrentUserContext;
   result: CliCommandResult;
@@ -101,7 +101,7 @@ declare function startUserWatcher(
   context: CurrentUserContext
 ): LongRunningCommandHandle;
 
-// This command returns a record for terminal output.
+// Эта команда возвращает запись для вывода в терминал.
 const currentUserCommand = command.define({
   path: ['users', 'current'],
   options: mergeOptionsSchema(
@@ -119,7 +119,7 @@ const currentUserCommand = command.define({
   }
 });
 
-// This command starts work that continues after the command returns.
+// Эта команда запускает работу, которая продолжается после возврата.
 const watchUsersCommand = command.define({
   path: ['users', 'watch'],
   options: insecureOptions,
@@ -139,7 +139,7 @@ const commands = command.registry([
   watchUsersCommand
 ] as const);
 
-// Let the terminal app format output and report errors consistently.
+// Терминальное приложение форматирует вывод и единообразно сообщает об ошибках.
 const app = createTerminalApp({
   commands,
   presentation,
@@ -178,7 +178,7 @@ const app = createTerminalApp({
 Опишите `-h` и `-v` среди опций, которые обрабатываются до выбора команды. `parseArgv(...)` сопоставит их с `help` и `version`, а `parseOptionsSubsetDetailed(...)` проверит только эти начальные опции:
 
 ```ts
-// Parse global flags without consuming options for the selected command.
+// Разберите глобальные флаги, не поглощая опции выбранной команды.
 import {
   parseArgv,
   parseOptionsSubsetDetailed
@@ -221,15 +221,15 @@ function parseGlobalInput(args: readonly string[]) {
 Приложение предоставляет собственное форматирование справки и объект, который закрывает ресурсы:
 
 ```ts
-// Keep help formatting and resource cleanup in application code.
+// Оставьте форматирование справки и очистку ресурсов в коде приложения.
 type InvocationScope = {
   context: CurrentUserContext;
   /**
-   * Idempotently closes progress or another interactive stdout line.
-   * `close()` also calls this when execution fails before final output.
+   * Завершает индикатор прогресса или другую интерактивную строку stdout; повторный вызов безопасен.
+   * `close()` также вызывает этот метод, если выполнение завершается ошибкой до итогового вывода.
    */
   finishInteractiveOutput(): Promise<void>;
-  /** Closes interactive output first, then selected resources. */
+  /** Сначала завершает интерактивный вывод, затем закрывает выбранные ресурсы. */
   close(): Promise<void>;
 };
 
@@ -261,7 +261,7 @@ declare function renderVersion(): string;
 Следующий код запоминает этап первой ошибки, объединяет её с ошибкой очистки и сообщает о них после очистки:
 
 ```ts
-// Track a failure until all resources are closed.
+// Запоминайте ошибку, пока не будут закрыты все ресурсы.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
 type FailurePhase = 'execute' | 'write' | 'external';
 
@@ -270,7 +270,7 @@ type InvocationFailure = {
   phase: FailurePhase;
 };
 
-// Use the selected command's list of resources.
+// Используйте список ресурсов выбранной команды.
 function selectResources(prepared: Prepared): readonly ResourceName[] {
   const selection = prepared.command.metadata.resources;
 
@@ -279,7 +279,7 @@ function selectResources(prepared: Prepared): readonly ResourceName[] {
     : selection;
 }
 
-// Keep the first failure and add a cleanup failure when both occur.
+// Сохраняйте первую ошибку и добавляйте ошибку очистки, если произошли обе.
 function mergeCleanupFailure(
   primary: InvocationFailure | undefined,
   cleanupError: unknown
@@ -300,7 +300,7 @@ function mergeCleanupFailure(
   };
 }
 
-// Print the error after cleanup and name the step where it happened.
+// Выведите ошибку после очистки и укажите шаг, на котором она произошла.
 async function reportPreparedFailure(
   failure: InvocationFailure,
   args: readonly string[],
@@ -329,7 +329,7 @@ async function reportPreparedFailure(
   });
 }
 
-// Write global help or version through the same error handling.
+// Выведите глобальную справку или версию с той же обработкой ошибок.
 async function writeBootstrapOutput(
   render: () => string,
   args: readonly string[]
@@ -347,7 +347,7 @@ async function writeBootstrapOutput(
   }
 }
 
-// Handle global flags before preparing the selected command.
+// Обработайте глобальные флаги до подготовки выбранной команды.
 async function runCli(args: readonly string[]): Promise<number> {
   let globalInput: ReturnType<typeof parseGlobalInput>;
 
@@ -386,7 +386,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     });
   }
 
-  // Keep selected resources open until output is written or work is transferred.
+  // Не закрывайте выбранные ресурсы, пока вывод не записан или работа не передана.
   let scope: InvocationScope | undefined;
   let failure: InvocationFailure | undefined;
   let phase: FailurePhase = 'external';
@@ -402,7 +402,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'execute';
     const result = await app.commands.run(prepared, scope.context);
 
-    // Long-running work takes over its own cleanup before this function returns.
+    // Длительная работа берёт очистку на себя до возврата этой функции.
     if (!isTerminalCommandOutput(result)) {
       phase = 'external';
       transferLongRunningLifecycle({
@@ -415,7 +415,7 @@ async function runCli(args: readonly string[]): Promise<number> {
       return 0;
     }
 
-    // Finish the interactive line before writing ordinary command output.
+    // Завершите интерактивную строку до записи обычного вывода команды.
     phase = 'external';
     await scope.finishInteractiveOutput();
 
@@ -429,7 +429,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     };
   }
   finally {
-    // Close resources even when preparation, execution, or writing fails.
+    // Закрывайте ресурсы даже при ошибке подготовки, выполнения или записи.
     try {
       await scope?.close();
     }
@@ -477,7 +477,7 @@ void runCli(process.argv.slice(2))
 Используйте `app.run(...)`, когда всё нужное команде уже готово, а она возвращает вывод, который может записать `TerminalApp`:
 
 ```ts
-// Use the one-call API when application data is already available.
+// Используйте API с одним вызовом, когда данные приложения уже доступны.
 process.exitCode = await app.run(args, context, {
   strict: true
 });

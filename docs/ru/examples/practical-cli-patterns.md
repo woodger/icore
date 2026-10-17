@@ -15,7 +15,7 @@
 Разберите эти флаги до того, как реестр команд запустит команду приложения:
 
 ```ts
-// Parse only the options that work before a command is selected.
+// Разберите только опции, которые работают до выбора команды.
 import {
   parseArgv,
   parseOptionsSubsetDetailed,
@@ -136,7 +136,7 @@ Expected '--help' as boolean flag
 Так `help` и `version` остаются видимыми публичными командами, а не задаются отдельно от реестра. Если приложение поддерживает `--help`, `-h`, `--version` и `-v`, оно всё равно должно обработать их до выбора команды.
 
 ```ts
-// Keep help and version as regular commands in the registry.
+// Оставьте справку и версию обычными командами в реестре.
 import { createCommand } from 'icore';
 
 const command = createCommand();
@@ -170,7 +170,7 @@ const versionCommand = command.define({
 Храните текст справки вместе с определением команды, а список команд стройте по `commands.definitions`. В списке каждая основная команда встречается один раз, поэтому псевдонимы не создают повторов:
 
 ```ts
-// Store help text on command definitions and build entries from them.
+// Храните текст справки в определениях команд и стройте из них пункты списка.
 import { createCommand } from 'icore';
 
 type CliCommandMetadata = {
@@ -231,7 +231,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 Общее описание опций полезно, когда одни и те же опции встречаются в нескольких командах. Если опция нужна только одной команде, определите её прямо в ней.
 
 ```ts
-// Combine common options with options specific to `jobs list`.
+// Объедините общие опции с опциями, характерными для `jobs list`.
 import {
   mergeOptionsSchema,
   type OptionsSchema
@@ -298,7 +298,7 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 Существующие пользователи могут зависеть от старого имени. Оставьте его видимым в коде, выводите предупреждение при использовании и отклоняйте вызовы с обоими именами.
 
 ```ts
-// Accept either name, but reject a call that provides both.
+// Принимайте любое имя, но отклоняйте вызов, в котором указаны оба.
 import { CliUsageError } from 'icore';
 
 const itemIdOptions = {

@@ -15,7 +15,7 @@
 请在使用命令注册表运行应用命令前解析这些标志：
 
 ```ts
-// Parse only the options that work before a command is selected.
+// 只解析在选择命令前生效的选项。
 import {
   parseArgv,
   parseOptionsSubsetDetailed,
@@ -136,7 +136,7 @@ Expected '--help' as boolean flag
 这样 `help` 和 `version` 仍是可见的公共命令，而不是在注册表外单独定义。如果应用支持 `--help`、`-h`、`--version` 和 `-v`，它仍需在选择命令前处理它们。
 
 ```ts
-// Keep help and version as regular commands in the registry.
+// 将帮助和版本作为注册表中的普通命令。
 import { createCommand } from 'icore';
 
 const command = createCommand();
@@ -170,7 +170,7 @@ const versionCommand = command.define({
 将帮助文本保存在每个命令定义中，再从 `commands.definitions` 构建命令列表。列表中每条主命令只出现一次，因此别名不会产生重复条目：
 
 ```ts
-// Store help text on command definitions and build entries from them.
+// 将帮助文本放在命令定义中，并据此构建条目。
 import { createCommand } from 'icore';
 
 type CliCommandMetadata = {
@@ -231,7 +231,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 当相同选项出现在多条命令中时，共享选项定义很有用。如果一个选项只被一条命令使用，就直接在该命令中定义。
 
 ```ts
-// Combine common options with options specific to `jobs list`.
+// 将通用选项与 `jobs list` 专用选项合并。
 import {
   mergeOptionsSchema,
   type OptionsSchema
@@ -298,7 +298,7 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 现有用户可能依赖旧名称。请在代码中保留它，使用时输出警告，并拒绝同时传入两个名称的调用。
 
 ```ts
-// Accept either name, but reject a call that provides both.
+// 接受任一名称，但拒绝同时提供两个名称的调用。
 import { CliUsageError } from 'icore';
 
 const itemIdOptions = {
