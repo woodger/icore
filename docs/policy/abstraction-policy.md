@@ -155,6 +155,12 @@ Preferred:
 
 Architectural form is justified only when it reduces current complexity, not when it demonstrates future design.
 
+## Function Invocation
+
+Production code must not use `bind`, `call`, or `apply` to pass callbacks, prefill arguments, or bind dependencies. Prefer direct calls and explicit data passing.
+
+An exception is allowed only when no equivalent solution exists without these methods. Explain the reason in a comment immediately next to the invocation. Being part of a library mechanism is not itself an exception.
+
 ## Frequency Rule
 
 Practical rule:

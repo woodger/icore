@@ -74,5 +74,5 @@ function isCliUsageError(error: unknown): error is CliUsageError {
 }
 
 function ownsProperty(value: object, key: PropertyKey): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key);
+  return Object.hasOwn(value, key);
 }

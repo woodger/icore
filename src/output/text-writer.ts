@@ -26,6 +26,10 @@ export type BackpressureTextSink = {
 type TextSinkLifecycleEvent = 'drain' | 'error' | 'close';
 type TextSinkLifecycleListener = (() => void) | ((error: unknown) => void);
 
+type DrainableBackpressureTextSink = BackpressureTextSink & {
+  once(event: 'drain', listener: () => void): unknown;
+};
+
 type EventedBackpressureTextSink = BackpressureTextSink & {
   readonly destroyed?: boolean;
   readonly writableEnded?: boolean;
@@ -72,7 +76,7 @@ export function createBackpressureTextWriter(
         return;
       }
 
-      if (typeof sink.once !== 'function') {
+      if (!isDrainableBackpressureTextSink(sink)) {
         return;
       }
 
@@ -82,7 +86,7 @@ export function createBackpressureTextWriter(
         return;
       }
 
-      await waitForDrain(sink.once.bind(sink));
+      await waitForDrain(sink);
     }
   };
 }
@@ -97,11 +101,17 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
 }
 
 function waitForDrain(
-  onceDrain: (event: 'drain', listener: () => void) => unknown
+  sink: DrainableBackpressureTextSink
 ): Promise<void> {
   return new Promise((resolve) => {
-    onceDrain('drain', resolve);
+    sink.once('drain', resolve);
   });
+}
+
+function isDrainableBackpressureTextSink(
+  sink: BackpressureTextSink
+): sink is DrainableBackpressureTextSink {
+  return typeof sink.once === 'function';
 }
 
 function waitForEventedDrain(
