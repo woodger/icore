@@ -13,7 +13,7 @@ import {
   isTerminalCommandOutput
 } from 'icore';
 
-type AppContext = {
+type WorkspaceContext = {
   workspace: string;
 };
 
@@ -34,7 +34,7 @@ const runJobCommand = command.define({
   },
   handle({ payload, context }: {
     payload: { jobId: string };
-    context: AppContext;
+    context: WorkspaceContext;
   }) {
     return `${context.workspace}:${payload.jobId}\n`;
   }

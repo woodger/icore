@@ -14,7 +14,7 @@ import {
   type PreparedCommand
 } from 'icore';
 
-type AppContext = {
+type GreetingContext = {
   greeting: string;
 };
 
@@ -35,7 +35,7 @@ const greetCommand = command.define({
   },
   handle({ payload, context }: {
     payload: { normalizedName: string };
-    context: AppContext;
+    context: GreetingContext;
   }) {
     return `${context.greeting}, ${payload.normalizedName}!\n`;
   }

@@ -51,13 +51,13 @@ Good example:
 
 ```ts
 /**
- * The runtime config resolver module transforms external input
- * into normalized launch settings.
+ * The deployment configuration loader reads configuration files
+ * and validates settings required to start a deployment.
  *
  * Allowed here:
- * - reading supported config sources;
- * - validating required fields;
- * - forming diagnostics for invalid config;
+ * - reading supported configuration files;
+ * - validating required deployment settings;
+ * - forming diagnostics for invalid deployment configuration;
  *
  * This file must not contain CLI rendering or network calls.
  */
@@ -111,11 +111,11 @@ Better:
 
 ```ts
 /**
- * Creates a runtime client from already validated options.
+ * Creates an API client from already validated endpoint options.
  *
  * The function does not read environment and does not change global state.
  */
-createClient(options);
+createApiClient(endpointOptions);
 ```
 
 But if this is already obvious from the interface and tests, it is better not to add the comment.

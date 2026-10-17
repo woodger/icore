@@ -46,7 +46,7 @@ import {
 
 type ResourceName = 'database' | 'remote-api';
 
-type AppContext = {
+type CurrentUserContext = {
   currentUser: string;
 };
 
@@ -80,7 +80,7 @@ type CommandMetadata = {
     | ((payload: unknown) => readonly ResourceName[]);
 };
 
-const runtimeOptions = {
+const insecureOptions = {
   insecure: {
     type: 'boolean',
     syntax: 'flag'
@@ -88,7 +88,7 @@ const runtimeOptions = {
 } as const;
 
 const command = createCommand.withTypes<{
-  context: AppContext;
+  context: CurrentUserContext;
   result: CliCommandResult;
   metadata: CommandMetadata;
   metadataRequired: true;
@@ -97,14 +97,14 @@ const command = createCommand.withTypes<{
 const presentation = createPresentation();
 
 declare function startUserWatcher(
-  context: AppContext
+  context: CurrentUserContext
 ): LongRunningCommandHandle;
 
 const currentUserCommand = command.define({
   path: ['users', 'current'],
   options: mergeOptionsSchema(
     presentationFormatOptions,
-    runtimeOptions
+    insecureOptions
   ),
   metadata: {
     description: 'Show the current user',
@@ -119,7 +119,7 @@ const currentUserCommand = command.define({
 
 const watchUsersCommand = command.define({
   path: ['users', 'watch'],
-  options: runtimeOptions,
+  options: insecureOptions,
   metadata: {
     description: 'Watch the current user',
     resources: ['remote-api']
@@ -191,7 +191,7 @@ const globalOptionsSchema = {
     alias: 'v',
     syntax: 'flag'
   },
-  ...runtimeOptions
+  ...insecureOptions
 } as const;
 
 function parseGlobalInput(args: readonly string[]) {
@@ -218,7 +218,7 @@ The application supplies its own help renderer and resource scope:
 
 ```ts
 type InvocationScope = {
-  context: AppContext;
+  context: CurrentUserContext;
   /**
    * Idempotently closes progress or another interactive stdout line.
    * `close()` also calls this when execution fails before final output.

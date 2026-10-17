@@ -223,7 +223,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 
 ## 应用共享选项
 
-实际命令经常复用 connection、output 或 runtime switches。请保持这些 schemas 小而专注，并与 command-specific schemas 组合：
+实际命令经常复用连接设置、输出设置或命令开关。请保持这些 schemas 小而专注，并与 command-specific schemas 组合：
 
 当相同 options 出现在多条命令中时，组合很有价值；但这并不意味着应为仅使用一次的 options 创建 generic schemas。若一个 option 只被一条命令使用，就在该命令中直接定义。
 
@@ -233,7 +233,7 @@ import {
   type OptionsSchema
 } from 'icore';
 
-const runtimeOptions = {
+const sharedCliOptions = {
   config: {
     type: 'string'
   },
@@ -253,7 +253,7 @@ const outputOptions = {
   }
 } as const satisfies OptionsSchema;
 
-const listJobsOptions = mergeOptionsSchema(runtimeOptions, outputOptions, {
+const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
   status: {
     type: 'string',
     choices: ['queued', 'running', 'done', 'failed']

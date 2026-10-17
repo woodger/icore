@@ -223,7 +223,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 
 ## Общие options приложения
 
-Реальные команды часто переиспользуют connection, output или runtime switches. Храните такие schemas небольшими и объединяйте их с command-specific schemas:
+Реальные команды часто переиспользуют настройки подключения, настройки вывода или переключатели команд. Храните такие schemas небольшими и объединяйте их с command-specific schemas:
 
 Композиция полезна, когда одни options встречаются во многих командах. Это не повод создавать generic schemas для одноразовых options. Если option нужна только одной команде, определите её прямо в этой команде.
 
@@ -233,7 +233,7 @@ import {
   type OptionsSchema
 } from 'icore';
 
-const runtimeOptions = {
+const sharedCliOptions = {
   config: {
     type: 'string'
   },
@@ -253,7 +253,7 @@ const outputOptions = {
   }
 } as const satisfies OptionsSchema;
 
-const listJobsOptions = mergeOptionsSchema(runtimeOptions, outputOptions, {
+const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
   status: {
     type: 'string',
     choices: ['queued', 'running', 'done', 'failed']

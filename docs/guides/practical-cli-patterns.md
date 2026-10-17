@@ -221,7 +221,7 @@ Use `commandHelpEntries` for top-level and group help. For command-specific help
 
 ## Shared Application Options
 
-Real commands often reuse connection, output, or runtime switches. Keep those schemas small and compose them with command-specific schemas:
+Real commands often reuse connection settings, output settings, or command switches. Keep those schemas small and compose them with command-specific schemas:
 
 Composition is useful when the same options appear across many commands. It is not a reason to create generic schemas for one-off options. If only one command uses an option, define it directly on that command.
 
@@ -231,7 +231,7 @@ import {
   type OptionsSchema
 } from 'icore';
 
-const runtimeOptions = {
+const sharedCliOptions = {
   config: {
     type: 'string'
   },
@@ -251,7 +251,7 @@ const outputOptions = {
   }
 } as const satisfies OptionsSchema;
 
-const listJobsOptions = mergeOptionsSchema(runtimeOptions, outputOptions, {
+const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
   status: {
     type: 'string',
     choices: ['queued', 'running', 'done', 'failed']

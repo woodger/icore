@@ -28,7 +28,7 @@ This document records directional decisions that are useful for contributors but
 - Non-strict raw resolution parses each canonical definition at most once, even when that definition owns multiple accepted paths.
 - Strict mode matches canonical and alias paths before parsing, but continues to require command-first argv. Bootstrap parsing does not make option-first argv strict-compatible unless the application also reorders or rejects it.
 
-## Presentation result scope
+## Presentation result boundaries
 
 - `record(...)` and `records(...)` are intended for one flat projection shared by JSON, table, and CSV output.
 - When formats need different projections, the consuming application owns those projections and selects the corresponding direct renderer.
