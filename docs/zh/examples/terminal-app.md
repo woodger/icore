@@ -66,22 +66,12 @@ type LongRunningCommandHandle = {
 };
 
 type LongRunningCommandResult = {
-  type: 'long-running';
   handle: LongRunningCommandHandle;
 };
 
 type CliCommandResult =
   | TerminalCommandOutput
   | LongRunningCommandResult;
-
-function isLongRunningCommandResult(
-  result: CliCommandResult
-): result is LongRunningCommandResult {
-  return typeof result === 'object'
-    && result !== null
-    && 'type' in result
-    && result.type === 'long-running';
-}
 
 type CommandMetadata = {
   description: string;
@@ -139,7 +129,6 @@ const watchUsersCommand = command.define({
   },
   handle({ context }) {
     return {
-      type: 'long-running',
       handle: startUserWatcher(context)
     } satisfies LongRunningCommandResult;
   }
@@ -414,7 +403,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     const result = await app.commands.run(prepared, scope.context);
 
     // Long-running work takes over its own cleanup before this function returns.
-    if (isLongRunningCommandResult(result)) {
+    if (!isTerminalCommandOutput(result)) {
       phase = 'external';
       transferLongRunningLifecycle({
         handle: result.handle,
@@ -429,10 +418,6 @@ async function runCli(args: readonly string[]): Promise<number> {
     // Finish the interactive line before writing ordinary command output.
     phase = 'external';
     await scope.finishInteractiveOutput();
-
-    if (!isTerminalCommandOutput(result)) {
-      throw new TypeError('Expected terminal command output');
-    }
 
     phase = 'write';
     await app.writePreparedOutput(prepared, result);
