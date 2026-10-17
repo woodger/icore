@@ -27,9 +27,15 @@ check global --help and --version
 
 Close progress output and resources before reporting an error, so diagnostics appear only after cleanup. Keep selected resources open through `writePreparedOutput(...)`: terminal output may be an asynchronous stream that still uses them.
 
-## Create Shared Command-Line Objects Once
+## Create One Typed Command Builder
 
-If every command uses the same types for values supplied by the application, returned values, and command descriptions, create that typed command builder once. Each command still declares its own options, name, aliases, prepared data, and return type:
+`createCommand.withTypes<...>()` sets types shared by every command. Create it once when commands share:
+
+- `context`: data the application passes to the command function;
+- `result`: the range of values that function may return;
+- `metadata`: static command information, such as its description.
+
+Each command still declares its own name, options, aliases, data returned from `prepare`, and specific result type:
 
 ```ts
 import {
