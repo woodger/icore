@@ -28,8 +28,6 @@ API-вызовы, конфигурация, доменное поведение 
 npm install icore
 ```
 
-Импортируйте публичные API из `icore`. Deep imports в `dist` или `src` не являются частью контракта пакета.
-
 ## Содержание
 
 - [Быстрый старт](#быстрый-старт)
@@ -41,7 +39,7 @@ npm install icore
 
 ## Быстрый старт
 
-Создайте команды, поместите их в registry и передайте его в `createTerminalApp()`:
+Создайте команды, поместите их в [registry](../guides/command-resolution.md#create-a-commands-object-directly) и передайте его в `createTerminalApp()`:
 
 ```ts
 import {
@@ -82,7 +80,7 @@ async function main(args: readonly string[]): Promise<void> {
 void main(process.argv.slice(2));
 ```
 
-После компиляции приложения:
+После сборки приложения:
 
 ```console
 $ node dist/cli.js hello
@@ -136,8 +134,6 @@ Text-table rendering поддерживает plain-text cells. Ширина с�
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
-
-Точный список публичных exports находится в [`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) и в декларациях TypeScript, включённых в пакет. Consumer-ы импортируют их из корня пакета; внутренние module paths не экспортируются.
 
 ## Поддерживаемый синтаксис аргументов
 

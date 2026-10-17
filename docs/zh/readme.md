@@ -28,8 +28,6 @@
 npm install icore
 ```
 
-请从 `icore` 导入公共 API。对 `dist` 或 `src` 的 deep imports 不属于包契约。
-
 ## 目录
 
 - [快速开始](#快速开始)
@@ -41,7 +39,7 @@ npm install icore
 
 ## 快速开始
 
-创建命令，将它们放入 registry，然后把该 registry 传给 `createTerminalApp()`：
+创建命令，将它们放入 [registry](../guides/command-resolution.md#create-a-commands-object-directly)，然后把该 registry 传给 `createTerminalApp()`：
 
 ```ts
 import {
@@ -82,7 +80,7 @@ async function main(args: readonly string[]): Promise<void> {
 void main(process.argv.slice(2));
 ```
 
-编译应用后：
+构建应用后：
 
 ```console
 $ node dist/cli.js hello
@@ -136,8 +134,6 @@ Command handlers 会收到解析后的 `options`、记录选项是否由用户�
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
-
-公共 exports 的准确列表位于 [`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) 以及包内的 TypeScript declarations。Consumer 从包根目录导入这些 API；内部 module paths 不会导出。
 
 ## 支持的参数语法
 

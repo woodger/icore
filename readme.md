@@ -26,8 +26,6 @@ Application-specific API calls, configuration, domain behavior, and help text re
 npm install icore
 ```
 
-Import public APIs from `icore`. Deep imports into `dist` or `src` are not part of the package contract.
-
 ## Contents
 
 - [Quick Start](#quick-start)
@@ -39,7 +37,7 @@ Import public APIs from `icore`. Deep imports into `dist` or `src` are not part 
 
 ## Quick Start
 
-Create commands, put them in a registry, and give that registry to `createTerminalApp()`:
+Create commands, put them in a [registry](docs/guides/command-resolution.md#create-a-commands-object-directly), and give that registry to `createTerminalApp()`:
 
 ```ts
 import {
@@ -80,7 +78,7 @@ async function main(args: readonly string[]): Promise<void> {
 void main(process.argv.slice(2));
 ```
 
-After compiling the application:
+After building the application:
 
 ```console
 $ node dist/cli.js hello
@@ -134,8 +132,6 @@ Text-table rendering supports plain-text cells. Column widths use JavaScript str
 ```text
 argv → resolve → validate/prepare → execute → render → stdout/stderr
 ```
-
-Exact public exports live in [`src/index.ts`](https://github.com/woodger/icore/blob/main/src/index.ts) and in the bundled TypeScript declarations. Consumers import them from the package root; internal module paths are not exported.
 
 ## Supported Argument Syntax
 
