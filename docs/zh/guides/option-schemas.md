@@ -1,18 +1,18 @@
-# 选项模式
+# 描述命令选项
 
 [English](../../guides/option-schemas.md) | [Русский](../../ru/guides/option-schemas.md) | 简体中文
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-使用 option schemas 描述命令的公共参数。schema 决定用户可以在终端输入什么，以及 command handler 会收到哪些类型化值。
+使用选项定义描述命令的公共参数。它说明用户可以在终端输入什么，以及执行命令的函数会收到哪些带类型的值。
 
-schema 有意保持精简：它涵盖基本 CLI 类型和 validation rules，而应用特有的 parsing 留在应用中。这样既能保持 icore 可复用，也不会让 domain rules 渗入 command mechanics。
+选项定义涵盖字符串、布尔值、数值及其验证规则。依赖具体应用的解析和领域规则仍留在应用中。
 
 ## 从一条命令开始
 
-将命令放在拥有其行为的 application code 附近。
+将命令放在实现它的应用代码附近。
 
-对大多数命令而言，这比集中维护一个“所有选项”文件更合适。读者可以在同一位置看到公共 CLI 契约和 handler。
+对大多数命令而言，这比集中维护一个“所有选项”文件更清楚。读者能在同一处看到命令行接口和执行命令的函数。
 
 ```ts
 import {
@@ -60,13 +60,17 @@ const reportCommand = command.define({
 });
 ```
 
-该命令现在接受一个必填 string option、一个带 choices 的 string option、一个 boolean option 和一个受约束的 number option。
+该命令接受一个必填字符串、一个限定为列出值的字符串、一个布尔值和一个范围受限的数值。
 
-`as const` 很重要，因为它会保留 literal choices，供 TypeScript 推导类型。如果省略，handler 在 JavaScript 执行时仍可工作，但推导出的类型会更宽、作用更小。
+`as const` 会保留列出的字符串值，供 TypeScript 推导类型。如果省略，命令仍能运行，但 TypeScript 推导出的类型会更宽、作用更小。
 
-## 一次性绑定应用命令类型
+## 为所有命令共享类型
 
-当应用的所有命令共享 context、result 和 metadata 契约时，请使用 `createCommand.withTypes<...>()`：
+只有当所有命令在下列内容上使用相同类型时，才使用 `createCommand.withTypes<...>()`：
+
+- `context`：应用传给命令函数的值；
+- `result`：该函数返回的值；
+- `metadata`：命令的固定信息，例如描述。
 
 ```ts
 import { createCommand } from 'icore';
@@ -113,13 +117,13 @@ const statusCommand = command.define({
 });
 ```
 
-Result binding 是上界：示例 handler 的返回值仍会被推导为 `string`，而不是更宽的 `string | void`。schema、literal canonical 与 alias paths，以及 prepared payload 也都会保持为 `statusCommand` 的具体类型。
+`result` 类型只定义应用允许的最宽结果。TypeScript 仍会把示例函数推导为返回 `string`，而不是更宽的 `string | void`。它的选项定义、命令名称、别名和准备后的数据也都保持为 `statusCommand` 的具体类型。
 
-如果命令可以不带 metadata，请不要指定 `metadataRequired`。该设置只影响由这个 bound builder 创建的 definitions；普通 `createCommand()` 和其他 builders 会保留原有契约。
+如果命令可以没有 `metadata`，请不要设置 `metadataRequired`。该设置只影响由这个带类型的构建器创建的定义；普通 `createCommand()` 调用和其他构建器不受影响。
 
-如果应用没有 command metadata 契约，请在 bindings 中指定 `metadata: undefined`，并省略 `metadataRequired`。共享绑定仍然是显式的，但 command definitions 不会被要求包含 metadata 属性。
+如果应用没有共享的 `metadata`，请在类型参数中指定 `metadata: undefined`，并省略 `metadataRequired`。这样选择仍然明确，但不会要求每条命令都带有 `metadata` 属性。
 
-Bindings 描述彼此独立的 application-level types。如果 metadata 依赖确切的 option schema，请对每条命令使用 `satisfies` 检查这种关系，或保留一个小型的 application-owned wrapper。Bound builder 不会创建 context、resources、clients、 signals 或 long-running handles；它们的 lifecycle 仍由应用拥有。
+类型参数描述应用使用的独立值。如果 `metadata` 依赖命令的确切选项，请在命令上使用 `satisfies` 检查这种关系，或在应用中保留一个小型构建器。该构建器不会创建 `context`、数据库连接、API 客户端、信号处理或长期运行的任务；这些由应用自己创建。
 
 ## 从终端运行
 
@@ -129,7 +133,7 @@ Bindings 描述彼此独立的 application-level types。如果 metadata 依赖�
 node dist/cli.js reports list --project alpha --format json --archived --limit 5
 ```
 
-Handler 收到：
+命令函数会收到：
 
 ```json
 {
@@ -140,13 +144,13 @@ Handler 收到：
 }
 ```
 
-用户也可以传入已声明的短 aliases：
+用户也可以传入已声明的短别名：
 
 ```bash
 node dist/cli.js reports list -p alpha -l 5
 ```
 
-对于 input 中未出现的选项，handler 会收到 defaults：
+对于用户未提供的选项，命令函数会收到默认值：
 
 ```json
 {
@@ -157,35 +161,35 @@ node dist/cli.js reports list -p alpha -l 5
 }
 ```
 
-Defaults 有助于保持命令行为稳定，但同时也是公共契约的一部分。只有当隐式值明确且安全时才应使用它们。
+默认值是命令行接口的一部分。只有在隐含值明确且安全时才使用它们。
 
-## 使用布尔值取反
+## 关闭布尔选项
 
-schema 已知的 boolean option 可以通过 `--no-<name>` 关闭：
+已知的布尔选项可以通过 `--no-<name>` 关闭：
 
 ```bash
 node dist/cli.js reports list --project alpha --archived
 node dist/cli.js reports list --project alpha --no-archived
 ```
 
-第一条命令向 handler 传入 `archived: true`，第二条传入 `archived: false`。
+第一条命令向函数传入 `archived: true`，第二条传入 `archived: false`。
 
 这种形式比支持 `--archived=false` 更明确，也不会产生 `0`、`no` 或 `off` 这类有歧义的文本值。
 
-不要传入显式 boolean values：
+不要显式传入布尔值：
 
 ```bash
 node dist/cli.js reports list --project alpha --archived=true
 node dist/cli.js reports list --project alpha --archived=false
 ```
 
-两种形式都会被拒绝。Boolean options 使用 flag syntax，而不是 `true` / `false` 值。
+两种形式都会被拒绝。布尔选项作为标志使用，不接受 `true` / `false` 值。
 
-## 将布尔选项限制为仅标志语法
+## 只作为标志使用的选项
 
 对于仅表示“启用此行为”的选项，请使用 `syntax: 'flag'`。
 
-这是更严格的契约，适用于 `--dry-run` 等选项；此时 flag 缺失本身已有清晰含义。
+这是更严格的规则，适用于 `--dry-run` 等选项；此时不带标志本身已有清晰含义。
 
 ```ts
 const schema = {
@@ -210,11 +214,11 @@ node dist/cli.js reports list --no-dry-run
 node dist/cli.js reports list --dry-run=false
 ```
 
-## 复用模式的共享部分
+## 复用共享选项定义
 
-当多条命令使用相同的公共 options 时，请保留小型 schema fragments，并在命令边界处合并它们。
+当多条命令使用相同的公共选项时，请保留小型选项定义，并在定义命令时合并它们。
 
-这样既能减少重复，也不会隐藏 command-specific intent。如果一个可复用 schema 需要为不同命令设置大量例外，它就不再是合适的抽象。
+这样既能减少重复，也不会隐藏命令的特有部分。如果复用一个选项定义需要很多例外，就应把它留在命令旁边。
 
 ```ts
 import { mergeOptionsSchema } from 'icore';
@@ -240,6 +244,6 @@ const outputOptions = {
 const options = mergeOptionsSchema(pagingOptions, outputOptions);
 ```
 
-如果选项名重复，后面的 schema 会覆盖前面的 schema。请确保这种行为是有意的，并且在 command definition 附近清晰可见。
+如果选项名重复，后面的定义会替换前面的定义。请在命令定义旁边清楚地表明这是有意的。
 
-组合 shared schemas、global shortcuts 和 compatibility options 的更大型应用模式见 [practical-cli-patterns.md](practical-cli-patterns.md)。
+涉及共享选项、全局帮助或版本标志以及旧选项名称的应用，请参阅[常用 CLI 模式](practical-cli-patterns.md)。

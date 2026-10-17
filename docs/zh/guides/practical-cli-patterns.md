@@ -4,15 +4,15 @@
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-这些示例展示构建在 icore 之上的 application-level patterns。它们使用中性的命令名称，但相关结构面向具有大量命令、共享 options、utility commands 和 compatibility behavior 的真实 CLI 应用。
+这些示例展示应用如何使用 `icore` 完成常见的命令行工作。命令名称是中性的，但示例适用于拥有许多命令、共享选项、帮助和版本命令以及旧选项名称的应用。
 
-## 全局 help 和 version 快捷方式
+## 全局帮助和版本
 
-在大型 CLI 中，`--help`、`-h`、`--version` 和 `-v` 经常需要在命令执行前生效。它们不应要求 command-specific required options 或 command context。
+在拥有许多命令的 CLI 中，`--help`、`-h`、`--version` 和 `-v` 通常在选择命令前生效。它们不应要求只由某一条命令使用的值。
 
-icore 不会自动提供这种行为，因为它属于应用策略，而不是 command mechanics。将它明确放在 bootstrap runner 中最为清晰：utility shortcuts 可以绕过特定命令的 validation，普通命令则继续使用 registry 与自己的 schemas。
+`icore` 不会自动处理这些标志，因为应用自己决定帮助和版本的含义。请在选择命令前处理它们。这样全局标志可以绕过某条命令的验证，而普通命令仍使用命令注册表和自己的选项定义。
 
-请把这段逻辑放在 bootstrap runner 中，并在 command registry 执行业务命令之前运行：
+请在使用命令注册表运行应用命令前解析这些标志：
 
 ```ts
 import {
@@ -53,13 +53,13 @@ function parseBootstrapInput(args: readonly string[]) {
 }
 ```
 
-短 aliases 属于 schema behavior：`parseArgv(...)` 将 `-h` 映射到 `help`，将 `-v` 映射到 `version`。应用不需要规范化 argv，也不需要分别声明 `h` 和 `v` options。
+选项定义赋予 `-h` 和 `-v` 含义：`parseArgv(...)` 将它们映射为 `help` 和 `version`。应用不需要重写参数，也不需要分别定义 `h` 和 `v` 选项。
 
-这里只验证 bootstrap 拥有的 options。Command-specific options 会在 `rest` 中返回以供检查，但通常仍应保留在传给 `app.prepare(...)` 的原始 argv 中。不要根据 subset result 重建 command argv。这样可避免 global parsing 在命令解析前错误地拒绝、重排或丢弃有效 command options。
+这里只检查全局标志。命令选项会在 `rest` 中返回以供查看，但通常仍应保留在传给 `app.prepare(...)` 的原始参数中。不要根据部分结果重建命令参数，否则全局解析可能在选择命令前错误地拒绝、重排或丢弃有效选项。
 
-应包含所有其类型会影响 token ownership 的 bootstrap options。本例将 `offline` 声明为 boolean，因此 shortcut parsing 不会把后续 command segment 作为它的值。
+包含每个类型能告诉解析器是否会占用下一个参数的全局选项。本例将 `offline` 声明为布尔值，因此解析不会把后续命令段作为它的值。
 
-用户可以请求顶层 help：
+用户可以请求顶层帮助：
 
 ```bash
 workspace-cli --help
@@ -80,7 +80,7 @@ Commands:
   jobs run
 ```
 
-用户可以在不提供 command required options 的情况下请求 command help：
+用户可以在不提供命令必填选项的情况下请求命令帮助：
 
 ```bash
 workspace-cli jobs run --help
@@ -100,7 +100,7 @@ Options:
   --dry-run        Validate input without running the job
 ```
 
-Version 既可以是命令，也可以是全局 shortcut：
+版本既可以是命令，也可以是全局标志：
 
 ```bash
 workspace-cli version
@@ -116,7 +116,7 @@ node v24.13.1
 platform linux x64
 ```
 
-无效的 boolean assignments 仍会在命令执行前被拒绝：
+无效的布尔值仍会在命令执行前被拒绝：
 
 ```bash
 workspace-cli --help=false
@@ -128,11 +128,11 @@ workspace-cli --help=false
 Expected '--help' as boolean flag
 ```
 
-## 将工具命令作为普通命令
+## 将帮助和版本作为普通命令
 
-Utility commands 可以与应用其余部分使用同一个 command registry。下面的命令接受额外 positionals，因此 `help jobs run` 可以指向另一条命令：
+帮助和版本可以与应用其余部分使用同一个命令注册表。下面的命令接受额外的位置参数，因此 `help jobs run` 可以指向另一条命令：
 
-这种方式通常比在 registry 外硬编码 utility commands 更合适，因为 `help` 和 `version` 仍是可见的公共命令。其代价是：如果 `--help`、`-h`、 `--version` 和 `-v` 属于公共接口，bootstrap 仍需处理这些 shortcuts。
+这样 `help` 和 `version` 仍是可见的公共命令，而不是在注册表外单独定义。如果应用支持 `--help`、`-h`、`--version` 和 `-v`，它仍需在选择命令前处理它们。
 
 ```ts
 import { createCommand } from 'icore';
@@ -161,11 +161,11 @@ const versionCommand = command.define({
 });
 ```
 
-这样 utility command routing 保持显式。实际 help 与 version 文本仍由应用拥有。
+这样帮助和版本命令的路由清楚可见。帮助和版本文本仍由应用提供。
 
-## 根据命令元数据构建 help
+## 根据命令说明构建帮助
 
-将 help 文本保存在每个 command definition 中，再从 `commands.definitions` 构建 help inventory。Definitions 只包含 canonical commands，因此 aliases 不会产生重复条目：
+将帮助文本保存在每个命令定义中，再从 `commands.definitions` 构建命令列表。列表中每条主命令只出现一次，因此别名不会产生重复条目：
 
 ```ts
 import { createCommand } from 'icore';
@@ -217,15 +217,15 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 }));
 ```
 
-使用 `commandHelpEntries` 生成顶层与分组 help。对于特定命令的 help，将请求的 path 与 `definition.path`、`definition.aliases` 匹配，但渲染时使用 `definition.path` 中的 canonical path。
+使用 `commandHelpEntries` 生成顶层和分组帮助。对于某条命令的帮助，将请求的名称与 `definition.path`、`definition.aliases` 匹配，但显示 `definition.path` 中的主名称。
 
-`icore` 会公开 definitions 和类型化 metadata，但有意不决定 help 的 layout、措辞、分组方式或 aliases 是否可见。这些仍属于应用策略。
+`icore` 会公开命令定义和带类型的说明，但帮助的布局、措辞、分组和是否显示别名由应用决定。
 
-## 应用共享选项
+## 多条命令使用的选项
 
-实际命令经常复用连接设置、输出设置或命令开关。请保持这些 schemas 小而专注，并与 command-specific schemas 组合：
+命令经常复用连接设置、输出设置或标志。请保持这些选项定义小而明确，并把它们与单条命令的选项合并：
 
-当相同 options 出现在多条命令中时，组合很有价值；但这并不意味着应为仅使用一次的 options 创建 generic schemas。若一个 option 只被一条命令使用，就在该命令中直接定义。
+当相同选项出现在多条命令中时，共享选项定义很有用。如果一个选项只被一条命令使用，就直接在该命令中定义。
 
 ```ts
 import {
@@ -268,13 +268,13 @@ const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
 } as const);
 ```
 
-用户可以组合共享 options 与 command-specific options：
+用户可以组合共享选项和命令自己的选项：
 
 ```bash
 workspace-cli jobs list --profile staging --format json --status failed --limit 10
 ```
 
-Command handler 收到：
+命令函数会收到：
 
 ```text
 {
@@ -287,11 +287,11 @@ Command handler 收到：
 }
 ```
 
-## 已弃用的选项别名
+## 重命名时保留旧选项名称
 
-重命名公共 CLI option 时，请将 compatibility option 放在 canonical option 附近，并显式处理冲突：
+重命名公共 CLI 选项时，请将旧名称放在新名称附近，并明确处理同时传入两个名称的调用：
 
-这不是最简洁的契约，但当现有用户可能依赖旧名称时很有用。让 deprecated option 在代码中保持可见，使用时发出 warning，同时拒绝同时传入两个名称的歧义调用。
+现有用户可能依赖旧名称。请在代码中保留它，使用时输出警告，并拒绝同时传入两个名称的调用。
 
 ```ts
 import { CliUsageError } from 'icore';
@@ -329,13 +329,13 @@ function resolveItemId(options: ItemIdOptions): string {
 }
 ```
 
-Canonical option 不输出警告：
+新选项名称不输出警告：
 
 ```bash
 workspace-cli catalog get --item-id=item-42
 ```
 
-Deprecated option 可以继续工作，同时应用向 stderr 输出 warning：
+旧选项名称仍可工作，同时应用向标准错误输出警告：
 
 ```bash
 workspace-cli catalog get --legacy-id=item-42
@@ -347,7 +347,7 @@ workspace-cli catalog get --legacy-id=item-42
 Warning: '--legacy-id' is deprecated; use '--item-id' instead.
 ```
 
-同时使用两个 options 会被拒绝：
+同时使用两个名称会被拒绝：
 
 ```bash
 workspace-cli catalog get --item-id=item-42 --legacy-id=item-42
@@ -359,44 +359,44 @@ workspace-cli catalog get --item-id=item-42 --legacy-id=item-42
 Use either '--item-id' or deprecated '--legacy-id', not both
 ```
 
-## 值得测试的边界情况
+## 需要了解的参数情况
 
-Boolean flags 不会把下一个 token 当作值：
+布尔标志不会把下一个参数当作值：
 
-这是有意的行为，可以防止 `--offline false` 悄悄表示与受支持 boolean syntax 不同的含义。
+这可以防止 `--offline false` 悄悄表示与支持的布尔形式不同的含义。
 
 ```bash
 workspace-cli jobs list --offline false
 ```
 
-Parser 得到 `offline: true`，并将 `false` 留作 positional token。如果命令不允许额外 positionals，command validation 会拒绝它。
+解析器得到 `offline: true`，并将 `false` 留作位置参数。如果命令不允许额外的位置参数，验证会拒绝它。
 
-schema 已知的 string 和 number options 可以取得以短横线开头的值：
+命令定义的字符串和数值选项可以接收以短横线开头的值：
 
-这正是 parsing 需要 command schema 的原因。没有 schema 时，`-draft` 或 `-1` 可能被误认为另一个 option-like token。
+这就是解析需要命令选项定义的原因。没有它时，`-draft` 或 `-1` 可能被误认为另一个选项。
 
 ```bash
 workspace-cli search --query -draft --limit -1
 ```
 
-这对搜索文本和有符号数字很有用。Schema validation 之后仍可拒绝解析后的值，例如 `limit` 设置了 `min: 1` 时。
+这对搜索文本和有符号数字很有用。验证仍可在之后拒绝解析后的值，例如 `limit` 设置了 `min: 1` 时。
 
-选项终止符会将其后的所有内容变成 positional input：
+选项终止符会将其后的每个参数变成位置参数：
 
-当用户需要把看起来像 option 的文本传给应用本身时，这很有用。
+当应用需要看起来像选项的文本时，请使用它。
 
 ```bash
 workspace-cli search -- --query -draft --offline
 ```
 
-Tokens `--query`、`-draft` 和 `--offline` 不再被解析为 options。
+`--query`、`-draft` 和 `--offline` 不再被解析为选项。
 
-重复的长形式与短形式会被作为同一个参数拒绝：
+同时使用长选项和它的短名称会被拒绝：
 
-拒绝 duplicates 比“最后一个值优先”更严格，但能避免 command contracts 中隐藏的优先级规则。
+拒绝重复项可以避免隐藏的“哪个值优先”规则。
 
 ```bash
 workspace-cli jobs list --offline -o
 ```
 
-当 `offline` 声明了 `alias: 'o'` 时，这就是 duplicate。
+当 `offline` 声明了 `alias: 'o'` 时，这就是重复项。

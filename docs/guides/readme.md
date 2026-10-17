@@ -2,30 +2,30 @@
 
 English | [Русский](../ru/guides/readme.md) | [简体中文](../zh/guides/readme.md)
 
-These guides show application code for consuming projects. They explain what to put into a project, how to run it from a terminal, what output to expect, and why a particular shape is useful or intentionally limited.
+These guides show how an application uses `icore`. Start with the task you need to perform; the lower sections cover APIs used when the application needs more control.
 
-## Terminal Application
+## Build A Terminal Application
 
-- [terminal-app.md](terminal-app.md) is the main production recipe for global shortcuts, preparation, metadata-driven resources, execution, output, cleanup, and error reporting. The compact `app.run(...)` path remains in the [README quick start](../../readme.md#quick-start).
-- [practical-cli-patterns.md](practical-cli-patterns.md) shows application-level patterns for schema-aware global help/version shortcuts, metadata-driven command help, deprecated options, and edge-case argument handling.
+- [Set Up Command Execution And Cleanup](terminal-app.md) covers global flags, resource creation and cleanup, output, and error handling. The [README quick start](../../readme.md#quick-start) shows `app.run(...)`.
+- [Common CLI Patterns](practical-cli-patterns.md) covers help and version commands, shared options, and compatibility aliases.
 
-## Layer Toolkit
+## Define Commands And Options
 
-- [option-schemas.md](option-schemas.md) shows how to describe string, boolean, and number options with defaults, choices, aliases, and inferred TypeScript types.
-- [cli-argument-syntax.md](cli-argument-syntax.md) documents supported CLI argument syntax with terminal input examples.
-- [custom-command-flow.md](custom-command-flow.md) shows explicit `commands.prepare(...)`, `commands.run(...)`, and `commands.runFromArgs(...)` usage without the terminal app output and error-policy boundary.
-- [presentation-output.md](presentation-output.md) shows presentation rendering and output writing without command execution.
+- [Define Command Options](option-schemas.md) explains string, boolean, and number options, allowed values, defaults, aliases, and inferred TypeScript types.
+- [Argument Syntax](cli-argument-syntax.md) lists the command-line forms that `icore` accepts.
+- [Prepare And Run Commands Yourself](custom-command-flow.md) shows how to prepare and run commands without a terminal application.
+- [Format And Write Output](presentation-output.md) explains rendering and writing output without running a command.
 
-## Primitive Mechanics
+## Direct APIs
 
-- [command-resolution.md](command-resolution.md) shows command registries, canonical aliases, matched paths, explicit resolution, command-name guards, and standalone command definitions.
-- [two-phase-primitives.md](two-phase-primitives.md) shows lower-level preparation and execution primitives used behind command facades.
-- [presentation-primitives.md](presentation-primitives.md) shows explicit presentation views, renderers, and format guards.
-- [output-writers.md](output-writers.md) shows stdout/stderr writer primitives, custom sink wiring, and the application-owned interactive output boundary.
+- [Resolve Commands Directly](command-resolution.md) covers command registries, aliases, matched command names, and direct resolution.
+- [Prepare, Run, And Parse Directly](two-phase-primitives.md) covers direct functions for preparation, execution, and parsing.
+- [Create Output Values](presentation-primitives.md) covers text, records, tables, CSV, JSON, and direct renderers.
+- [Write Output Directly](output-writers.md) covers standard-output and standard-error writers and custom destinations.
 
-## Compatibility And Rework Candidates
+## APIs Kept For Existing Integrations
 
-Some examples intentionally show public APIs that are useful but not preferred as the first choice for new application code. Those examples call out the tradeoff near the method usage.
+These APIs remain public, but new applications normally start with the APIs above.
 
-- [command-resolution.md](command-resolution.md) covers `resolveCommandFromArgs(...)`.
-- [two-phase-primitives.md](two-phase-primitives.md) covers `parseOptionsDetailed(...)` and `parseOptionsSubsetDetailed(...)`.
+- [Resolve Commands Directly](command-resolution.md) documents `resolveCommandFromArgs(...)`.
+- [Prepare, Run, And Parse Directly](two-phase-primitives.md) documents `parseOptionsDetailed(...)` and `parseOptionsSubsetDetailed(...)`.

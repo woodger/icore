@@ -7,39 +7,23 @@
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](../../LICENSE)
 
-> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
+> 本文是英文版的翻译。如有差异，以英文版为准。
 
-`icore` 是一个用于在 [Node.js®](https://nodejs.org/) 应用中创建命令行界面的紧凑型库。它提供声明式命令定义、类型化参数解析、命令执行管理，以及文本、表格、JSON 和 CSV 格式的结果呈现。
+`icore` 是一个用于在 [Node.js®](https://nodejs.org/) 应用中构建命令行界面的 TypeScript 库。它帮助应用描述命令、解析参数、执行选中的命令，并输出文本、表格、JSON 或 CSV。
 
-`icore` 负责从 `process.argv` 到终端输出的整条路径：
+该库提供通用的命令行机制。API 调用、配置、领域规则、帮助文本和交互式终端行为仍由应用负责。
 
-- 声明式、可推导类型的选项 schema；
-- 支持 canonical command aliases 的多段命令解析；
-- 相互分离的 prepare 和 execute 阶段；
-- 感知 backpressure 的 stdout/stderr writers，以及可复用的 terminal error policy。
+## 要求和安装
 
-应用特有的 API 调用、配置、领域行为和 help 文本仍由使用方应用负责。
-
-## 要求与安装
-
-`icore` 要求 Node.js `>=16.9.0`，并包含 TypeScript declarations。
+`icore` 需要 Node.js `>=16.9.0`，并包含 TypeScript 声明。
 
 ```sh
 npm install icore
 ```
 
-## 目录
-
-- [快速开始](#快速开始)
-- [选择 API 层级](#选择-api-层级)
-- [支持的参数语法](#支持的参数语法)
-- [错误处理](#错误处理)
-- [指南](#指南)
-- [项目边界](#项目边界)
-
 ## 快速开始
 
-创建命令，将它们放入 [registry](../guides/command-resolution.md#create-a-commands-object-directly)，然后把该 registry 传给 `createTerminalApp()`：
+创建命令，将它们放入[命令注册表](../guides/command-resolution.md#create-a-commands-object-from-existing-definitions)，然后把注册表传给 `createTerminalApp()`：
 
 ```ts
 import {
@@ -90,145 +74,47 @@ $ node dist/cli.js hello --name Alice --uppercase
 HELLO, ALICE!
 ```
 
-schema 决定 handler 的选项类型。必填选项和具有默认值的选项始终存在；可选项返回 `T | undefined`。
+`options` 对象描述 `hello` 后面可接受的参数。`handle` 函数会收到解析后的值。
 
-具有共享 context、result 和 metadata 契约的应用可以通过 `createCommand.withTypes<...>()` 一次性绑定这些类型，同时仍会为每条命令推导 schema、path、aliases、准备后的 payload 和具体 result 类型。参见 [一次性绑定应用命令类型](guides/option-schemas.md#一次性绑定应用命令类型)。
+`app.run(...)` 会验证参数、执行选中的命令、格式化结果并写入终端。使用 `strict: true` 时，必须先写命令名和子命令，再写选项：`users get --id 42`。
 
-`app.run(...)` 是精简路径。若应用需要处理全局 shortcuts、在准备后选择资源或自行执行 cleanup，请使用 [生产级终端应用 lifecycle](guides/terminal-app.md)。
+如果应用自行处理全局 `--help` 或 `--version`、在选中命令后创建资源，或需要在命令执行前后关闭资源，请参阅[配置命令执行和资源清理](guides/terminal-app.md)。
 
-`strict: true` 会拒绝 command path 之前的 options。字符串输出会原样写入，因此逐行输出时请在命令结果中添加 `\n`。默认解析仍接受 option-first input。Bootstrap parsing 不会重排 argv，因此只有当 command-first syntax 属于应用的公共 CLI 契约时，才应启用 strict mode。
+## 选择 API
 
-## 选择 API 层级
-
-请从适合应用的最高层 API 开始：
-
-| 任务 | 起点 | 详细指南 |
+| 应用需要什么 | 从这里开始 | 指南 |
 | --- | --- | --- |
-| 简单终端应用 | `app.run(...)` | [快速开始](#快速开始) |
-| 生产级 shortcuts 与资源 lifecycle | `app.prepare(...)` 和 `app.commands.run(...)` | [生产级终端应用](guides/terminal-app.md) |
-| 命令与选项 schemas | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [选项模式](guides/option-schemas.md) |
-| 自定义 prepare/execute lifecycle | `commands.prepare()` 和 `commands.run()` | [Custom Command Flow（英文）](../guides/custom-command-flow.md) |
-| 所有格式共用一个扁平 projection | `createPresentation()` | [Presentation And Output（英文）](../guides/presentation-output.md) |
-| JSON、table 或 CSV 使用不同 projections | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [Presentation And Output（英文）](../guides/presentation-output.md) |
-| 显式写入 stdout/stderr | `createOutput()` | [Output Writers（英文）](../guides/output-writers.md) |
-| parser 与 resolver primitives | `parseArgv()`、`resolveCommand()` 及相关 exports | [Primitive Mechanics（英文）](../guides/readme.md#primitive-mechanics) |
+| 立即执行命令 | `app.run(...)` | [快速开始](#快速开始) |
+| 处理全局选项，或创建和关闭资源 | `app.prepare(...)` 和 `app.commands.run(...)` | [配置命令执行和资源清理](guides/terminal-app.md) |
+| 描述命令及其选项 | `createCommand()`、`createCommand.withTypes()` 或 `createCommands()` | [描述命令选项](guides/option-schemas.md) |
+| 在创建应用服务前准备命令 | `commands.prepare()` 和 `commands.run()` | [手动准备并执行命令](../guides/custom-command-flow.md) |
+| 在 JSON、表格和 CSV 中使用相同字段 | `createPresentation()` | [格式化并写入输出](../guides/presentation-output.md) |
+| 为 JSON、表格和 CSV 准备不同的数据 | `renderJson()`、`renderTextTable()` 或 `renderCsv()` | [格式化并写入输出](../guides/presentation-output.md) |
+| 直接写入标准输出或标准错误 | `createOutput()` | [写入输出](../guides/output-writers.md) |
+| 直接解析参数或查找命令 | `parseArgv()`、`resolveCommand()` 和相关导出 | [直接 API](../guides/readme.md#direct-apis) |
 
-终端应用提供以下主要 lifecycle 操作：
+## 错误
 
-- `app.run(args, context, options?)` 执行 prepare、execute、render 和 write；
-- `app.prepare(args, options?)` 在应用创建 command context 前验证输入；
-- `app.runPrepared(prepared, context)` 执行已准备的命令；
-- `app.writePreparedOutput(prepared, output)` 写入 caller 得到的 output；
-- `app.reportError(error, context?)` 应用配置的 terminal error policy，并返回 process-style exit code。
-
-空 command registry 是 bootstrap-only `TerminalApp` 的受支持场景。它可在完整 registry 加载前处理 caller-owned global shortcuts，并使用 presentation、 output 或 `reportError(...)`。空 registry 中没有可解析的命令：应创建另一个含完整命令 registry 的应用，并复用相同的 output 与 error policy，而不是原地修改 registry。
-
-Command handlers 会收到解析后的 `options`、记录选项是否由用户提供的 `provided` metadata、剩余 `positionals`、caller-owned `context` 和可选的 prepared `payload`。
-
-受支持的 terminal results 包括字符串、字符串异步流、presentation results 和 `undefined`。
-
-在将未知的 caller-owned result 传给 `app.writePreparedOutput(...)` 之前，使用 `isTerminalCommandOutput(...)` 缩小其类型。
-
-文本表格 rendering 仅支持 plain-text cells。列宽通过 JavaScript string length 计算，因此 ANSI sequences、emoji、combining characters、tabs 和 full-width Unicode 可能无法正确对齐。
-
-```text
-argv → resolve → validate/prepare → execute → render → stdout/stderr
-```
-
-## 支持的参数语法
-
-受支持的语法有意保持精简和可预测：
-
-| 形式 | 示例 | 说明 |
-| --- | --- | --- |
-| 带独立值的长选项 | `--name Alice` | String 与 number options 会取得该值 |
-| 带连接值的长选项 | `--name=Alice` | 等同于独立形式 |
-| Boolean flag | `--verbose` | 返回 `true` |
-| Boolean negation | `--no-cache` | 对已知 boolean options 生效，但 `syntax: 'flag'` 除外 |
-| 短 alias | `-v`、`-n Alice` | 必须在 schema 中声明为单个 ASCII 字母 |
-| 选项终止符 | `--` | 后续每个 token 都成为 positional |
-
-选项名称必须精确匹配：`icore` 不会把 `camelCase` 转换为 `kebab-case`。不支持 `--verbose=true` 这样的显式 boolean values、`-nAlice` 这样的连接短值，以及 `-abc` 这样的分组 aliases。
-
-Parsing examples、edge cases、duplicate handling 与终止符契约见 [CLI Argument Syntax（英文）](../guides/cli-argument-syntax.md)。
-
-## 错误处理
-
-CLI parsing、validation、resolution 和 definitions 产生的错误用 `IcoreError` 表示。它扩展 `Error` 并包含：
-
-- 稳定、机器可读的 `code`；
-- `usage` 或 `definition` category；
-- 与错误 code 对应的必填 `details`。
-
-请使用 `isIcoreError(...)`，而不是手动转换 details。向 guard 传入 code 会缩小到对应的 details 结构：
-
-```ts
-import {
-  createTerminalApp,
-  isIcoreError,
-  isUsageError
-} from 'icore';
-
-const help = 'Usage: cli hello [--name value]';
-
-const app = createTerminalApp({
-  commands,
-  errorPolicy: {
-    renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
-
-      if (isIcoreError(error, 'UNKNOWN_COMMAND')) {
-        return `${message}\n\n${help}\n`;
-      }
-
-      return `${message}\n`;
-    },
-    resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
-    }
-  }
-});
-```
-
-在 `UNKNOWN_COMMAND` 分支内，`error.details.command` 和 `error.details.positionals` 等字段均具有严格类型。 `IcoreErrorDetailsMap` 是每种 code 的公共 source of truth。直接调用 `new IcoreError(...)` 时，必须提供与所选 code 匹配的第三个参数。
-
-Application-owned semantic validation 可以抛出 `CliUsageError`，而不必为错误分配 framework-owned `IcoreError` code：
-
-```ts
-import { CliUsageError } from 'icore';
-
-throw new CliUsageError(
-  "Expected '--from' to be earlier than or equal to '--to'"
-);
-```
-
-`isUsageError(...)` 会识别 `CliUsageError`，以及 category 为 `usage` 的 `IcoreError` 实例。Rendering、help text 与 exit code 选择仍由应用决定。
-
-两个 guards 都能识别同一 JavaScript realm 中由另一份物理 `icore` 副本创建的兼容 branded errors。这不会把经 JSON、IPC 或 worker boundaries 序列化的错误恢复成类实例。
-
-未提供 custom policy 时，终端应用会写入 `Error.message + "\n"`；对于其他抛出值则写入 `String(error) + "\n"`，并返回 exit code `1`。应用特有的 help 仍属于应用策略。
-
-Custom lifecycle 可以调用 `app.reportError(...)` 来复用相同的 rendering 和 exit-code policy。prepare、execute、write 与 external 各阶段的完整 flow 见 [生产级 lifecycle](guides/terminal-app.md#资源清理与错误顺序的所有权)。
+`IcoreError` 表示无效的命令行参数或无效的命令定义。使用 `isIcoreError(...)` 检查此类错误，并用 `isUsageError(...)` 识别由用户输入造成的错误。对于应用自己的输入规则，请抛出 `CliUsageError`。当前的错误类型和代码定义在[错误源文件](https://github.com/woodger/icore/tree/main/src/errors)中。
 
 ## 指南
 
-[中文指南索引](guides/readme.md) 从普通终端应用逐步通向底层机制。建议从以下文档开始：
+部分详细指南暂时只有英文版；以下链接用中文说明其内容。
 
-- [生产级终端应用](guides/terminal-app.md) — global shortcuts、 preparation、按 metadata 选择资源、execution、output、cleanup 与可复用的 error handling；
-- [选项模式](guides/option-schemas.md) — strings、booleans、numbers、 choices、defaults、aliases 和推导类型；
-- [实用 CLI 模式](guides/practical-cli-patterns.md) — help/version shortcuts、共享 options 和 compatibility aliases；
-- [Command Resolution（英文）](../guides/command-resolution.md) — registry、 canonical aliases、matched paths、显式解析与 command-name guards；
-- [Two-Phase Primitives（英文）](../guides/two-phase-primitives.md) — preparation、payloads、execution 与已提供选项的 metadata；
-- [Presentation Primitives（英文）](../guides/presentation-primitives.md) — text、record、table、CSV、JSON 与 direct renderers。
+- [配置命令执行和资源清理](guides/terminal-app.md) — 全局选项、资源创建和清理、输出与错误处理。
+- [描述命令选项](guides/option-schemas.md) — 字符串、布尔值、数值、允许值、默认值、别名和 TypeScript 类型推导。
+- [常用 CLI 模式](guides/practical-cli-patterns.md) — 帮助和版本命令、公共选项与兼容性别名。
+- [参数语法](../guides/cli-argument-syntax.md) — 命令行参数支持和不支持的写法。
+- [手动准备并执行命令](../guides/custom-command-flow.md) — 不通过终端应用来准备和执行命令。
+- [格式化并写入输出](../guides/presentation-output.md) — 渲染结果并写入标准输出或标准错误。
+- [直接 API](../guides/readme.md#direct-apis) — 不通过终端应用来解析命令、输出和表示数据。
 
-版本历史见 [CHANGELOG.md](../../CHANGELOG.md)，指导性决策见 [docs/roadmap.md](../roadmap.md)。这些文档使用英文维护。
+发布历史见 [CHANGELOG.md](../../CHANGELOG.md)，项目决策见 [docs/roadmap.md](../roadmap.md)。
 
-## 项目边界
+## `icore` 负责什么
 
-`icore` 是一个小型终端机制模块，负责 generic behavior：选项 validation、 command resolution、handler 的类型化输入、presentation rendering、error contracts，以及向 stdout/stderr 的输出。
+`icore` 处理通用的命令行工作：验证选项、选择命令、向命令函数传递带类型的值、格式化输出、提供错误处理入口，以及写入标准输出或标准错误。
 
-它不负责应用 DTO mapping、API calls、配置加载、domain-specific validation、 resource lifecycle 或 help 内容。这些职责留给 Consumer。Interactive line rendering 与 progress reporting 同样属于应用；旧版 compatibility exports 不应成为新代码的基础。
+应用自行完成 API 调用、加载配置、验证领域规则、创建和关闭资源、编写帮助文本、显示进度和处理其他交互式终端输出。
 
 项目采用 [MIT 许可证](../../LICENSE)。

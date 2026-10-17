@@ -1,23 +1,23 @@
-# Output Writers
+# Write Output
 
-`createOutput()` is the preferred output entrypoint. It exposes semantic `write(...)` and `error(...)` methods while keeping raw stdout/stderr channels available for lower-level integrations.
+`createOutput()` is the usual way to write output. It provides `write(...)` for standard output and `error(...)` for standard error, while still exposing the individual channels when code needs them.
 
-Prefer semantic methods first. Direct writer primitives are useful in tests, streaming adapters, and custom terminal boundaries.
+Start with `write(...)` and `error(...)`. Direct writer functions are useful in tests, streaming adapters, and code that needs one specific channel.
 
-Interactive lines and progress are application-owned.
+The application owns interactive lines and progress indicators.
 
-## Application-Owned Interactive Output
+## Keep Interactive Output In The Application
 
-For new Consumers, keep interactive behavior in the terminal infrastructure or bootstrap layer. `icore` should receive only semantic stdout/stderr output:
+Keep interactive behavior in the application code that starts the CLI. Pass only regular standard output and standard error through `icore`:
 
-- application code emits progress state or domain events meaningful to the operation;
-- the infrastructure reporter decides TTY behavior, line redraw, terminal width, labels, signal handling, and cleanup;
-- bootstrap creates one reporter per invocation and closes it before writing a final result or reporting an error;
-- `createOutput()` remains the shared boundary for regular output and diagnostics.
+- application code reports progress or events meaningful to its work;
+- the progress reporter decides terminal detection, line redraw, width, labels, signal handling, and cleanup;
+- the code that starts the CLI creates one reporter for a run and closes it before the final result or error;
+- `createOutput()` writes ordinary output and diagnostics.
 
-Do not interleave reporter writes with `output.write(...)`. If an application must support both at the same time, its infrastructure layer must provide the serialization; `createOutput()` does not coordinate application-owned line operations.
+Do not mix progress-reporter writes with `output.write(...)`. If both must run at once, application code must serialize them; `createOutput()` does not coordinate interactive lines.
 
-The exact reporter contract is application-owned. A representative lifecycle looks like this:
+The application defines its own progress-reporter interface. For example:
 
 ```ts
 import { createOutput, createTerminalApp } from 'icore';
@@ -52,9 +52,9 @@ if (failure !== undefined) {
 }
 ```
 
-`TerminalProgressReporter` and `runApplication(...)` in this example belong to the consuming project. Keep domain mapping, resource ownership, and process signals out of `icore`.
+`TerminalProgressReporter` and `runApplication(...)` in this example belong to the application. Keep application data mapping, resources, and process signals there too.
 
-## Use Semantic Output
+## Write Command Output And Errors
 
 ```ts
 import { createOutput } from 'icore';
@@ -65,20 +65,20 @@ await output.write('regular command output\n');
 await output.error('warning: using cached data\n');
 ```
 
-The convention is simple: command results go to stdout, diagnostics go to stderr. Keeping that split makes shell pipelines usable.
+Command results go to standard output, and diagnostics go to standard error. This keeps shell pipelines usable.
 
-## Use Explicit Channels
+## Use One Channel Directly
 
-Use `output.stdout.write(...)` and `output.stderr.write(...)` when a specific channel must be passed into another component.
+Use `output.stdout.write(...)` and `output.stderr.write(...)` when another component needs a specific channel.
 
 ```ts
 await output.stdout.write('regular command output\n');
 await output.stderr.write('warning: using cached data\n');
 ```
 
-This is lower-level than `output.write(...)` and `output.error(...)`. Prefer it only when the channel identity matters.
+Use this only when the receiving code needs to know which channel it writes to.
 
-## Inject Test Sinks
+## Provide Output Destinations In Tests
 
 Pass custom sinks to `createOutput(...)` when tests or applications need to capture text.
 
@@ -103,9 +103,9 @@ await output.write('ok\n');
 await output.error('warning\n');
 ```
 
-This is better than mocking `process.stdout` globally. The output dependency is explicit and local to the terminal boundary.
+This keeps the output dependency explicit and avoids mocking `process.stdout` globally.
 
-## Create Node Writers Directly
+## Create Standard-Output And Standard-Error Writers
 
 `createStdoutWriter(...)` and `createStderrWriter(...)` create individual text writers.
 
@@ -122,11 +122,11 @@ await stdout.write('ok\n');
 await stderr.write('warning\n');
 ```
 
-Use these when a custom facade owns channel composition. For normal CLI code, `createOutput()` is clearer because it preserves stdout/stderr semantics in one object.
+Use these when code assembles its own output object. For normal CLI code, `createOutput()` keeps standard output and standard error together.
 
-## Use A Backpressure-Aware Writer
+## Wait For A Slow Stream
 
-`createBackpressureTextWriter(...)` adapts a text sink and waits when the sink reports backpressure.
+`createBackpressureTextWriter(...)` wraps a text destination and waits when the destination cannot accept more text yet.
 
 ```ts
 import { createBackpressureTextWriter } from 'icore';
@@ -136,13 +136,13 @@ const writer = createBackpressureTextWriter(process.stdout);
 await writer.write('large chunk\n');
 ```
 
-This is useful for streaming commands. It is more code than direct `process.stdout.write(...)`, but it prevents a fast producer from ignoring a slow consumer.
+This is useful for commands that stream output. It prevents a fast producer from ignoring a slow destination.
 
-Passing the stream directly preserves its event hooks, so a backpressured write rejects if the stream emits `error` or `close` before `drain`.
+When a Node stream is passed directly, a paused write rejects if the stream emits `error` or `close` before `drain`.
 
 Already destroyed or ended Node streams reject before writing, rather than waiting for a drain event that cannot occur.
 
-## Use Promise-Returning Sinks
+## Use Destinations That Return Promises
 
 Sinks can also return a promise from `write(...)`.
 
@@ -156,4 +156,4 @@ const writer = createBackpressureTextWriter({
 await writer.write('forwarded output\n');
 ```
 
-This shape is useful when output is not a Node stream. The tradeoff is that the application owns the reliability and ordering guarantees of that sink.
+Use this when output is not a Node stream. The application then defines the destination's reliability and ordering guarantees.

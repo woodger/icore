@@ -1,10 +1,10 @@
-# Custom Command Flow
+# Prepare And Run Commands Yourself
 
-Use this shape when the application wants command mechanics without the terminal application boundary. The application prepares a command, creates the selected command's context, and then runs the prepared command explicitly.
+Use this guide when the application needs to validate arguments and select a command before it creates the values needed by that command. The application then prepares the command and runs it itself, without `TerminalApp` formatting output or handling errors.
 
-This is useful when command parsing happens before the application opens a database connection or creates an API client. The application can validate arguments and select a command before creating either one. The tradeoff is that the application must own output rendering and error handling itself.
+This is useful when argument parsing should happen before the application opens a database connection or creates an API client. The application must then format output and handle errors itself.
 
-If the application wants the same explicit resource lifecycle while retaining `TerminalApp` output and error policy, use the [production terminal lifecycle](terminal-app.md) instead.
+When the application needs to create and close resources while still using `TerminalApp` for output and errors, use [Set Up Command Execution And Cleanup](terminal-app.md).
 
 Put the command registry close to the code that owns the command contract:
 
@@ -46,7 +46,7 @@ const commands = command.registry([
 ] as const);
 ```
 
-The `prepare` hook is intentionally small. It normalizes command input before the application creates the command context, but it should not perform application work. Keeping that split makes failed argument parsing cheap and deterministic.
+Keep `prepare` small. It turns command input into prepared data before the application creates values for the command, but it should not perform application work. This makes argument failures inexpensive and predictable.
 
 When application startup needs a separate preparation step, prepare first and run later:
 
@@ -62,7 +62,7 @@ async function runTwoPhase(args: readonly string[]): Promise<string> {
 }
 ```
 
-The two-phase form is the safest choice when application context is expensive or has side effects. If preparation fails, the command context never needs to be created.
+This two-step form is useful when values passed to the command are expensive to create or have side effects. If preparation fails, the application never creates them.
 
 When the application does not need that split, run from raw terminal arguments:
 
@@ -76,7 +76,7 @@ async function runFromArgs(args: readonly string[]): Promise<string> {
 }
 ```
 
-`runFromArgs(...)` is more compact and works well for simple applications. It is less flexible because parsing, preparation, and execution happen as one step.
+`runFromArgs(...)` is useful when the application does not need the gap between parsing and execution. It is less flexible because it combines parsing, preparation, and execution in one call.
 
 Pass the same arguments a user would type in the terminal:
 

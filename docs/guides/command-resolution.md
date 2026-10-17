@@ -1,12 +1,12 @@
-# Command Resolution
+# Resolve Commands
 
-Use these primitives when the application needs command selection without immediately running a command. This is common in help systems, command previews, audit logs, and custom routers.
+Use these functions when the application needs to choose a command without running it yet. This is useful for help, command previews, audit logs, and custom routing.
 
-For regular terminal applications, prefer `createTerminalApp()` or `createCommand().registry(...)`. The lower-level resolution API is more verbose, but it makes command selection explicit and testable.
+For a regular terminal application, start with `createTerminalApp()` or `createCommand().registry(...)`. Use the direct functions only when application code needs to choose a command itself.
 
-## Define Commands Without The Facade
+## Define Commands Directly
 
-`defineCommand(...)` is the low-level form behind `command.define(...)`.
+`defineCommand(...)` is the direct form of `command.define(...)`.
 
 ```ts
 import {
@@ -51,7 +51,7 @@ const registry = defineCommandRegistry([
 type PublicCommandName = CommandName<typeof runJobCommand>;
 ```
 
-Use this form when the registry itself is the important object. The tradeoff is that you do not get the convenient `commands.prepare(...)` and `commands.run(...)` methods until you call `createCommands(...)`.
+Use this form when application code needs the command registry itself. Call `createCommands(...)` when it also needs `commands.prepare(...)` and `commands.run(...)`.
 
 The inferred `PublicCommandName` is:
 
@@ -59,9 +59,9 @@ The inferred `PublicCommandName` is:
 type PublicCommandName = 'jobs run';
 ```
 
-## Declare Canonical Command Aliases
+## Give A Command Alternate Names
 
-Put compatibility paths on the canonical command definition. Aliases select the same option schema, prepare hook, metadata, and handler; they do not create additional command definitions.
+Put older or alternate paths on the main command definition. They use the same options, `prepare` function, description, and command function; they do not create additional commands.
 
 ```ts
 const listAccountsCommand = defineCommand({
@@ -99,7 +99,7 @@ type AcceptedAccountPath =
   CommandAcceptedPath<typeof listAccountsCommand>;
 ```
 
-`name` and `path` always describe the canonical command. `matchedPath` records the path used for this invocation:
+`name` and `path` always describe the main command. `matchedPath` records the name used for this call:
 
 ```ts
 canonical.name;        // 'account list'
@@ -111,15 +111,15 @@ aliased.path;           // ['account', 'list']
 aliased.matchedPath;    // ['users', 'get-accounts']
 ```
 
-For a canonical invocation, `matchedPath === path`. The inferred `AcceptedAccountPath` is the literal union of the canonical path and both alias paths.
+For a call using the main name, `matchedPath === path`. TypeScript infers `AcceptedAccountPath` as the literal union of the main path and both alternate paths.
 
-`accountCommands.names` contains only `'account list'`, and `accountCommands.definitions` contains one definition. Canonical and alias paths participate in the same collision validation and longest-path resolution; an exact collision is rejected as `DUPLICATE_COMMAND`.
+`accountCommands.names` contains only `'account list'`, and `accountCommands.definitions` contains one definition. Main and alternate paths use the same collision checks and longest-path selection; an exact collision is rejected as `DUPLICATE_COMMAND`.
 
-When an alias invocation has an unexpected positional, the human-readable message uses the matched alias. Structured `UNEXPECTED_POSITIONAL` details keep `command` canonical and add `matchedPath` for that alias invocation.
+When a call using an alternate name has an unexpected positional argument, the message uses that alternate name. The structured `UNEXPECTED_POSITIONAL` details keep `command` as the main name and add `matchedPath` for the name used in the call.
 
-## Create A Commands Object Directly
+## Create A Commands Object From Existing Definitions
 
-`createCommands(...)` is the direct alternative to `createCommand().registry(...)`.
+`createCommands(...)` creates the same kind of commands object as `createCommand().registry(...)`.
 
 ```ts
 const commands = createCommands([
@@ -131,11 +131,11 @@ commands.names;
 commands.registry;
 ```
 
-This is useful when command definitions are already created elsewhere and the application does not need the `createCommand()` object. It is not better for normal code; it is just a more direct construction form.
+Use this when command definitions are already created elsewhere and application code does not need the `createCommand()` object.
 
 ## Resolve From Positionals
 
-Use `commands.resolve(...)` when arguments are already split into command path tokens.
+Use `commands.resolve(...)` when command name and subcommands are already separate arguments.
 
 ```ts
 const resolved = commands.resolve([
@@ -155,7 +155,7 @@ The resolved command name is:
 jobs run
 ```
 
-No options are parsed in this form. That is intentional: it is useful for help renderers that already have command tokens, but it is not enough to validate a terminal call.
+This function does not parse options. It is useful for help code that already has command arguments, but it does not validate a terminal call.
 
 ## Resolve From Raw Arguments
 
@@ -179,9 +179,9 @@ const sameResolved = resolveCommandFromArgs(commands.registry, [
 ]);
 ```
 
-This form asks each command schema how to split options from command tokens. It is a better fit for real argv input than `resolve(...)`. During one non-strict resolution, each canonical command definition is parsed at most once, regardless of how many alias paths it owns.
+This form asks each command's option definition how to separate options from command arguments. It fits real terminal input better than `resolve(...)`. During one non-strict resolution, each main command definition is parsed at most once, even when it has several alternate names.
 
-A usage parsing failure in an unrelated schema does not prevent another schema from resolving valid input. Parsing errors for the selected command and invalid schema definitions are still rejected; when no candidate resolves, a captured parsing failure is reported.
+A parsing error in an unrelated command's options does not prevent another command from matching valid input. Parsing errors for the selected command and invalid option definitions are still rejected. If no command matches, a captured parsing error is reported.
 
 Default resolution preserves option-first input:
 
@@ -193,7 +193,7 @@ await accountCommands.prepare([
 ]);
 ```
 
-Strict resolution searches canonical and alias paths before parsing, so the path must begin with the first argument:
+With `strict: true`, command names and alternate names are checked before options, so the command name must be the first argument:
 
 ```ts
 await accountCommands.prepare([
@@ -205,11 +205,11 @@ await accountCommands.prepare([
 });
 ```
 
-The option-first form is rejected with `strict: true`. Parsing global or bootstrap options does not itself reorder argv; an application should enable strict mode only when command-first syntax is its public contract.
+With `strict: true`, the option-first form is rejected. Parsing global options does not reorder arguments; use strict mode only when the command name must come first in the application's public CLI.
 
-## Use The Standalone Resolver
+## Use The Standalone Function
 
-`resolveCommand(...)` is the primitive behind `commands.resolve(...)`.
+`resolveCommand(...)` does the same command-name lookup as `commands.resolve(...)`.
 
 ```ts
 import { resolveCommand } from 'icore';
@@ -220,11 +220,11 @@ const resolved = resolveCommand(registry, [
 ]);
 ```
 
-Prefer `commands.resolve(...)` when you already have a `commands` object. Use the standalone function when a custom registry object is passed around.
+Use `commands.resolve(...)` when code already has a `commands` object. Use the standalone function when it passes a registry object around.
 
 ## Guard Command Names
 
-`isCommandName(...)` narrows unknown input to the command names registered in a registry.
+`isCommandName(...)` checks whether an unknown value is one of the command names in a registry.
 
 ```ts
 import { isCommandName } from 'icore';
@@ -238,4 +238,4 @@ function renderHelpPage(name: unknown): string {
 }
 ```
 
-This is safer than comparing against string literals in several places. The cost is that the guard checks only canonical command names. Alias paths remain available on command definitions and through `matchedPath`; the guard does not validate options or execute anything.
+This is safer than comparing string literals in several places. The check covers only main command names. Alternate names remain available on command definitions and through `matchedPath`; this function does not validate options or run a command.

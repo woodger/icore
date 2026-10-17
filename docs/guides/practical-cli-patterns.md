@@ -1,16 +1,16 @@
-# Practical CLI Patterns
+# Common CLI Patterns
 
 English | [Русский](../ru/guides/practical-cli-patterns.md) | [简体中文](../zh/guides/practical-cli-patterns.md)
 
-These examples show application-level patterns built on top of icore. They use neutral command names, but the shapes are meant for real CLI applications with many commands, shared options, utility commands, and compatibility behavior.
+These examples show how an application can use `icore` for common command-line behavior. The command names are neutral, but the examples apply to applications with many commands, shared options, help and version commands, and older option names.
 
-## Global Help And Version Shortcuts
+## Global Help And Version
 
-In a larger CLI, `--help`, `-h`, `--version`, and `-v` often work before command execution. They should not require command-specific required options or command context.
+In a CLI with many commands, `--help`, `-h`, `--version`, and `-v` often work before a command is selected. They should not require values needed only by one command.
 
-This behavior is not automatic in icore because it is application policy, not command mechanics. Keeping it in the bootstrap runner is the most explicit choice: utility shortcuts can bypass command-specific validation, while regular commands still use the registry and their own schemas.
+`icore` does not handle these flags automatically because an application decides what help and version mean. Handle them before selecting a command. The global flags can then bypass validation for a specific command, while regular commands still use the command registry and their own option definitions.
 
-Put this logic in the bootstrap runner, before the command registry runs a business command:
+Parse these flags before using the command registry to run an application command:
 
 ```ts
 import {
@@ -51,11 +51,11 @@ function parseBootstrapInput(args: readonly string[]) {
 }
 ```
 
-Short aliases are schema behavior: `parseArgv(...)` maps `-h` to `help` and `-v` to `version`. The application does not need to normalize argv or declare separate `h` and `v` options.
+The option definition gives `-h` and `-v` their meanings: `parseArgv(...)` maps them to `help` and `version`. The application does not need to rewrite the arguments or define separate `h` and `v` options.
 
-Only bootstrap-owned options are validated here. Command-specific options are returned in `rest` for inspection but should normally remain in the original argv passed to `app.prepare(...)`. Do not reconstruct command argv from the subset result. That avoids a common mistake where global parsing rejects, reorders, or drops valid command options before the command is resolved.
+Only the global flags are checked here. Options for a command appear in `rest`, but normally stay in the original arguments passed to `app.prepare(...)`. Do not rebuild command arguments from the partial result. Otherwise global parsing can reject, reorder, or discard valid command options before a command is selected.
 
-Include every bootstrap option whose type affects token ownership. In this example `offline` is declared as boolean, so shortcut parsing will not consume the following command segment as its value.
+Include every global option whose type tells the parser whether it takes the next argument. Here `offline` is boolean, so parsing does not treat the following command segment as its value.
 
 The user can ask for top-level help:
 
@@ -98,7 +98,7 @@ Options:
   --dry-run        Validate input without running the job
 ```
 
-Version can also be a command and a global shortcut:
+Version can be both a command and a global flag:
 
 ```bash
 workspace-cli version
@@ -114,7 +114,7 @@ node v24.13.1
 platform linux x64
 ```
 
-Invalid boolean assignments are still rejected before command execution:
+Invalid boolean values are still rejected before command execution:
 
 ```bash
 workspace-cli --help=false
@@ -126,11 +126,11 @@ The terminal shows:
 Expected '--help' as boolean flag
 ```
 
-## Utility Commands As Regular Commands
+## Make Help And Version Regular Commands
 
-Utility commands can use the same command registry as the rest of the application. The command below accepts extra positionals so `help jobs run` can target another command:
+Help and version can use the same command registry as the rest of the application. The command below accepts extra positional arguments, so `help jobs run` can name another command:
 
-This approach is usually better than hard-coding utility commands outside the registry because `help` and `version` remain visible public commands. The cost is that bootstrap still needs shortcut handling for `--help`, `-h`, `--version`, and `-v` if those forms are part of the public interface.
+This keeps `help` and `version` visible as public commands instead of hard-coding them outside the registry. The application still needs to handle `--help`, `-h`, `--version`, and `-v` before command selection if it supports those forms.
 
 ```ts
 import { createCommand } from 'icore';
@@ -159,11 +159,11 @@ const versionCommand = command.define({
 });
 ```
 
-This keeps utility command routing explicit. The application still owns the actual help text and version text.
+This makes the routing of help and version commands visible. The application still supplies the help text and version text.
 
-## Build Help From Command Metadata
+## Build Help From Command Descriptions
 
-Keep help text with each command definition, then build the help inventory from `commands.definitions`. Definitions contain canonical commands only, so aliases do not create duplicate entries:
+Keep help text with each command definition, then build the command list from `commands.definitions`. The list contains each main command once, so aliases do not create duplicate entries:
 
 ```ts
 import { createCommand } from 'icore';
@@ -215,15 +215,15 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 }));
 ```
 
-Use `commandHelpEntries` for top-level and group help. For command-specific help, match the requested path against `definition.path` and `definition.aliases`, but render the canonical path from `definition.path`.
+Use `commandHelpEntries` for top-level and group help. For help about one command, compare the requested name with `definition.path` and `definition.aliases`, but show the main name from `definition.path`.
 
-`icore` exposes definitions and typed metadata but deliberately does not choose help layout, wording, grouping, or whether aliases should be visible. Those remain application policy.
+`icore` exposes command definitions and typed descriptions, but the application chooses the help layout, wording, grouping, and whether aliases are shown.
 
-## Shared Application Options
+## Options Used By Several Commands
 
-Real commands often reuse connection settings, output settings, or command switches. Keep those schemas small and compose them with command-specific schemas:
+Commands often reuse connection settings, output settings, or flags. Keep those option definitions small and merge them with the options for one command:
 
-Composition is useful when the same options appear across many commands. It is not a reason to create generic schemas for one-off options. If only one command uses an option, define it directly on that command.
+Share an option definition when the same options appear in several commands. If only one command uses an option, define it directly on that command.
 
 ```ts
 import {
@@ -266,13 +266,13 @@ const listJobsOptions = mergeOptionsSchema(sharedCliOptions, outputOptions, {
 } as const);
 ```
 
-The user can combine shared and command-specific options:
+The user can combine shared options with options for one command:
 
 ```bash
 workspace-cli jobs list --profile staging --format json --status failed --limit 10
 ```
 
-The command handler receives:
+The command function receives:
 
 ```text
 {
@@ -285,11 +285,11 @@ The command handler receives:
 }
 ```
 
-## Deprecated Option Aliases
+## Keep An Old Option Name During Migration
 
-When a public CLI option is renamed, keep the compatibility option close to the canonical option and resolve the conflict explicitly:
+When a public CLI option is renamed, keep the old name near the new name and resolve a call that contains both explicitly:
 
-This is not the cleanest contract, but it is useful when existing users may already depend on the old name. Keep the deprecated option visible in code, warn when it is used, and reject ambiguous calls that pass both names.
+Existing users may depend on the old name. Keep it visible in code, print a warning when it is used, and reject calls that pass both names.
 
 ```ts
 import { CliUsageError } from 'icore';
@@ -327,13 +327,13 @@ function resolveItemId(options: ItemIdOptions): string {
 }
 ```
 
-The canonical option is quiet:
+The new option prints no warning:
 
 ```bash
 workspace-cli catalog get --item-id=item-42
 ```
 
-The deprecated option can still work while the application prints a warning to stderr:
+The old option can still work while the application prints a warning to standard error:
 
 ```bash
 workspace-cli catalog get --legacy-id=item-42
@@ -345,7 +345,7 @@ The terminal can show:
 Warning: '--legacy-id' is deprecated; use '--item-id' instead.
 ```
 
-Using both options is rejected:
+Using both names is rejected:
 
 ```bash
 workspace-cli catalog get --item-id=item-42 --legacy-id=item-42
@@ -357,44 +357,44 @@ The terminal shows:
 Use either '--item-id' or deprecated '--legacy-id', not both
 ```
 
-## Edge Cases Worth Testing
+## Argument Cases To Understand
 
-Boolean flags do not consume the next token as a value:
+Boolean flags do not consume the next argument as a value:
 
-This behavior is intentional. It prevents `--offline false` from silently meaning something different than the supported boolean syntax.
+This prevents `--offline false` from silently meaning something other than the supported boolean form.
 
 ```bash
 workspace-cli jobs list --offline false
 ```
 
-The parser sees `offline: true` and leaves `false` as a positional token. If the command does not allow extra positionals, command validation rejects it.
+The parser sees `offline: true` and leaves `false` as a positional argument. If the command does not allow extra positional arguments, validation rejects it.
 
-Schema-known string and number options can consume dash-prefixed values:
+String and number options defined for a command can consume values that start with a dash:
 
-This is why parsing receives the command schema. Without the schema, `-draft` or `-1` could be mistaken for another option-like token.
+This is why parsing receives the command's option definition. Without it, `-draft` or `-1` could be mistaken for another option.
 
 ```bash
 workspace-cli search --query -draft --limit -1
 ```
 
-This is useful for search text and signed numbers. Schema validation can still reject the parsed value later, for example when `limit` has `min: 1`.
+This is useful for search text and signed numbers. Validation can still reject the parsed value later, for example when `limit` has `min: 1`.
 
-The option terminator turns everything after it into positional input:
+The option terminator turns every following argument into positional input:
 
-This is useful when the user needs to pass text that looks like an option to the application itself.
+Use it when the application needs text that looks like an option.
 
 ```bash
 workspace-cli search -- --query -draft --offline
 ```
 
-The tokens `--query`, `-draft`, and `--offline` are no longer parsed as options.
+`--query`, `-draft`, and `--offline` are no longer parsed as options.
 
-Duplicate long and short forms are rejected as the same argument:
+Using both a long option and its short name is rejected:
 
-Rejecting duplicates is stricter than "last value wins", but it prevents hidden precedence rules in command contracts.
+Rejecting duplicates avoids hidden rules about which value wins.
 
 ```bash
 workspace-cli jobs list --offline -o
 ```
 
-That is a duplicate when `offline` declares `alias: 'o'`.
+This is a duplicate when `offline` declares `alias: 'o'`.

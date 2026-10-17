@@ -1,19 +1,19 @@
-# 生产级终端应用
+# 配置命令执行和资源清理
 
 [English](../../guides/terminal-app.md) | [Русский](../../ru/guides/terminal-app.md) | 简体中文
 
 > 本文是英文版的简体中文翻译。如有差异，以英文版为准。
 
-[README 快速开始](../readme.md#快速开始)使用 `app.run(...)`，因为对已具备 context 的小型 CLI 来说，这是最清晰的入口。
+[README 快速开始](../readme.md#快速开始)在应用已具备命令所需的一切时使用 `app.run(...)`。
 
-当应用满足以下情况时，请使用本指南中的显式 lifecycle：
+当应用需要完成以下工作时，请使用本指南中的步骤：
 
-- 在 command validation 前处理全局 help 或 version shortcuts；
-- 根据 prepared command metadata 或 payload 选择数据库或 API 资源；
-- 自行拥有 resource cleanup、progress 或 long-running handles；
-- 同时仍希望使用 `TerminalApp` 的 rendering、output 和 error policy。
+- 在验证命令前处理全局 `--help` 或 `--version`；
+- 在知道要运行哪条命令后选择数据库连接或 API 客户端；
+- 自行创建和关闭资源，并管理进度输出或长期运行的任务；
+- 同时仍使用 `TerminalApp` 格式化输出并应用错误处理规则。
 
-生产级流程如下：
+执行顺序如下：
 
 ```text
 parse global shortcuts
@@ -27,11 +27,11 @@ parse global shortcuts
 → app.reportError() when a failure was captured
 ```
 
-Cleanup 先于 error reporting，以确保 progress 与 resources 已经结束，再向 stderr 写入 diagnostics。所选资源会一直保持打开，直到 `writePreparedOutput(...)` 完成，因为 terminal output 可能是仍依赖这些资源的异步流。
+请在报告错误前关闭进度输出和资源，这样诊断信息只会在清理完成后出现。在 `writePreparedOutput(...)` 完成前不要关闭所选资源：终端输出可能仍是会使用这些资源的异步流。
 
-## 一次性组合命令与终端服务
+## 一次创建共享的命令行对象
 
-一次性绑定共享 application contracts，同时保留 command-specific schema、 path、payload、aliases 和 result inference：
+如果所有命令都使用相同的类型来表示应用传入的值、返回值和命令说明，请只创建一次带类型的命令构建器。每条命令仍会声明自己的选项、名称、别名、准备后的数据和返回类型：
 
 ```ts
 import {
@@ -168,13 +168,13 @@ const app = createTerminalApp({
 });
 ```
 
-每次 CLI invocation 只创建一次 `command`、`commands`、`presentation`、 `output` 和 `app`。资源实例不属于这次组合；只有在 `app.prepare(...)` 确定所选命令后才创建它们。
+CLI 启动时只创建一次 `command`、`commands`、`presentation`、`output` 和 `app`。此时不要创建数据库连接或 API 客户端；等待 `app.prepare(...)` 确定所选命令后再创建。
 
-Error policy 会输出 `AggregateError` 的每个成员，并将第一个成员作为主要错误来选择 exit code。Runner 将命令错误放在第一位，cleanup 错误放在第二位，因此两条 diagnostics 都会显示，同时保留命令的 exit code。
+错误处理规则会输出 `AggregateError` 的每个成员，并用第一个成员选择退出码。当命令和清理都失败时，这个示例把命令错误放在第一位、清理错误放在第二位，因此两个消息都会显示，同时保留命令的退出码。
 
-## 在不重写 argv 的情况下解析全局快捷方式
+## 不重写参数地处理全局帮助和版本
 
-在 bootstrap option schema 中声明短 aliases。`parseArgv(...)` 会将 `-h` 和 `-v` 映射到 canonical names，而 `parseOptionsSubsetDetailed(...)` 只验证 bootstrap 拥有的 options：
+在选择命令前处理的选项中描述 `-h` 和 `-v`。`parseArgv(...)` 会把它们映射为 `help` 和 `version`，而 `parseOptionsSubsetDetailed(...)` 只检查这些初始选项：
 
 ```ts
 import {
@@ -210,13 +210,13 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-将原始 `args` 传给 `app.prepare(...)`；不要根据 subset result 重建 argv。这样 command-specific options 才会继续提供给所选命令的 schema。
+把原始 `args` 传给 `app.prepare(...)`；不要根据部分解析结果重建参数。所选命令仍必须收到自己的选项。
 
-应包含每个其类型会影响 token ownership 的 bootstrap option。例如，声明 boolean `--insecure` 可以防止 shortcut parsing 把后续 command segment 误认为它的值。
+包含每个类型能告诉解析器是否会占用下一个参数的初始选项。例如，将 `--insecure` 声明为布尔值可防止解析器把后续命令段当成它的值。
 
-## 资源、清理与错误顺序的所有权
+## 创建资源、清理资源，再报告错误
 
-应用提供自己的 help renderer 和 resource scope：
+应用提供自己的帮助格式化函数和关闭资源的对象：
 
 ```ts
 type InvocationScope = {
@@ -251,11 +251,11 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` 应在每个资源创建后立即注册 cleanup，并在 initialization 失败时回滚已经创建的部分资源。
+`createInvocationScope(...)` 应在创建每个资源后立即登记关闭动作。如果初始化失败，它应关闭已经创建的资源。
 
-[由 metadata 驱动的 help 方案](practical-cli-patterns.md#根据命令元数据构建-help) 展示 `renderHelp(...)` 如何从 `commands.definitions` 构建 canonical command inventory，而不重复 aliases。
+[构建帮助的示例](practical-cli-patterns.md#根据命令说明构建帮助)展示 `renderHelp(...)` 如何从 `commands.definitions` 读取主命令名列表，而不重复别名。
 
-Runner 保留主要 failure 的 phase、合并 cleanup failure，并且只在 cleanup 完成后报告：
+下面的代码记录第一个错误发生的阶段，将它与清理错误合并，并在清理后报告：
 
 ```ts
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
@@ -446,26 +446,26 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` 同时执行 rendering 和 writing。外部 caller 无法区分这两种 failure，因此本方案将 rejection 报告为 `write`。内置的 `app.run(...)` 与 `app.runPrepared(...)` 路径可以在内部区分 `render` 和 `write`。
+`writePreparedOutput(...)` 会格式化输出并写入它。`TerminalApp` 外的代码无法知道哪一步失败，因此本指南将其拒绝报告为 `write`。内置的 `app.run(...)` 和 `app.runPrepared(...)` 会在内部区分 `render` 与 `write`。
 
-绑定的 `CliCommandResult` 是上界。普通命令仍保留其具体 presentation result，而 `watchUsersCommand` 保留具体 `LongRunningCommandResult`。
+`CliCommandResult` 只定义应用允许的最宽结果类型。普通命令仍保留具体的输出结果，而 `watchUsersCommand` 保留具体的 `LongRunningCommandResult`。
 
-`transferLongRunningLifecycle(...)` 属于应用策略。它必须在注册 handle 与 scope 的 signal handling 和 cleanup 后才返回。成功时 runner 清空 `scope`，因此 invocation `finally` 不再拥有它。如果 transfer 抛出异常，它必须关闭 handle，但不能取得 scope ownership；随后 invocation `finally` 关闭 scope。转移后的 lifecycle 也负责在写入后续 diagnostics 前结束 interactive output。
+`transferLongRunningLifecycle(...)` 属于应用代码。它必须在返回前为任务和 `scope` 注册信号处理和清理。成功时，`runCli(...)` 会清空 `scope`，因此调用的 `finally` 块不会关闭它。若转移抛出异常，该函数必须关闭任务，但不能接管 `scope`；调用的 `finally` 块随后会关闭 `scope`。转移后的工作还必须在写入后续诊断信息前结束交互式输出。
 
-只有被 `isTerminalCommandOutput(...)` 接受的 results 才会到达 `writePreparedOutput(...)`。这样 custom handles、process signals 与 long-running resource ownership 都保持在 terminal app 边界之外。
+只有被 `isTerminalCommandOutput(...)` 接受的值才会到达 `writePreparedOutput(...)`。应用自己负责特殊任务、进程信号和长期运行工作使用的资源。
 
-## 选择表示层所有权
+## 选择输出格式化方式
 
-请在两种 presentation 路径中选择一种：
+请选择两种输出路径之一：
 
-- 当同一个扁平 projection 适用于 JSON、table 和 CSV 时，从 `createPresentation()` 返回 view。
-- 当 JSON 需要完整的嵌套 report，而 table 或 CSV 需要选定 columns 与 domain formatting 时，由 Consumer 直接选择 `renderJson(...)`、 `renderTextTable(...)` 或 `renderCsv(...)`。
+- 当 JSON、表格和 CSV 使用同一组顶层字段时，返回通过 `createPresentation()` 创建的输出值。
+- 当 JSON 需要完整的嵌套报告，而表格或 CSV 需要选定列和应用自己的格式化时，直接在应用中调用 `renderJson(...)`、`renderTextTable(...)` 或 `renderCsv(...)`。
 
-格式选择见 [Presentation And Output（英文）](../../guides/presentation-output.md)，底层契约见 [Presentation Primitives（英文）](../../guides/presentation-primitives.md)。
+格式选择见[格式化并写入输出](../../guides/presentation-output.md)，直接 API 见[准备输出数据](../../guides/presentation-primitives.md)。
 
-## 为简单应用保留精简路径
+## 当命令可以立即运行时使用 `app.run(...)`
 
-当 context 已存在且 handlers 返回终端支持的 output 时，请优先使用精简路径：
+当命令所需的一切都已准备好，并且命令返回 `TerminalApp` 可以写入的输出时，使用 `app.run(...)`：
 
 ```ts
 process.exitCode = await app.run(args, context, {
@@ -473,4 +473,4 @@ process.exitCode = await app.run(args, context, {
 });
 ```
 
-显式方案用于 application-owned lifecycle 工作，并非每个 CLI 都必须采用的固定流程。
+只有在应用自行创建或关闭命令执行期间的资源时，才使用上述步骤。

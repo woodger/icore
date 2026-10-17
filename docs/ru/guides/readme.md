@@ -4,30 +4,32 @@
 
 > Русский перевод английской версии. При расхождении актуальной считается английская версия.
 
-Эти руководства показывают application code для Consumer-проектов. Они объясняют, что поместить в проект, как запустить его из терминала, какой output ожидать и почему конкретная структура полезна или намеренно ограничена.
+Эти руководства показывают, как приложение использует `icore`. Начните с нужной задачи; ниже собраны прямые API для случаев, когда приложению требуется больше контроля.
 
-## Терминальное приложение
+Часть подробных руководств пока доступна только на английском; их названия ниже переведены для навигации.
 
-- [terminal-app.md](terminal-app.md) — основной production recipe для global shortcuts, preparation, ресурсов на основе metadata, execution, output, cleanup и обработки ошибок. Компактный путь `app.run(...)` приведён в [быстром старте README](../readme.md#быстрый-старт).
-- [practical-cli-patterns.md](practical-cli-patterns.md) показывает application-level patterns для schema-aware глобальных help/version shortcuts, help на основе command metadata, deprecated options и обработки edge cases аргументов.
+## Создание терминального приложения
 
-## Инструменты слоёв
+- [Настройка запуска команды и очистки ресурсов](terminal-app.md) — глобальные опции, создание и очистка ресурсов, вывод и обработка ошибок. Пример `app.run(...)` есть в [быстром старте README](../readme.md#быстрый-старт).
+- [Распространённые приёмы для CLI](practical-cli-patterns.md) — команды справки и версии, общие опции и устаревшие псевдонимы.
 
-- [option-schemas.md](option-schemas.md) показывает, как описывать string, boolean и number options с defaults, choices, aliases и выводимыми типами TypeScript.
-- [CLI Argument Syntax (English)](../../guides/cli-argument-syntax.md) описывает поддерживаемый синтаксис CLI-аргументов с примерами terminal input.
-- [Custom Command Flow (English)](../../guides/custom-command-flow.md) показывает явное использование `commands.prepare(...)`, `commands.run(...)` и `commands.runFromArgs(...)` без output и error-policy boundary терминального приложения.
-- [Presentation And Output (English)](../../guides/presentation-output.md) показывает presentation rendering и запись output без command execution.
+## Описание команд и опций
 
-## Низкоуровневая механика
+- [Описание опций команд](option-schemas.md) — строковые, логические и числовые опции, допустимые значения, значения по умолчанию, псевдонимы и вывод типов TypeScript.
+- [Синтаксис аргументов](../../guides/cli-argument-syntax.md) — формы аргументов командной строки, которые принимает `icore`.
+- [Подготовка и выполнение команды вручную](../../guides/custom-command-flow.md) — подготовка и выполнение команд без терминального приложения.
+- [Форматирование и запись вывода](../../guides/presentation-output.md) — подготовка и запись вывода без выполнения команды.
 
-- [Command Resolution (English)](../../guides/command-resolution.md) показывает command registries, canonical aliases, matched paths, explicit resolution, command-name guards и отдельные command definitions.
-- [Two-Phase Primitives (English)](../../guides/two-phase-primitives.md) описывает низкоуровневые primitives preparation и execution, используемые за command facades.
-- [Presentation Primitives (English)](../../guides/presentation-primitives.md) показывает явные presentation views, renderers и format guards.
-- [Output Writers (English)](../../guides/output-writers.md) показывает stdout/stderr writer primitives, подключение custom sink и application-owned boundary интерактивного output.
+## Прямые API
 
-## Кандидаты на compatibility и переработку
+- [Поиск команды напрямую](../../guides/command-resolution.md) — реестры команд, псевдонимы, совпавшие имена и прямой поиск.
+- [Подготовка, выполнение и разбор аргументов напрямую](../../guides/two-phase-primitives.md) — прямые функции подготовки, выполнения и разбора аргументов.
+- [Подготовка данных для вывода](../../guides/presentation-primitives.md) — текст, записи, таблицы, CSV, JSON и прямые функции форматирования.
+- [Прямая запись вывода](../../guides/output-writers.md) — запись в стандартный вывод, поток ошибок и пользовательские назначения.
 
-Некоторые примеры намеренно показывают публичные API, которые полезны, но не рекомендуются как первый выбор для нового application code. Trade-off отмечен рядом с использованием метода.
+## API для существующих интеграций
 
-- [Command Resolution (English)](../../guides/command-resolution.md) описывает `resolveCommandFromArgs(...)`.
-- [Two-Phase Primitives (English)](../../guides/two-phase-primitives.md) описывает `parseOptionsDetailed(...)` и `parseOptionsSubsetDetailed(...)`.
+Эти API остаются публичными, но новые приложения обычно начинают с API из разделов выше.
+
+- [Поиск команды напрямую](../../guides/command-resolution.md) описывает `resolveCommandFromArgs(...)`.
+- [Подготовка, выполнение и разбор аргументов напрямую](../../guides/two-phase-primitives.md) описывает `parseOptionsDetailed(...)` и `parseOptionsSubsetDetailed(...)`.

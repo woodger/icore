@@ -1,10 +1,10 @@
-# Presentation And Output
+# Format And Write Output
 
-Use this shape when command execution is handled elsewhere, but the application still wants shared terminal rendering and stdout/stderr writing.
+Use this guide when the application runs commands itself but still wants `icore` to format output and write to standard output or standard error.
 
-This split is useful when application code already has its own command runner or framework. icore can still provide a consistent terminal view layer without taking ownership of command execution.
+This is useful when application code already has its own command runner or framework. `icore` can format the result without running the command.
 
-Create presentation and output once near the terminal boundary:
+Create the formatting and output objects where the application writes to the terminal:
 
 ```ts
 import {
@@ -16,9 +16,9 @@ const presentation = createPresentation();
 const output = createOutput();
 ```
 
-Keeping these objects near the boundary avoids leaking stdout/stderr decisions into application services. When every output format exposes the same fields, domain objects can be mapped to generic presentation records before they are rendered.
+Keeping these objects where terminal output is written keeps standard-output and standard-error decisions out of application services. When every format uses the same fields, map application data to records containing those fields before formatting.
 
-Build a view from application data:
+Build an output value from application data:
 
 ```ts
 const result = presentation.records([
@@ -33,18 +33,18 @@ const result = presentation.records([
 ]);
 ```
 
-The view contains already selected fields. This is deliberate: presentation views should not discover domain meaning by themselves. `records(...)` is a good fit only when the same flat shape is suitable for JSON, table, and CSV. Table and CSV headers are inferred from data, so an empty records view renders without headers in those formats.
+The records already contain the fields to show. `records(...)` is a good fit only when JSON, table, and CSV use the same top-level fields. Table and CSV headers come from the records, so an empty record list has no headers in those formats.
 
-Render the view and write it to stdout. Write operational messages to stderr:
+Format the value and write it to standard output. Write operational messages to standard error:
 
 ```ts
 await output.write(presentation.render(result, 'table'));
 await output.error('Rendered job table\n');
 ```
 
-Write machine-consumable command output to stdout and operational status to stderr. That convention keeps shell pipelines usable.
+Write command output intended for another program to standard output and operational status to standard error. This keeps shell pipelines usable.
 
-When formats intentionally need different projections, render each projection directly at this boundary instead:
+When formats need different data, prepare the data for each format and call the renderer directly instead:
 
 ```ts
 import {
@@ -80,7 +80,7 @@ switch (format) {
 await output.write(text);
 ```
 
-This keeps the full nested report available to JSON while allowing table and CSV output to select and format their own columns. icore deliberately does not derive one projection from the other.
+This keeps the complete nested report in JSON while letting table and CSV select and format their own columns. `icore` does not derive one format's data from another.
 
 The user sees the table in stdout:
 

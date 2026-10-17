@@ -1,16 +1,16 @@
-# Option Schemas
+# Define Command Options
 
 English | [Русский](../ru/guides/option-schemas.md) | [简体中文](../zh/guides/option-schemas.md)
 
-Use option schemas to describe the public arguments of a command. The schema defines what the user can type in the terminal and what typed values the command handler receives.
+Use an option definition to describe a command's public arguments. It states what a user can type in the terminal and which typed values the function that runs the command receives.
 
-The schema is deliberately small: it covers primitive CLI types and validation rules, while application-specific parsing stays in the application. That keeps icore reusable and prevents domain rules from leaking into command mechanics.
+The option definition covers strings, booleans, numbers, and their validation rules. Application-specific parsing stays in the application, along with its business rules.
 
 ## Start with one command
 
-Put a command close to the application code that owns the command behavior:
+Put a command near the application code that implements it:
 
-This is preferable to a central "all options" file for most commands. The person reading the command can see the public CLI contract and the handler together.
+For most commands, this is clearer than a central file containing every option. A reader can see the command-line interface and the function that runs the command together.
 
 ```ts
 import {
@@ -58,13 +58,17 @@ const reportCommand = command.define({
 });
 ```
 
-The command now accepts one required string option, one string option with choices, one boolean option, and one bounded number option.
+The command accepts one required string, one string limited to listed values, one boolean, and one number within a range.
 
-The `as const` is important because it preserves literal choices for TypeScript inference. Without it, the handler would still work when JavaScript executes, but the inferred type would be wider and less useful.
+`as const` preserves the listed string values for TypeScript inference. Without it, the command still runs, but TypeScript infers a broader and less useful type.
 
-## Bind application command types once
+## Share Types Used By Every Command
 
-Use `createCommand.withTypes<...>()` when every command in an application shares the same context, result, and metadata contracts:
+Use `createCommand.withTypes<...>()` only when every command uses the same types for:
+
+- `context`: values passed by the application to the command function;
+- `result`: the value returned by that function;
+- `metadata`: static command information, such as its description.
 
 ```ts
 import { createCommand } from 'icore';
@@ -111,13 +115,13 @@ const statusCommand = command.define({
 });
 ```
 
-The result binding is an upper bound: the example handler is still inferred to return `string`, rather than the wider `string | void`. The schema, literal canonical and alias paths, and prepared payload also remain specific to `statusCommand`.
+The `result` type is only the broadest result the application allows. TypeScript still infers this example function as returning `string`, rather than `string | void`. Its option definition, command name, aliases, and prepared data also remain specific to `statusCommand`.
 
-Omit `metadataRequired` when commands may leave out metadata. The setting only changes the definitions created by that bound builder; ordinary `createCommand()` and other builders keep their existing contracts.
+Do not set `metadataRequired` when a command may omit `metadata`. The setting affects only definitions created by this typed builder; ordinary `createCommand()` calls and other builders are unchanged.
 
-When an application has no command metadata contract, use `metadata: undefined` in the bindings and omit `metadataRequired`. This keeps the shared binding explicit without requiring a metadata property on command definitions.
+When the application has no shared `metadata`, use `metadata: undefined` in the type arguments and omit `metadataRequired`. This makes that choice explicit without requiring a `metadata` property on every command.
 
-Bindings describe independent application-level types. If metadata depends on the exact option schema, validate that relationship per command with `satisfies`, or keep a small application-owned wrapper. The bound builder does not create context, resources, clients, signals, or long-running handles; their lifecycle remains application-owned.
+The type arguments describe separate values used by the application. If `metadata` depends on a command's exact options, check that relationship on the command with `satisfies` or keep a small wrapper in the application. The builder does not create values for `context`, database connections, API clients, signal handlers, or long-running work; the application does that itself.
 
 ## Run it from the terminal
 
@@ -127,7 +131,7 @@ The user can pass long options:
 node dist/cli.js reports list --project alpha --format json --archived --limit 5
 ```
 
-The handler receives:
+The command function receives:
 
 ```json
 {
@@ -144,7 +148,7 @@ The user can pass declared short aliases:
 node dist/cli.js reports list -p alpha -l 5
 ```
 
-The handler receives defaults for options that were not typed:
+The command function receives default values for options the user did not provide:
 
 ```json
 {
@@ -155,18 +159,18 @@ The handler receives defaults for options that were not typed:
 }
 ```
 
-Defaults are useful for stable command behavior, but they are also part of the public contract. Prefer defaults only when the implicit value is obvious and safe.
+Defaults are part of the command-line interface. Use them only when the implicit value is obvious and safe.
 
 ## Use boolean negation
 
-Boolean options can be turned off with `--no-<name>` when the option is known by the schema:
+A known boolean option can be turned off with `--no-<name>`:
 
 ```bash
 node dist/cli.js reports list --project alpha --archived
 node dist/cli.js reports list --project alpha --no-archived
 ```
 
-The first command gives the handler `archived: true`; the second gives it `archived: false`.
+The first command function receives `archived: true`; the second receives `archived: false`.
 
 This form is more explicit than accepting `--archived=false`. It also avoids ambiguous text values such as `0`, `no`, or `off`.
 
@@ -183,7 +187,7 @@ Both forms are rejected. Boolean options use flag syntax, not `true` / `false` v
 
 Use `syntax: 'flag'` for options that should only mean "enable this behavior":
 
-This is a stricter contract. It is a good fit for options like `--dry-run`, where the absence of the flag already has a clear meaning.
+This is stricter. It suits options such as `--dry-run`, where the flag being absent already has a clear meaning.
 
 ```ts
 const schema = {
@@ -208,11 +212,11 @@ node dist/cli.js reports list --no-dry-run
 node dist/cli.js reports list --dry-run=false
 ```
 
-## Reuse shared schema pieces
+## Reuse Shared Option Definitions
 
-When several commands reuse the same public options, keep small schema pieces and merge them at the command boundary:
+When several commands use the same public options, keep small option definitions and merge them where the command is defined:
 
-This reduces duplication without hiding command-specific intent. It becomes a bad abstraction when the reusable schema needs many exceptions for individual commands.
+This avoids duplication without hiding what is specific to a command. Keep an option definition local when reuse would require many exceptions.
 
 ```ts
 import { mergeOptionsSchema } from 'icore';
@@ -238,6 +242,6 @@ const outputOptions = {
 const options = mergeOptionsSchema(pagingOptions, outputOptions);
 ```
 
-Later schemas override earlier schemas when an option name is repeated. Keep that behavior intentional and visible near the command definition.
+When an option name is repeated, the later definition replaces the earlier one. Keep that choice visible near the command definition.
 
-For larger application patterns that combine shared schemas, global shortcuts, and compatibility options, see [practical-cli-patterns.md](practical-cli-patterns.md).
+For applications with shared options, global help or version flags, and older option names, see [Common CLI Patterns](practical-cli-patterns.md).

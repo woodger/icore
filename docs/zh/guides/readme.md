@@ -2,32 +2,34 @@
 
 [English](../../guides/readme.md) | [Русский](../../ru/guides/readme.md) | 简体中文
 
-> 本文是英文版的简体中文翻译。如有差异，以英文版为准。
+> 本文是英文版的翻译。如有差异，以英文版为准。
 
-这些指南展示了供使用方项目采用的应用代码。它们说明应在项目中放置什么、如何从终端运行、预期得到什么输出，以及某种结构为何有用或为何受到有意限制。
+这些指南说明应用如何使用 `icore`。请从要完成的任务开始；后面的章节介绍需要由应用掌握更多控制权时可直接使用的 API。
 
-## 终端应用
+部分详细指南暂时只有英文版；以下链接用中文说明其内容。
 
-- [terminal-app.md](terminal-app.md) 是处理全局快捷方式、准备、由 metadata 驱动的资源、执行、输出、清理和错误报告的主要生产级方案。精简的 `app.run(...)` 路径仍位于 [README 快速开始](../readme.md#快速开始)中。
-- [practical-cli-patterns.md](practical-cli-patterns.md) 展示应用层模式，包括 schema-aware 的全局 help/version 快捷方式、由 command metadata 驱动的 help、已弃用选项和参数边界情况处理。
+## 构建终端应用
 
-## 分层工具集
+- [配置命令执行和资源清理](terminal-app.md) — 全局选项、资源创建和清理、输出与错误处理。[README 快速开始](../readme.md#快速开始)展示了 `app.run(...)`。
+- [常用 CLI 模式](practical-cli-patterns.md) — 帮助和版本命令、公共选项与兼容性别名。
 
-- [option-schemas.md](option-schemas.md) 展示如何描述带有默认值、choices、 aliases 和 TypeScript 类型推导的 string、boolean 与 number options。
-- [CLI Argument Syntax（英文）](../../guides/cli-argument-syntax.md) 通过终端输入示例说明受支持的 CLI 参数语法。
-- [Custom Command Flow（英文）](../../guides/custom-command-flow.md) 展示如何在不经过终端应用的 output 和 error-policy 边界时，显式使用 `commands.prepare(...)`、`commands.run(...)` 与 `commands.runFromArgs(...)`。
-- [Presentation And Output（英文）](../../guides/presentation-output.md) 展示不执行命令时的 presentation rendering 和 output writing。
+## 描述命令和选项
 
-## 底层机制
+- [描述命令选项](option-schemas.md) — 字符串、布尔值、数值、允许值、默认值、别名和 TypeScript 类型推导。
+- [参数语法](../../guides/cli-argument-syntax.md) — `icore` 接受的命令行参数写法。
+- [手动准备并执行命令](../../guides/custom-command-flow.md) — 不通过终端应用来准备和执行命令。
+- [格式化并写入输出](../../guides/presentation-output.md) — 不执行命令时准备并写入输出。
 
-- [Command Resolution（英文）](../../guides/command-resolution.md) 展示 command registries、canonical aliases、matched paths、显式解析、command-name guards 和独立的 command definitions。
-- [Two-Phase Primitives（英文）](../../guides/two-phase-primitives.md) 介绍 command facades 背后使用的底层 preparation 与 execution primitives。
-- [Presentation Primitives（英文）](../../guides/presentation-primitives.md) 展示显式 presentation views、renderers 和 format guards。
-- [Output Writers（英文）](../../guides/output-writers.md) 展示 stdout/stderr writer primitives、自定义 sink 接线和由应用拥有的交互式 output 边界。
+## 直接 API
 
-## 兼容性与重构候选项
+- [直接查找命令](../../guides/command-resolution.md) — 命令注册表、别名、匹配到的命令名和直接查找。
+- [直接准备、执行和解析参数](../../guides/two-phase-primitives.md) — 直接调用准备、执行和解析函数。
+- [准备输出数据](../../guides/presentation-primitives.md) — 文本、记录、表格、CSV、JSON 和直接格式化函数。
+- [直接写入输出](../../guides/output-writers.md) — 标准输出、标准错误和自定义目标的写入。
 
-部分示例有意展示仍然有用、但不推荐作为新应用代码首选的公共 API。相关取舍会在方法使用位置附近说明。
+## 为现有集成保留的 API
 
-- [Command Resolution（英文）](../../guides/command-resolution.md) 说明 `resolveCommandFromArgs(...)`。
-- [Two-Phase Primitives（英文）](../../guides/two-phase-primitives.md) 说明 `parseOptionsDetailed(...)` 和 `parseOptionsSubsetDetailed(...)`。
+这些 API 仍然公开，但新应用通常应从上面列出的 API 开始。
+
+- [直接查找命令](../../guides/command-resolution.md)说明 `resolveCommandFromArgs(...)`。
+- [直接准备、执行和解析参数](../../guides/two-phase-primitives.md)说明 `parseOptionsDetailed(...)` 和 `parseOptionsSubsetDetailed(...)`。

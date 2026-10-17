@@ -7,16 +7,9 @@ English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/re
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
 
-`icore` is a compact library for building command-line interfaces in [Node.js®](https://nodejs.org/) applications. It provides declarative command definitions, typed argument parsing, command execution management, and text, table, JSON, and CSV result presentation.
+`icore` is a TypeScript library for building command-line interfaces in [Node.js®](https://nodejs.org/) applications. It helps an application define commands, parse arguments, run the selected command, and write text, table, JSON, or CSV output.
 
-`icore` owns the path from `process.argv` to terminal output:
-
-- declarative, type-inferred option schemas;
-- multi-segment command resolution with canonical command aliases;
-- separate prepare and execute phases;
-- backpressure-aware stdout/stderr writers and reusable terminal error policy.
-
-Application-specific API calls, configuration, domain behavior, and help text remain in the consuming application.
+The library provides the shared command-line mechanics. The application provides its API calls, configuration, business rules, help text, and interactive terminal behavior.
 
 ## Requirements And Installation
 
@@ -26,18 +19,9 @@ Application-specific API calls, configuration, domain behavior, and help text re
 npm install icore
 ```
 
-## Contents
-
-- [Quick Start](#quick-start)
-- [Choose An API Level](#choose-an-api-level)
-- [Supported Argument Syntax](#supported-argument-syntax)
-- [Error Handling](#error-handling)
-- [Guides](#guides)
-- [Project Boundary](#project-boundary)
-
 ## Quick Start
 
-Create commands, put them in a [registry](docs/guides/command-resolution.md#create-a-commands-object-directly), and give that registry to `createTerminalApp()`:
+Create commands, collect them in a [command registry](docs/guides/command-resolution.md#create-a-commands-object-from-existing-definitions), and pass the registry to `createTerminalApp()`:
 
 ```ts
 import {
@@ -88,145 +72,45 @@ $ node dist/cli.js hello --name Alice --uppercase
 HELLO, ALICE!
 ```
 
-The schema determines the handler's option types. Required options and options with defaults are always present; optional options are returned as `T | undefined`.
+The `options` object describes arguments accepted after `hello`. The `handle` function receives their parsed values.
 
-Applications that share command context, result, and metadata contracts can bind those types once with `createCommand.withTypes<...>()`. Per-command schema, path, aliases, prepared payload, and concrete result types remain inferred. See [Bind application command types once](docs/guides/option-schemas.md#bind-application-command-types-once).
+`app.run(...)` validates the arguments, runs the selected command, formats its result, and writes it to the terminal. With `strict: true`, the command name and any subcommands must come before options: `users get --id 42`.
 
-`app.run(...)` is the compact path. Applications that handle global shortcuts, select resources after preparation, or own cleanup should continue with the [production terminal lifecycle](docs/guides/terminal-app.md).
+When the application handles global `--help` or `--version`, opens resources after selecting a command, or must close resources around execution, follow [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md).
 
-`strict: true` rejects options placed before the command path. String output is written exactly as returned, so include `\n` when line output is intended. Default resolution continues to accept option-first input. Parsing bootstrap options does not reorder argv, so enable strict mode only when command-first syntax is part of the application's public CLI contract.
+## Choose An API
 
-## Choose An API Level
-
-Start with the highest-level API that fits the application:
-
-| Need | Start with | Detailed guide |
+| What the application needs | Start with | Guide |
 | --- | --- | --- |
-| Simple terminal application | `app.run(...)` | [Quick Start](#quick-start) |
-| Production shortcuts and resource lifecycle | `app.prepare(...)` and `app.commands.run(...)` | [Production Terminal Application](docs/guides/terminal-app.md) |
-| Commands and option schemas | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Option Schemas](docs/guides/option-schemas.md) |
-| Custom prepare/execute lifecycle | `commands.prepare()` and `commands.run()` | [Custom Command Flow](docs/guides/custom-command-flow.md) |
-| One flat projection for every format | `createPresentation()` | [Presentation And Output](docs/guides/presentation-output.md) |
-| Different JSON, table, or CSV projections | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Presentation And Output](docs/guides/presentation-output.md) |
-| Explicit stdout/stderr writing | `createOutput()` | [Output Writers](docs/guides/output-writers.md) |
-| Parser and resolver primitives | `parseArgv()`, `resolveCommand()`, and related exports | [Primitive Mechanics](docs/guides/readme.md#primitive-mechanics) |
+| Run a command immediately | `app.run(...)` | [Quick Start](#quick-start) |
+| Handle global flags or create and close resources | `app.prepare(...)` and `app.commands.run(...)` | [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md) |
+| Define commands and their options | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Define Command Options](docs/guides/option-schemas.md) |
+| Prepare a command before creating application services | `commands.prepare()` and `commands.run()` | [Prepare And Run Commands Yourself](docs/guides/custom-command-flow.md) |
+| Use the same record fields for JSON, table, and CSV | `createPresentation()` | [Format And Write Output](docs/guides/presentation-output.md) |
+| Choose separate data for JSON, table, and CSV | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Format And Write Output](docs/guides/presentation-output.md) |
+| Write directly to standard output or standard error | `createOutput()` | [Write Output](docs/guides/output-writers.md) |
+| Parse arguments or resolve a command directly | `parseArgv()`, `resolveCommand()`, and related exports | [Direct APIs](docs/guides/readme.md#direct-apis) |
 
-The terminal application exposes the main lifecycle operations:
+## Errors
 
-- `app.run(args, context, options?)` prepares, executes, renders, and writes;
-- `app.prepare(args, options?)` validates input before the application creates command context;
-- `app.runPrepared(prepared, context)` executes an already prepared command;
-- `app.writePreparedOutput(prepared, output)` writes caller-obtained output;
-- `app.reportError(error, context?)` applies the configured terminal error policy and returns a process-style exit code.
-
-An empty command registry is supported for a bootstrap-only `TerminalApp` that uses caller-owned global shortcuts and needs presentation, output, or `reportError(...)` before the full registry is loaded. It has no resolvable commands; construct the command application separately and reuse the same output and error policy instead of replacing the registry in place.
-
-Command handlers receive parsed `options`, option-presence metadata in `provided`, remaining `positionals`, caller-owned `context`, and an optional prepared `payload`.
-
-Supported terminal results are strings, async string streams, presentation results, and `undefined`.
-
-Use `isTerminalCommandOutput(...)` to narrow an unknown caller-owned result before passing it to `app.writePreparedOutput(...)`.
-
-Text-table rendering supports plain-text cells. Column widths use JavaScript string length, so ANSI sequences, emoji, combining characters, tabs, and full-width Unicode may be aligned incorrectly.
-
-```text
-argv → resolve → validate/prepare → execute → render → stdout/stderr
-```
-
-## Supported Argument Syntax
-
-The supported syntax is intentionally small and predictable:
-
-| Form | Example | Notes |
-| --- | --- | --- |
-| Long option with separate value | `--name Alice` | String and number options consume a value |
-| Long option with attached value | `--name=Alice` | Equivalent to the separate form |
-| Boolean flag | `--verbose` | Produces `true` |
-| Boolean negation | `--no-cache` | Supported for known boolean options unless `syntax: 'flag'` |
-| Short alias | `-v`, `-n Alice` | Must be declared in the schema as one ASCII letter |
-| Option terminator | `--` | Every following token becomes positional |
-
-Option names are exact: `icore` does not convert `camelCase` to `kebab-case`. Explicit boolean values such as `--verbose=true`, attached short values such as `-nAlice`, and grouped aliases such as `-abc` are not supported.
-
-See [CLI Argument Syntax](docs/guides/cli-argument-syntax.md) for parsing examples, edge cases, duplicate handling, and the option terminator contract.
-
-## Error Handling
-
-CLI parsing, validation, resolution, and definition failures are reported as `IcoreError`. It extends `Error` with:
-
-- a stable machine-readable `code`;
-- a `usage` or `definition` category;
-- required, code-specific `details`.
-
-Use `isIcoreError(...)` instead of manually casting details. Passing a code to the guard narrows the corresponding details shape:
-
-```ts
-import {
-  createTerminalApp,
-  isIcoreError,
-  isUsageError
-} from 'icore';
-
-const help = 'Usage: cli hello [--name value]';
-
-const app = createTerminalApp({
-  commands,
-  errorPolicy: {
-    renderError(error) {
-      const message = error instanceof Error
-        ? error.message
-        : String(error);
-
-      if (isIcoreError(error, 'UNKNOWN_COMMAND')) {
-        return `${message}\n\n${help}\n`;
-      }
-
-      return `${message}\n`;
-    },
-    resolveExitCode(error) {
-      return isUsageError(error) ? 2 : 1;
-    }
-  }
-});
-```
-
-Inside the `UNKNOWN_COMMAND` branch, fields such as `error.details.command` and `error.details.positionals` are strongly typed. `IcoreErrorDetailsMap` is the public source of truth for every code. Direct `new IcoreError(...)` calls must provide a third argument matching the selected code.
-
-Application-owned semantic validation can throw `CliUsageError` without claiming one of the framework-owned `IcoreError` codes:
-
-```ts
-import { CliUsageError } from 'icore';
-
-throw new CliUsageError(
-  "Expected '--from' to be earlier than or equal to '--to'"
-);
-```
-
-`isUsageError(...)` recognizes both `CliUsageError` and `IcoreError` instances whose category is `usage`. Rendering, help text, and the choice of exit code remain application policy.
-
-Both guards recognize compatible branded errors created by another physical copy of `icore` in the same JavaScript realm. This does not turn errors serialized through JSON, IPC, or worker boundaries back into class instances.
-
-Without a custom policy, terminal apps write `Error.message + "\n"` (or `String(error) + "\n"` for other thrown values) and return exit code `1`. Application-specific help remains application policy.
-
-Custom lifecycles can call `app.reportError(...)` to reuse the same rendering and exit-code policy. The complete prepare, execute, write, and external phase flow is shown in the [production terminal lifecycle](docs/guides/terminal-app.md#own-resources-cleanup-and-error-ordering).
+`IcoreError` describes invalid command lines and invalid command definitions. Use `isIcoreError(...)` to inspect one and `isUsageError(...)` to identify errors caused by user input. For application-specific input rules, throw `CliUsageError`. The current error types and codes are defined in [the error source files](https://github.com/woodger/icore/tree/main/src/errors).
 
 ## Guides
 
-The [guides index](docs/guides/readme.md) routes from regular terminal apps to lower-level mechanics. Useful starting points:
+- [Set Up Command Execution And Cleanup](docs/guides/terminal-app.md) explains global flags, resource creation and cleanup, output, and error handling.
+- [Define Command Options](docs/guides/option-schemas.md) explains strings, booleans, numbers, allowed values, defaults, aliases, and inferred TypeScript types.
+- [Common CLI Patterns](docs/guides/practical-cli-patterns.md) covers help and version commands, shared options, and compatibility aliases.
+- [Argument Syntax](docs/guides/cli-argument-syntax.md) lists accepted command-line forms and rejected forms.
+- [Prepare And Run Commands Yourself](docs/guides/custom-command-flow.md) shows how to use command preparation and execution without a terminal application.
+- [Format And Write Output](docs/guides/presentation-output.md) explains how to render results and write them to standard output or standard error.
+- [Direct APIs](docs/guides/readme.md#direct-apis) links to direct command resolution, output, and presentation APIs.
 
-- [Production Terminal Application](docs/guides/terminal-app.md) — global shortcuts, preparation, metadata-driven resource selection, execution, output, cleanup, and reusable error reporting;
-- [Option Schemas](docs/guides/option-schemas.md) — strings, booleans, numbers, choices, defaults, aliases, and inferred types;
-- [Practical CLI Patterns](docs/guides/practical-cli-patterns.md) — help/version shortcuts, shared options, and compatibility aliases;
-- [Command Resolution](docs/guides/command-resolution.md) — registries, canonical command aliases, matched paths, explicit resolution, and command-name guards;
-- [Two-Phase Primitives](docs/guides/two-phase-primitives.md) — preparation, payloads, execution, and provided-option metadata;
-- [Presentation Primitives](docs/guides/presentation-primitives.md) — text, record, table, CSV, JSON, and direct renderers.
+Release history is in [CHANGELOG.md](CHANGELOG.md). Design decisions are in [docs/roadmap.md](docs/roadmap.md).
 
-Release history is recorded in [CHANGELOG.md](CHANGELOG.md). Directional decisions live in [docs/roadmap.md](docs/roadmap.md).
+## What `icore` Does
 
-## Project Boundary
+`icore` handles generic command-line work: option validation, command selection, typed values passed to command functions, output formatting, error handling hooks, and writing to standard output or standard error.
 
-`icore` is a small terminal mechanics module. It owns generic behavior such as option validation, command resolution, typed handler input, presentation rendering, error contracts, and stdout/stderr delivery.
-
-It does not own application DTO mapping, API calls, configuration loading, domain-specific validation, lifecycle resources, or help content. Keep those responsibilities in the consuming application. Interactive line rendering and progress reporting are also application-owned; the legacy compatibility exports are not a foundation for new code.
+The application owns API calls, configuration loading, domain validation, resource creation and cleanup, help content, progress indicators, and other interactive terminal behavior.
 
 Licensed under the [MIT License](LICENSE).
