@@ -7,7 +7,7 @@ English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/re
 [![types](https://img.shields.io/npm/types/icore.svg)](https://www.npmjs.com/package/icore)
 [![license](https://img.shields.io/npm/l/icore.svg)](LICENSE)
 
-Small command line interface and terminal presentation mechanics for [Node.js®](https://nodejs.org) applications. Installing `icore` does not install additional npm packages.
+`icore` is a compact library for building command-line interfaces in [Node.js®](https://nodejs.org/) applications. It provides declarative command definitions, typed argument parsing, command execution management, and text, table, JSON, and CSV result presentation.
 
 `icore` owns the path from `process.argv` to terminal output:
 
