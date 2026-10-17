@@ -14,7 +14,6 @@ English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/re
 - declarative, type-inferred option schemas;
 - multi-segment command resolution with canonical command aliases;
 - separate prepare and execute phases;
-- JSON, CSV, and text-table presentation;
 - backpressure-aware stdout/stderr writers and reusable terminal error policy.
 
 Application-specific API calls, configuration, domain behavior, and help text remain in the consuming application.

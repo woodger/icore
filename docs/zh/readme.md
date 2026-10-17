@@ -16,7 +16,6 @@
 - 声明式、可推导类型的选项 schema；
 - 支持 canonical command aliases 的多段命令解析；
 - 相互分离的 prepare 和 execute 阶段；
-- JSON、CSV 与文本表格呈现；
 - 感知 backpressure 的 stdout/stderr writers，以及可复用的 terminal error policy。
 
 应用特有的 API 调用、配置、领域行为和 help 文本仍由使用方应用负责。
