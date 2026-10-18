@@ -11,9 +11,9 @@ English | [Русский](https://github.com/woodger/icore/blob/main/docs/ru/re
 
 The library provides the shared command-line mechanics. The application provides its API calls, configuration, business rules, help text, and interactive terminal behavior.
 
-## Requirements And Installation
+## Installation
 
-`icore` requires Node.js `>=16.9.0` and includes TypeScript declarations.
+To use `icore` in your project, run:
 
 ```sh
 npm install icore
@@ -76,8 +76,6 @@ The `options` object describes arguments accepted after `hello`. The `handle` fu
 
 `app.run(...)` validates the arguments, runs the selected command, formats its result, and writes it to the terminal. With `strict: true`, the command name and any subcommands must come before options: `users get --id 42`.
 
-When the application handles global `--help` or `--version`, opens resources after selecting a command, or must close resources around execution, follow [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md).
-
 ## Choose An API
 
 | What the application needs | Start with | Example |
@@ -86,8 +84,7 @@ When the application handles global `--help` or `--version`, opens resources aft
 | Handle global flags or create and close resources | `app.prepare(...)` and `app.commands.run(...)` | [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md) |
 | Define commands and their options | `createCommand()`, `createCommand.withTypes()`, or `createCommands()` | [Define Command Options](docs/examples/option-schemas.md) |
 | Prepare a command before creating application services | `commands.prepare()` and `commands.run()` | [Prepare And Run Commands Yourself](docs/examples/custom-command-flow.md) |
-| Use the same record fields for JSON, table, and CSV | `createPresentation()` | [Format And Write Output](docs/examples/presentation-output.md) |
-| Choose separate data for JSON, table, and CSV | `renderJson()`, `renderTextTable()`, or `renderCsv()` | [Format And Write Output](docs/examples/presentation-output.md) |
+| Format JSON, table, and CSV with shared fields or separate data | `createPresentation()` for shared fields; `renderJson()`, `renderTextTable()`, or `renderCsv()` for separate data | [Format And Write Output](docs/examples/presentation-output.md) |
 | Write directly to standard output or standard error | `createOutput()` | [Write Output](docs/examples/output-writers.md) |
 | Parse arguments or resolve a command directly | `parseArgv()`, `resolveCommand()`, and related exports | [Direct APIs](docs/examples/readme.md#direct-apis) |
 
@@ -97,20 +94,8 @@ When the application handles global `--help` or `--version`, opens resources aft
 
 ## Examples
 
-- [Set Up Command Execution And Cleanup](docs/examples/terminal-app.md) explains global flags, resource creation and cleanup, output, and error handling.
-- [Define Command Options](docs/examples/option-schemas.md) explains strings, booleans, numbers, allowed values, defaults, aliases, and inferred TypeScript types.
-- [Common CLI Patterns](docs/examples/practical-cli-patterns.md) covers help and version commands, shared options, and compatibility aliases.
-- [Argument Syntax](docs/examples/cli-argument-syntax.md) lists accepted command-line forms and rejected forms.
-- [Prepare And Run Commands Yourself](docs/examples/custom-command-flow.md) shows how to use command preparation and execution without a terminal application.
-- [Format And Write Output](docs/examples/presentation-output.md) explains how to render results and write them to standard output or standard error.
-- [Direct APIs](docs/examples/readme.md#direct-apis) links to direct command resolution, output, and presentation APIs.
+[All examples](docs/examples/readme.md) are grouped by task.
 
 Release history is in [CHANGELOG.md](CHANGELOG.md). Design decisions are in [docs/roadmap.md](docs/roadmap.md).
-
-## What `icore` Does
-
-`icore` handles generic command-line work: option validation, command selection, typed values passed to command functions, output formatting, error handling hooks, and writing to standard output or standard error.
-
-The application owns API calls, configuration loading, domain validation, resource creation and cleanup, help content, progress indicators, and other interactive terminal behavior.
 
 Licensed under the [MIT License](LICENSE).

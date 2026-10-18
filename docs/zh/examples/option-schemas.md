@@ -20,7 +20,7 @@
 node dist/cli.js reports list --project alpha --format json --archived --limit 5
 ```
 
-下面定义 `reports list` 及其选项：
+下面说明如何解析 `reports list` 及其选项：
 
 ```ts
 // 说明 `reports list` 接受的选项。
@@ -56,7 +56,7 @@ const reportOptions = {
   }
 } as const;
 
-// 推导传给命令函数的对象类型。
+// 获取命令函数的类型。
 type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
@@ -83,13 +83,13 @@ const reportCommand = command.define({
 
 该命令接受一个必填字符串、一个限定为列出值的字符串、一个布尔值和一个范围受限的数值。
 
-`as const` 会保留列出的字符串值，供 TypeScript 推导类型。如果省略，命令仍能运行，但 TypeScript 推导出的类型会更宽、作用更小。
+`as const` 会保留列出的字符串值，供 [TypeScript](https://www.typescriptlang.org/) 推导类型。如果省略，命令仍能运行，但 [TypeScript](https://www.typescriptlang.org/) 推导出的类型会更宽、作用更小。
 
 ## 为所有命令共享类型
 
 只有当所有命令在下列内容上使用相同类型时，才使用 `createCommand.withTypes<...>()`：
 
-- `context`：应用传给命令函数的值；
+- `context`：命令函数接收的值；
 - `result`：该函数返回的值；
 - `metadata`：命令的固定信息，例如描述。
 
@@ -139,7 +139,7 @@ const statusCommand = command.define({
 });
 ```
 
-`result` 类型只定义应用允许的最宽结果。TypeScript 仍会把示例函数推导为返回 `string`，而不是更宽的 `string | void`。它的选项定义、命令名称、别名和准备后的数据也都保持为 `statusCommand` 的具体类型。
+`result` 类型只定义应用允许的最宽结果。[TypeScript](https://www.typescriptlang.org/) 仍会把示例函数推导为返回 `string`，而不是更宽的 `string | void`。它的选项定义、命令名称、别名和准备后的数据也都保持为 `statusCommand` 的具体类型。
 
 如果命令可以没有 `metadata`，请不要设置 `metadataRequired`。该设置只影响由这个带类型的构建器创建的定义；普通 `createCommand()` 调用和其他构建器不受影响。
 
@@ -181,7 +181,7 @@ node dist/cli.js reports list --project alpha --no-archived
 
 这种形式比支持 `--archived=false` 更明确，也不会产生 `0`、`no` 或 `off` 这类有歧义的文本值。
 
-不要显式传入布尔值：
+布尔选项**不支持**显式传入 `true` 或 `false`：
 
 ```bash
 node dist/cli.js reports list --project alpha --archived=true

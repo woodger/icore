@@ -37,15 +37,70 @@ const result = presentation.records([
 
 The records already contain the fields to show. `records(...)` is a good fit only when JSON, table, and CSV use the same top-level fields. Table and CSV headers come from the records, so an empty record list has no headers in those formats.
 
-Format the value and write it to standard output. Write operational messages to standard error:
+## Render Records As Table, JSON, Or CSV
+
+The same records can be written as a table, JSON, or CSV. Choose one call for the format requested by the user.
+
+To write a table and an operational message:
 
 ```ts
-// Write data to stdout and a status message to stderr.
+// Write a table to stdout and a status message to stderr.
 await output.write(presentation.render(result, 'table'));
 await output.error('Rendered job table\n');
 ```
 
 Write command output intended for another program to standard output and operational status to standard error. This keeps shell pipelines usable.
+
+The user sees the table in stdout:
+
+```text
+id     active
+job-1  true
+job-2  false
+```
+
+The status line goes to stderr:
+
+```text
+Rendered job table
+```
+
+To write JSON:
+
+```ts
+// Render the records as JSON before writing them to stdout.
+await output.write(presentation.render(result, 'json'));
+```
+
+The user sees:
+
+```json
+[
+  {
+    "id": "job-1",
+    "active": true
+  },
+  {
+    "id": "job-2",
+    "active": false
+  }
+]
+```
+
+To write CSV:
+
+```ts
+// Render the records as CSV before writing them to stdout.
+await output.write(presentation.render(result, 'csv'));
+```
+
+The user sees:
+
+```csv
+id,active
+job-1,true
+job-2,false
+```
 
 When formats need different data, prepare the data for each format and call the renderer directly instead:
 
@@ -85,17 +140,3 @@ await output.write(text);
 ```
 
 This keeps the complete nested report in JSON while letting table and CSV select and format their own columns. `icore` does not derive one format's data from another.
-
-The user sees the table in stdout:
-
-```text
-id     active
-job-1  true
-job-2  false
-```
-
-The status line goes to stderr:
-
-```text
-Rendered job table
-```

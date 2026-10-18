@@ -18,7 +18,7 @@ Example command:
 node dist/cli.js reports list --project alpha --format json --archived --limit 5
 ```
 
-The definition below describes `reports list` and its options:
+The following shows how `reports list` and its options are parsed:
 
 ```ts
 // Describe the options accepted by `reports list`.
@@ -54,7 +54,7 @@ const reportOptions = {
   }
 } as const;
 
-// Infer the object passed to the command function.
+// Get the command function type.
 type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
@@ -81,13 +81,13 @@ For that command line, the command function receives:
 
 The command accepts one required string, one string limited to listed values, one boolean, and one number within a range.
 
-`as const` preserves the listed string values for TypeScript inference. Without it, the command still runs, but TypeScript infers a broader and less useful type.
+`as const` preserves the listed string values for [TypeScript](https://www.typescriptlang.org/) inference. Without it, the command still runs, but [TypeScript](https://www.typescriptlang.org/) infers a broader and less useful type.
 
 ## Share Types Used By Every Command
 
 Use `createCommand.withTypes<...>()` only when every command uses the same types for:
 
-- `context`: values passed by the application to the command function;
+- `context`: a value received by the command function;
 - `result`: the value returned by that function;
 - `metadata`: static command information, such as its description.
 
@@ -137,7 +137,7 @@ const statusCommand = command.define({
 });
 ```
 
-The `result` type is only the broadest result the application allows. TypeScript still infers this example function as returning `string`, rather than `string | void`. Its option definition, command name, aliases, and prepared data also remain specific to `statusCommand`.
+The `result` type is only the broadest result the application allows. [TypeScript](https://www.typescriptlang.org/) still infers this example function as returning `string`, rather than `string | void`. Its option definition, command name, aliases, and prepared data also remain specific to `statusCommand`.
 
 Do not set `metadataRequired` when a command may omit `metadata`. The setting affects only definitions created by this typed builder; ordinary `createCommand()` calls and other builders are unchanged.
 
@@ -179,7 +179,7 @@ The first command function receives `archived: true`; the second receives `archi
 
 This form is more explicit than accepting `--archived=false`. It also avoids ambiguous text values such as `0`, `no`, or `off`.
 
-Do not pass explicit boolean values:
+Explicit `true` and `false` values for boolean options are **not supported**:
 
 ```bash
 node dist/cli.js reports list --project alpha --archived=true
