@@ -1,12 +1,12 @@
-# CLI Argument Syntax
+# Command-Line Arguments
 
-icore supports a practical GNU-style option syntax. The parser receives `process.argv.slice(2)`, splits command path tokens from option tokens, and then uses the command schema to validate option values.
+`icore` supports a small GNU-style option syntax. It receives `process.argv.slice(2)`, separates the command name and subcommands from options, and uses the command's option definition to validate values.
 
 Supported forms:
 
 - long options: `--name value`, `--name=value`;
 - boolean flags: `--flag`, `--no-flag`;
-- short aliases declared in the schema: `-f`, `-n value`;
+- short names declared in the option definition: `-f`, `-n value`;
 - option terminator: `--`.
 
 The supported set is intentionally small. It covers common terminal usage while avoiding shell-specific surprises and hidden precedence rules.
@@ -33,19 +33,19 @@ Use an equals sign when it reads better:
 node dist/cli.js users get --name=Alice
 ```
 
-The handler receives the same parsed value.
+The command function receives the same parsed value.
 
 Supporting both forms keeps the CLI comfortable for humans and scripts. Both forms map to the same option value, so command handlers do not need to care which spelling the user chose.
 
-Schema-known string and number options can consume values that start with `-`:
+String and number options defined for the command can consume values that start with `-`:
 
 ```bash
 node dist/cli.js search --label -draft --limit -1
 ```
 
-That works when the command schema declares `label` as `type: 'string'` and `limit` as `type: 'number'`.
+That works when the command's option definition declares `label` as `type: 'string'` and `limit` as `type: 'number'`.
 
-This is one reason argv parsing accepts a schema hint. Without it, values like `-draft` and `-1` are hard to distinguish from option-looking tokens.
+This is why argument parsing accepts an option definition. Without it, values like `-draft` and `-1` are hard to distinguish from options.
 
 ## Boolean flags
 
@@ -68,7 +68,7 @@ node dist/cli.js reports list --archived=true
 node dist/cli.js reports list --archived=false
 ```
 
-Those forms are rejected. A boolean option is either present as a flag or, when the schema allows it, negated with `--no-<name>`.
+Those forms are rejected. A boolean option is either present as a flag or, when its option definition allows it, negated with `--no-<name>`.
 
 Rejecting explicit boolean values is stricter, but it avoids a long list of quasi-boolean strings such as `yes`, `no`, `1`, and `0`.
 
@@ -80,13 +80,14 @@ node dist/cli.js reports list --archived false
 
 sets `archived` to `true` and leaves `false` as a positional token. It does not mean `archived: false`.
 
-## Short aliases
+## Short Option Names
 
-Short aliases work only when the option schema declares them.
+Short names work only when the option definition declares them.
 
 For a boolean alias:
 
 ```ts
+// Declare the short `-v` name for `--verbose`.
 const options = {
   verbose: {
     type: 'boolean',
@@ -101,7 +102,7 @@ The user can type:
 node dist/cli.js users get -v
 ```
 
-The handler receives:
+The command function receives:
 
 ```json
 {
@@ -112,6 +113,7 @@ The handler receives:
 For a string or number alias, put the value in the next token:
 
 ```ts
+// Give string and number options their own short names.
 const options = {
   name: {
     type: 'string',
@@ -130,7 +132,7 @@ The user can type:
 node dist/cli.js users get -n Alice -l 10
 ```
 
-The handler receives:
+The command function receives:
 
 ```json
 {
@@ -153,7 +155,7 @@ node dist/cli.js users get -abc
 
 Use one declared alias per token.
 
-This limitation is deliberate. Compact short syntax can be convenient, but it creates more parser edge cases and makes command examples harder to read. icore chooses clarity over maximum GNU compatibility here.
+This limitation is deliberate. Combining short options can be convenient, but it creates more parsing edge cases and makes command examples harder to read.
 
 ## Option terminator
 
@@ -165,7 +167,7 @@ This is useful when the application needs to receive raw user text, patterns, or
 node dist/cli.js search -- --name Alice -v
 ```
 
-The parser treats `--name`, `Alice`, and `-v` as positional tokens after the command path.
+The parser treats `--name`, `Alice`, and `-v` as positional arguments after the command name.
 
 ## Duplicate options
 
@@ -187,12 +189,12 @@ Rejecting duplicates is usually safer than choosing the first or last value. It 
 
 ## Unknown options
 
-Unknown long options are rejected when command options are validated:
+Unknown long options are rejected when the command's options are validated:
 
 ```bash
 node dist/cli.js users get --unknown value
 ```
 
-Unknown short tokens are not expanded automatically. If the active command does not allow them as positionals, command validation rejects them as unexpected positional arguments.
+Unknown short arguments are not expanded automatically. If the selected command does not allow them as positional arguments, validation rejects them as unexpected positional arguments.
 
-For application-level patterns built from this syntax, see [practical-cli-patterns.md](practical-cli-patterns.md).
+For help, version, shared options, and older option names, see [Common CLI Patterns](practical-cli-patterns.md).

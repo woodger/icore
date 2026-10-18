@@ -11,7 +11,7 @@ Changes must not break:
 
 Compatibility-sensitive properties must remain unchanged unless the task explicitly requires changing them:
 
-- runtime behavior
+- observable application behavior
 - file structure
 - startup order
 - architecture

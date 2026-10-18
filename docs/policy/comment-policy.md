@@ -18,7 +18,7 @@ Not:
 
 ## Basic Rules
 
-1. In each production module that participates in runtime, defines a layer contract, or contains non-trivial responsibility, one top architectural block is allowed.
+1. In each production module that defines a layer contract or contains non-trivial responsibility, one top architectural block is allowed.
 2. The top architectural block must describe the file role, allowed responsibility, module boundaries, and foreign responsibility that must not be moved into this file.
 3. Local comments are allowed only where the reason for a decision, invariant, or constraint would be lost without them.
 4. Obvious code actions do not need comments.
@@ -51,13 +51,13 @@ Good example:
 
 ```ts
 /**
- * The runtime config resolver module transforms external input
- * into normalized launch settings.
+ * The deployment configuration loader reads configuration files
+ * and validates settings required to start a deployment.
  *
  * Allowed here:
- * - reading supported config sources;
- * - validating required fields;
- * - forming diagnostics for invalid config;
+ * - reading supported configuration files;
+ * - validating required deployment settings;
+ * - forming diagnostics for invalid deployment configuration;
  *
  * This file must not contain CLI rendering or network calls.
  */
@@ -83,7 +83,7 @@ A top architectural block is not required for:
 - trivial files with one obvious type or constant;
 - temporary local helper files that do not define a production contract.
 
-If a file participates in production runtime, defines a layer contract, or contains non-trivial responsibility, a top block is allowed and must be meaningful.
+If a production module defines a layer contract or contains non-trivial responsibility, a top block is allowed and must be meaningful.
 
 ## Public Contract JSDoc
 
@@ -111,11 +111,11 @@ Better:
 
 ```ts
 /**
- * Creates a runtime client from already validated options.
+ * Creates an API client from already validated endpoint options.
  *
  * The function does not read environment and does not change global state.
  */
-createClient(options);
+createApiClient(endpointOptions);
 ```
 
 But if this is already obvious from the interface and tests, it is better not to add the comment.
@@ -238,7 +238,7 @@ Good:
  */
 ```
 
-This block helps avoid mixing bootstrap and runtime behavior.
+This block helps keep bootstrap parsing separate from command execution and output handling.
 
 ## Good Comment Criterion
 

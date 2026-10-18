@@ -33,6 +33,11 @@ type ShortAliasDefinition = {
   definition: OptionDefinition;
 };
 
+const shortOptionPrefix = '-';
+const longOptionPrefix = '--';
+const negatedOptionPrefix = 'no-';
+const optionValueSeparator = '=';
+
 /**
  * Parses raw CLI arguments into positionals and raw long-option values.
  */
@@ -57,13 +62,13 @@ export function parseArgv(
       continue;
     }
 
-    if (arg === '--') {
+    if (arg === longOptionPrefix) {
       parseOptions = false;
       continue;
     }
 
     if (isShortOptionToken(arg)) {
-      const alias = aliases.get(arg.slice(1));
+      const alias = aliases.get(arg.slice(shortOptionPrefix.length));
 
       if (alias === undefined) {
         positionals.push(arg);
@@ -81,7 +86,7 @@ export function parseArgv(
 
       const nextArg = args[index + 1];
 
-      if (nextArg !== undefined && nextArg !== '--') {
+      if (nextArg !== undefined && nextArg !== longOptionPrefix) {
         options[alias.name] = nextArg;
         index += 1;
         continue;
@@ -91,13 +96,13 @@ export function parseArgv(
       continue;
     }
 
-    if (!arg.startsWith('--')) {
+    if (!arg.startsWith(longOptionPrefix)) {
       positionals.push(arg);
       continue;
     }
 
-    const option = arg.slice(2);
-    const separatorIndex = option.indexOf('=');
+    const option = arg.slice(longOptionPrefix.length);
+    const separatorIndex = option.indexOf(optionValueSeparator);
     const name = separatorIndex === -1
       ? option
       : option.slice(0, separatorIndex);
@@ -108,8 +113,12 @@ export function parseArgv(
 
     const definition = getOwnOptionDefinition(schema, name);
 
-    if (separatorIndex === -1 && definition === undefined && name.startsWith('no-')) {
-      const negatedName = name.slice(3);
+    if (
+      separatorIndex === -1
+      && definition === undefined
+      && name.startsWith(negatedOptionPrefix)
+    ) {
+      const negatedName = name.slice(negatedOptionPrefix.length);
       const negatedDefinition = getOwnOptionDefinition(schema, negatedName);
 
       if (negatedDefinition?.type === 'boolean') {
@@ -127,7 +136,7 @@ export function parseArgv(
     }
 
     if (separatorIndex !== -1) {
-      options[name] = option.slice(separatorIndex + 1);
+      options[name] = option.slice(separatorIndex + optionValueSeparator.length);
       continue;
     }
 
@@ -210,7 +219,9 @@ function assertShortAlias(name: string, alias: string): void {
 }
 
 function isShortOptionToken(arg: string): boolean {
-  return arg.length === 2 && arg.startsWith('-') && !arg.startsWith('--');
+  return arg.length === shortOptionPrefix.length + 1
+    && arg.startsWith(shortOptionPrefix)
+    && !arg.startsWith(longOptionPrefix);
 }
 
 function createDuplicateArgumentError(

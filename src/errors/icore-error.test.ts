@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   IcoreError,
@@ -72,6 +72,8 @@ describe('IcoreError', () => {
   });
 
   test('categorizes definition errors', () => {
+    const minimumLimit = 1;
+    const invalidLimit = 0;
     const errors = [
       new IcoreError('INVALID_OPTION_ALIAS', 'invalid alias', {
         argument: '--verbose',
@@ -86,8 +88,8 @@ describe('IcoreError', () => {
         argument: '--limit',
         option: 'limit',
         expected: 'minimum',
-        min: 1,
-        value: 0
+        min: minimumLimit,
+        value: invalidLimit
       }),
       new IcoreError('DUPLICATE_COMMAND', 'duplicate command', {
         command: 'users'

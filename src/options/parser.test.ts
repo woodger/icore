@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
 import { IcoreError } from '../errors/icore-error';
 import {
@@ -14,6 +14,9 @@ import type {
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {
+    const minimumLimit = 1;
+    const maximumLimit = 1_000;
+    const requestedLimit = 100;
     const schema = {
       format: {
         type: 'string',
@@ -26,8 +29,8 @@ describe('parseOptions', () => {
       limit: {
         type: 'number',
         integer: true,
-        min: 1,
-        max: 1000,
+        min: minimumLimit,
+        max: maximumLimit,
         required: true
       }
     } as const;
@@ -36,13 +39,13 @@ describe('parseOptions', () => {
 
     const options: Options = parseOptions(schema, {
       insecure: true,
-      limit: '100'
+      limit: String(requestedLimit)
     });
 
     assert.deepStrictEqual(options, {
       format: 'table',
       insecure: true,
-      limit: 100
+      limit: requestedLimit
     });
   });
 
@@ -210,18 +213,23 @@ describe('parseOptions', () => {
   });
 
   test('rejects numbers below the minimum', () => {
+    const minimumDepth = 1;
+    const belowMinimumDepth = 0;
+
     assert.throws(
       () => parseOptions({
         depth: {
           type: 'number',
-          min: 1
+          min: minimumDepth
         }
-      }, { depth: '0' }),
-      /Expected '--depth' to be greater than or equal to 1/
+      }, { depth: String(belowMinimumDepth) }),
+      new RegExp(`Expected '--depth' to be greater than or equal to ${minimumDepth}`)
     );
   });
 
   test('throws machine-readable invalid default errors', () => {
+    const minimumLimit = 1;
+    const invalidDefaultLimit = 0;
     const scenarios = [
       {
         run: () => parseOptions({
@@ -260,17 +268,17 @@ describe('parseOptions', () => {
           limit: {
             type: 'number',
             integer: true,
-            min: 1,
-            default: 0
+            min: minimumLimit,
+            default: invalidDefaultLimit
           }
         } as const, {}),
-        message: "Expected '--limit' to be greater than or equal to 1",
+        message: `Expected '--limit' to be greater than or equal to ${minimumLimit}`,
         details: {
           argument: '--limit',
           option: 'limit',
           expected: 'minimum',
-          min: 1,
-          value: 0
+          min: minimumLimit,
+          value: invalidDefaultLimit
         }
       }
     ];

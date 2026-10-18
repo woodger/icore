@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
 import {
   createCommand,
@@ -15,6 +15,12 @@ import {
   isTerminalCommandOutput,
   type TerminalCommandOutput
 } from './app';
+
+const successfulExitCode = 0;
+const defaultErrorExitCode = 1;
+const customErrorExitCode = 70;
+const customPreparationErrorExitCode = 2;
+const customWriteErrorExitCode = 74;
 
 function createMemoryOutput() {
   const stdout: string[] = [];
@@ -133,12 +139,12 @@ describe('createTerminalApp', () => {
       output: memory.output
     });
 
-    assert.equal(await app.run(['version'], undefined), 0);
+    assert.equal(await app.run(['version'], undefined), successfulExitCode);
     assert.equal(await app.run([
       'greet',
       '--name',
       ' Alice '
-    ], undefined), 0);
+    ], undefined), successfulExitCode);
 
     assert.equal(memory.read().stdout, 'ok\nfield  value\nname   Alice\n');
     assert.equal(memory.read().stderr, '');
@@ -176,7 +182,7 @@ describe('createTerminalApp', () => {
       '--format=json'
     ], undefined);
 
-    assert.equal(exitCode, 0);
+    assert.equal(exitCode, successfulExitCode);
     assert.equal(JSON.parse(memory.read().stdout)[0].id, 'account-1');
     assert.equal(memory.read().stderr, '');
   });
@@ -225,14 +231,14 @@ describe('createTerminalApp', () => {
       currentUser: 'Alice'
     });
 
-    assert.equal(exitCode, 0);
+    assert.equal(exitCode, successfulExitCode);
     assert.deepEqual(JSON.parse(memory.read().stdout), {
       user: 'Alice'
     });
     assert.equal(memory.read().stderr, '');
   });
 
-  test('runs narrowed prepared commands with their own runtime context', async () => {
+  test('runs narrowed prepared commands with their own command context', async () => {
     const memory = createMemoryOutput();
     const account = defineCommand({
       path: ['accounts'],
@@ -258,7 +264,10 @@ describe('createTerminalApp', () => {
       assert.fail('Expected accounts command');
     }
 
-    assert.equal(await app.runPrepared(prepared, { accountId: 'account-id' }), 0);
+    assert.equal(
+      await app.runPrepared(prepared, { accountId: 'account-id' }),
+      successfulExitCode
+    );
     assert.equal(memory.read().stdout, 'account-id\n');
     assert.equal(memory.read().stderr, '');
 
@@ -290,7 +299,7 @@ describe('createTerminalApp', () => {
 
     const exitCode = await app.runPrepared(prepared, undefined);
 
-    assert.equal(exitCode, 1);
+    assert.equal(exitCode, defaultErrorExitCode);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'prepared command failed\n');
   });
@@ -443,8 +452,8 @@ describe('createTerminalApp', () => {
       output: memory.output
     });
 
-    assert.equal(await app.run(['status'], undefined), 0);
-    assert.equal(await app.run(['stream'], undefined), 0);
+    assert.equal(await app.run(['status'], undefined), successfulExitCode);
+    assert.equal(await app.run(['stream'], undefined), successfulExitCode);
     assert.equal(memory.read().stdout, 'ok\none\ntwo\n');
     assert.equal(memory.read().stderr, '');
   });
@@ -478,7 +487,7 @@ describe('createTerminalApp', () => {
 
     const exitCode = await app.run(['invalid'], undefined);
 
-    assert.equal(exitCode, 1);
+    assert.equal(exitCode, defaultErrorExitCode);
     assert.equal(phase, 'render');
     assert.equal(memory.read().stdout, '');
     assert.equal(
@@ -523,7 +532,7 @@ describe('createTerminalApp', () => {
         }
       });
 
-      assert.equal(await app.run(['stream'], undefined), 1);
+      assert.equal(await app.run(['stream'], undefined), defaultErrorExitCode);
       assert.equal(phase, 'write');
       assert.equal(memory.read().stdout, 'before\n');
       assert.equal(memory.read().stderr, 'Expected terminal output chunk to be a string\n');
@@ -570,7 +579,7 @@ describe('createTerminalApp', () => {
 
     const exitCode = await app.run(['fail'], undefined);
 
-    assert.equal(exitCode, 1);
+    assert.equal(exitCode, defaultErrorExitCode);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'command failed\n');
   });
@@ -583,8 +592,8 @@ describe('createTerminalApp', () => {
       output: memory.output
     });
 
-    assert.equal(await app.reportError(new Error('failed')), 1);
-    assert.equal(await app.reportError('unknown failure'), 1);
+    assert.equal(await app.reportError(new Error('failed')), defaultErrorExitCode);
+    assert.equal(await app.reportError('unknown failure'), defaultErrorExitCode);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'failed\nunknown failure\n');
   });
@@ -616,14 +625,14 @@ describe('createTerminalApp', () => {
           assert.equal(error, 'failed');
           assert.equal(context.phase, 'external');
 
-          return 70;
+          return customErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.reportError('failed');
 
-    assert.equal(exitCode, 70);
+    assert.equal(exitCode, customErrorExitCode);
     assert.equal(memory.read().stderr, 'external failure');
   });
 
@@ -666,14 +675,14 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           phases.push(`exit:${context.phase}`);
 
-          return 2;
+          return customPreparationErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.run(['greet'], undefined);
 
-    assert.equal(exitCode, 2);
+    assert.equal(exitCode, customPreparationErrorExitCode);
     assert.equal(handled, false);
     assert.deepEqual(phases, [
       'render:prepare',
@@ -716,14 +725,14 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           phases.push(context.phase);
 
-          return 70;
+          return customErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.run(['fail'], undefined);
 
-    assert.equal(exitCode, 70);
+    assert.equal(exitCode, customErrorExitCode);
     assert.deepEqual(phases, ['execute', 'execute']);
     assert.equal(memory.read().stderr, 'execution error\n');
   });
@@ -764,14 +773,14 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           phases.push(context.phase);
 
-          return 70;
+          return customErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.run(['users'], undefined);
 
-    assert.equal(exitCode, 70);
+    assert.equal(exitCode, customErrorExitCode);
     assert.deepEqual(phases, ['render', 'render']);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'render error\n');
@@ -818,14 +827,14 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           phases.push(context.phase);
 
-          return 74;
+          return customWriteErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.run(['status'], undefined);
 
-    assert.equal(exitCode, 74);
+    assert.equal(exitCode, customWriteErrorExitCode);
     assert.deepEqual(phases, ['write', 'write']);
     assert.equal(stderr.join(''), 'output error\n');
   });
@@ -860,14 +869,14 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           phases.push(context.phase);
 
-          return 74;
+          return customWriteErrorExitCode;
         }
       }
     });
 
     const exitCode = await app.run(['stream'], undefined);
 
-    assert.equal(exitCode, 74);
+    assert.equal(exitCode, customWriteErrorExitCode);
     assert.deepEqual(phases, ['write', 'write']);
     assert.equal(memory.read().stdout, 'first\n');
     assert.equal(memory.read().stderr, 'stream error\n');
@@ -920,7 +929,7 @@ describe('createTerminalApp', () => {
           assert.ok(error instanceof Error);
           events.push(`exit:${context.phase}`);
 
-          return 74;
+          return customWriteErrorExitCode;
         }
       }
     });
@@ -938,7 +947,7 @@ describe('createTerminalApp', () => {
       });
     }
 
-    assert.equal(exitCode, 74);
+    assert.equal(exitCode, customWriteErrorExitCode);
     assert.deepEqual(events, [
       'render:write',
       'write:external output error',

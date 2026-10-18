@@ -32,7 +32,7 @@ import type {
 export type CommandPath = readonly [string, ...string[]];
 
 /**
- * Input produced after command path and option validation, before runtime
+ * Input produced after command path and option validation, before command
  * context is attached.
  */
 export type PreparedCommandInput<TSchema extends OptionsSchema> = {
@@ -52,7 +52,7 @@ export type CommandInput<
   TContext,
   TPayload = void
 > = PreparedCommandInput<TSchema> & {
-  /** Application runtime context. */
+  /** Application command context. */
   context: TContext;
 } & (
   [TPayload] extends [void]
@@ -92,7 +92,7 @@ export type CommandDefinition<
   metadata?: TMetadata;
   /** Allows extra positionals. */
   allowExtraPositionals?: boolean;
-  /** Prepares payload before runtime context. */
+  /** Prepares payload before command context is attached. */
   prepare?(input: PreparedCommandInput<TSchema>): TPayload | Promise<TPayload>;
   /** Runs application command behavior. */
   handle(input: CommandInput<TSchema, TContext, TPayload>): TResult | Promise<TResult>;
@@ -155,7 +155,7 @@ type CommandDefinitionParts<TCommand extends AnyCommandDefinition> =
     };
 
 /**
- * Infers the runtime context type required by a command.
+ * Infers the command context type required by a command.
  */
 export type CommandContext<TCommand extends AnyCommandDefinition> =
   CommandDefinitionParts<TCommand>['context'];
@@ -213,7 +213,7 @@ export type Commands<TCommands extends readonly AnyCommandDefinition[]> = {
   resolve(positionals: readonly string[]): ResolvedCommand<TCommands[number]>;
   /** Resolves from raw argv. */
   resolveFromArgs(args: readonly string[]): ResolvedCommand<TCommands[number]>;
-  /** Prepares without runtime context. */
+  /** Prepares without command context. */
   prepare(
     args: readonly string[],
     options?: CommandResolutionOptions
@@ -244,7 +244,7 @@ export type Command = {
  * Application-level command types fixed by a bound command builder.
  */
 export type CommandTypeBindings = {
-  /** Runtime context shared by the application's commands. */
+  /** Command context shared by the application's commands. */
   context: unknown;
   /** Result type accepted from application command handlers. */
   result: unknown;
@@ -341,6 +341,8 @@ type AnyCommandRoute = {
   matchedPath: CommandPath;
 };
 
+const minimumCommandPathLength = 1;
+
 const commandRoutesByRegistry = new WeakMap<
   object,
   readonly AnyCommandRoute[]
@@ -363,7 +365,7 @@ export type ResolvedCommand<TCommand extends AnyCommandDefinition> = {
 };
 
 /**
- * Command resolved and validated without runtime context.
+ * Command resolved and validated before command context is attached.
  */
 export type PreparedCommand<TCommand extends AnyCommandDefinition> =
   TCommand extends AnyCommandDefinition
@@ -561,7 +563,7 @@ export function resolveCommandFromArgs<
 }
 
 /**
- * Resolves and validates a command without requiring runtime context.
+ * Resolves and validates a command without requiring command context.
  */
 export async function prepareCommandFromArgs<
   const TCommands extends readonly AnyCommandDefinition[]
@@ -631,7 +633,7 @@ function resolveCommandArgs<
 }
 
 /**
- * Runs a prepared command with caller-provided runtime context.
+ * Runs a prepared command with caller-provided command context.
  */
 export async function runPreparedCommand<TCommand extends AnyCommandDefinition>(
   prepared: PreparedCommand<TCommand>,
@@ -903,7 +905,7 @@ function findStrictCommandRoute<
   registry: CommandRegistry<TCommands>,
   args: readonly string[]
 ): CommandRoute<TCommands[number]> | undefined {
-  assertNoOptionBeforeCommand(args, 1);
+  assertNoOptionBeforeCommand(args, minimumCommandPathLength);
 
   const routes = commandRoutes(registry);
   const matchedRoute = findMatchingRawCommandRoute(routes, args);
@@ -994,7 +996,7 @@ function findMatchingRawCommandRoute<TCommand extends AnyCommandDefinition>(
 function longestCommandPathLength<TCommand extends AnyCommandDefinition>(
   routes: readonly CommandRoute<TCommand>[]
 ): number {
-  return routes[0]?.matchedPath.length ?? 1;
+  return routes[0]?.matchedPath.length ?? minimumCommandPathLength;
 }
 
 function resolveCommandRoute<TCommand extends AnyCommandDefinition>(

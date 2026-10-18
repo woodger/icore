@@ -10,6 +10,17 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-18
+
+### Removed
+
+- Removed the deprecated terminal output and progress compatibility APIs. Applications now own interactive terminal output and progress lifecycle directly.
+
+### Changed
+
+- Reorganized published Consumer examples under `docs/examples` and added table, JSON, and CSV output examples.
+- Updated the development toolchain to `@types/node` 26.6.5, FWA 2.1.5, Oxlint 1.88.0, and `oxlint-tsgolint` 7.0.2004.
+
 ## [2.2.4] - 2026-10-02
 
 ### Changed
@@ -49,7 +60,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ### Added
 
-- Added initial Russian localization for the README, guides index, production terminal lifecycle, option schemas, and practical CLI patterns.
+- Added initial Russian localization for the README, examples index, production terminal lifecycle, option schemas, and practical CLI patterns.
 - Added matching Simplified Chinese localization for the same documentation route.
 
 ## [2.2.0] - 2026-07-30
@@ -64,7 +75,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Updated the development toolchain to TypeScript 7.0.2 and FWA 2.1.0. The test runner no longer depends on the project's TypeScript compiler API.
 - Committed `yarn.lock` for reproducible development and CI installs while keeping it excluded from the published npm package.
 - Refined the npm description and keywords around typed CLI command mechanics.
-- Moved published Consumer guides from `examples/` to `docs/guides/`, added package documentation metadata, and kept contributor policies out of the npm package.
+- Moved published Consumer examples under `docs/examples/`, added package documentation metadata, and kept contributor policies out of the npm package.
 
 ## [2.1.0] - 2026-07-28
 
@@ -205,7 +216,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
   - `createStderrWriter`
   - `createBackpressureTextWriter`
 - Added typed option subset parsing with `parseOptionsSubsetDetailed`.
-- Added guide-style examples for terminal app, command flow, option schemas, presentation, output, and lower-level mechanics.
+- Added examples for terminal app, command flow, option schemas, presentation, output, and lower-level mechanics.
 
 ### Changed
 
@@ -409,6 +420,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[3.0.0]: https://www.npmjs.com/package/icore/v/3.0.0
 [2.2.4]: https://www.npmjs.com/package/icore/v/2.2.4
 [2.2.3]: https://www.npmjs.com/package/icore/v/2.2.3
 [2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2

@@ -1,37 +1,44 @@
-# Production Terminal Application
+# Set Up Command Execution And Cleanup
 
-English | [Русский](../ru/guides/terminal-app.md) | [简体中文](../zh/guides/terminal-app.md)
+English | [Русский](../ru/examples/terminal-app.md) | [简体中文](../zh/examples/terminal-app.md)
 
-The [README quick start](../../readme.md#quick-start) uses `app.run(...)` because that is the clearest entrypoint for a small CLI with an already available context.
+The [README quick start](../../readme.md#quick-start) uses `app.run(...)` when the application already has everything the command needs.
 
-Use the explicit lifecycle in this guide when the application:
+Use the steps in this example when the application:
 
-- handles global help or version shortcuts before command validation;
-- chooses runtime resources from prepared command metadata or payload;
-- owns resource cleanup, progress, or long-running handles;
-- still wants `TerminalApp` rendering, output, and error policy.
+- handles global `--help` or `--version` before validating a command;
+- chooses a database connection or API client after the command is known;
+- creates and closes its own resources, manages progress output, or runs long-running work itself;
+- still uses `TerminalApp` to format output and apply its error rules.
 
-The production route is:
+The sequence is:
 
 ```text
-parse global shortcuts
+check global --help and --version
 → app.prepare()
-→ inspect metadata and payload
-→ create selected resources
+→ read the selected command's data
+→ create its resources
 → app.commands.run()
-→ terminal result: finish interactive output → app.writePreparedOutput()
-  or long-running result: transfer handle, scope, and interactive output
-→ cleanup
+→ command output: finish interactive output → app.writePreparedOutput()
+  or long-running work: transfer its resources and interactive output
+→ close resources
 → app.reportError() when a failure was captured
 ```
 
-Cleanup precedes error reporting so progress and resources are settled before stderr diagnostics are written. Runtime resources remain open through `writePreparedOutput(...)` because terminal output may be an async stream that still depends on them.
+Close progress output and resources before reporting an error, so diagnostics appear only after cleanup. Keep selected resources open through `writePreparedOutput(...)`: terminal output may be an asynchronous stream that still uses them.
 
-## Compose Commands And Terminal Services Once
+## Create One Typed Command Builder
 
-Bind shared application contracts once and keep command-specific schema, path, payload, aliases, and result inference:
+`createCommand.withTypes<...>()` sets types shared by every command. Create it once when commands share:
+
+- `context`: data the application passes to the command function;
+- `result`: the range of values that function may return;
+- `metadata`: static command information, such as its description.
+
+Each command still declares its own name, options, aliases, data returned from `prepare`, and specific result type:
 
 ```ts
+// Define the commands, output, and error handling used by the CLI.
 import {
   createCommand,
   createOutput,
@@ -46,32 +53,23 @@ import {
 
 type ResourceName = 'database' | 'remote-api';
 
-type AppContext = {
+type CurrentUserContext = {
   currentUser: string;
 };
 
+// A long-running command returns a handle for application code to manage.
 type LongRunningCommandHandle = {
   completed: Promise<void>;
   close(): Promise<void>;
 };
 
 type LongRunningCommandResult = {
-  kind: 'long-running';
   handle: LongRunningCommandHandle;
 };
 
 type CliCommandResult =
   | TerminalCommandOutput
   | LongRunningCommandResult;
-
-function isLongRunningCommandResult(
-  result: CliCommandResult
-): result is LongRunningCommandResult {
-  return typeof result === 'object'
-    && result !== null
-    && 'kind' in result
-    && result.kind === 'long-running';
-}
 
 type CommandMetadata = {
   description: string;
@@ -80,15 +78,16 @@ type CommandMetadata = {
     | ((payload: unknown) => readonly ResourceName[]);
 };
 
-const runtimeOptions = {
+const insecureOptions = {
   insecure: {
     type: 'boolean',
     syntax: 'flag'
   }
 } as const;
 
+// Each command receives the current user, returns CLI output, and declares its description and resources.
 const command = createCommand.withTypes<{
-  context: AppContext;
+  context: CurrentUserContext;
   result: CliCommandResult;
   metadata: CommandMetadata;
   metadataRequired: true;
@@ -97,14 +96,15 @@ const command = createCommand.withTypes<{
 const presentation = createPresentation();
 
 declare function startUserWatcher(
-  context: AppContext
+  context: CurrentUserContext
 ): LongRunningCommandHandle;
 
+// This command returns a record for terminal output.
 const currentUserCommand = command.define({
   path: ['users', 'current'],
   options: mergeOptionsSchema(
     presentationFormatOptions,
-    runtimeOptions
+    insecureOptions
   ),
   metadata: {
     description: 'Show the current user',
@@ -117,16 +117,16 @@ const currentUserCommand = command.define({
   }
 });
 
+// This command starts work that continues after the command returns.
 const watchUsersCommand = command.define({
   path: ['users', 'watch'],
-  options: runtimeOptions,
+  options: insecureOptions,
   metadata: {
     description: 'Watch the current user',
     resources: ['remote-api']
   },
   handle({ context }) {
     return {
-      kind: 'long-running',
       handle: startUserWatcher(context)
     } satisfies LongRunningCommandResult;
   }
@@ -137,6 +137,7 @@ const commands = command.registry([
   watchUsersCommand
 ] as const);
 
+// Let the terminal app format output and report errors consistently.
 const app = createTerminalApp({
   commands,
   presentation,
@@ -166,15 +167,16 @@ const app = createTerminalApp({
 });
 ```
 
-Create `command`, `commands`, `presentation`, `output`, and `app` once for one CLI invocation. Resource instances are not part of this composition; create them only after `app.prepare(...)` identifies the selected command.
+Create `command`, `commands`, `presentation`, `output`, and `app` once when the CLI starts. Do not create database or API resources yet; wait until `app.prepare(...)` identifies the selected command.
 
-The error policy renders every member of an `AggregateError` and uses its first member as the primary failure for exit-code selection. The runner puts the command failure first and the cleanup failure second, so both diagnostics are visible without replacing the command's exit code.
+The error policy writes every member of an `AggregateError` and uses the first one to choose the exit code. When both operations fail, this example puts the command error first and the cleanup error second, so both messages are shown while the command's exit code is retained.
 
-## Parse Global Shortcuts Without Rewriting Argv
+## Handle Global Help And Version Without Rewriting Arguments
 
-Declare short aliases in the bootstrap option schema. `parseArgv(...)` maps `-h` and `-v` to their canonical names, while `parseOptionsSubsetDetailed(...)` validates only bootstrap-owned options:
+Describe `-h` and `-v` among the options handled before a command is selected. `parseArgv(...)` maps them to `help` and `version`, while `parseOptionsSubsetDetailed(...)` checks only those initial options:
 
 ```ts
+// Parse global flags without consuming options for the selected command.
 import {
   parseArgv,
   parseOptionsSubsetDetailed
@@ -191,7 +193,7 @@ const globalOptionsSchema = {
     alias: 'v',
     syntax: 'flag'
   },
-  ...runtimeOptions
+  ...insecureOptions
 } as const;
 
 function parseGlobalInput(args: readonly string[]) {
@@ -208,23 +210,24 @@ function parseGlobalInput(args: readonly string[]) {
 }
 ```
 
-Pass the original `args` to `app.prepare(...)`; do not rebuild argv from the subset result. Command-specific options remain available to the selected command schema.
+Pass the original `args` to `app.prepare(...)`; do not rebuild arguments from the partial parsing result. The selected command must still receive its own options.
 
-Include every bootstrap option whose type affects token ownership. For example, declaring boolean `--insecure` prevents a following command segment from being mistaken for its value during shortcut parsing.
+Include each initial option whose type tells the parser whether it consumes the next argument. Declaring `--insecure` as boolean, for example, prevents the parser from treating the next command segment as its value.
 
-## Own Resources, Cleanup, And Error Ordering
+## Create Resources, Clean Up, Then Report Errors
 
-The application supplies its own help renderer and resource scope:
+The application supplies its own help formatter and an object that closes resources:
 
 ```ts
+// Keep help formatting and resource cleanup in application code.
 type InvocationScope = {
-  context: AppContext;
+  context: CurrentUserContext;
   /**
    * Idempotently closes progress or another interactive stdout line.
    * `close()` also calls this when execution fails before final output.
    */
   finishInteractiveOutput(): Promise<void>;
-  /** Closes interactive output first, then runtime resources. */
+  /** Closes interactive output first, then selected resources. */
   close(): Promise<void>;
 };
 
@@ -249,13 +252,14 @@ declare function renderHelp(
 declare function renderVersion(): string;
 ```
 
-`createInvocationScope(...)` should register cleanup immediately after each resource is created and roll back partially created resources if initialization fails.
+`createInvocationScope(...)` should register cleanup immediately after creating each resource. If initialization fails, it should close resources that were already created.
 
-The [metadata-driven help recipe](practical-cli-patterns.md#build-help-from-command-metadata) shows how `renderHelp(...)` can derive its canonical command inventory from `commands.definitions` without duplicating aliases.
+The [help example](practical-cli-patterns.md#build-help-from-command-descriptions) shows how `renderHelp(...)` can read the list of main command names from `commands.definitions` without repeating aliases.
 
-The runner keeps the phase of the primary failure, merges a cleanup failure, and reports only after cleanup:
+The code below records the stage where the first error occurred, combines it with a cleanup error, and reports after cleanup:
 
 ```ts
+// Track a failure until all resources are closed.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
 type FailurePhase = 'execute' | 'write' | 'external';
 
@@ -264,6 +268,7 @@ type InvocationFailure = {
   phase: FailurePhase;
 };
 
+// Use the selected command's list of resources.
 function selectResources(prepared: Prepared): readonly ResourceName[] {
   const selection = prepared.command.metadata.resources;
 
@@ -272,6 +277,7 @@ function selectResources(prepared: Prepared): readonly ResourceName[] {
     : selection;
 }
 
+// Keep the first failure and add a cleanup failure when both occur.
 function mergeCleanupFailure(
   primary: InvocationFailure | undefined,
   cleanupError: unknown
@@ -292,6 +298,7 @@ function mergeCleanupFailure(
   };
 }
 
+// Print the error after cleanup and name the step where it happened.
 async function reportPreparedFailure(
   failure: InvocationFailure,
   args: readonly string[],
@@ -320,6 +327,7 @@ async function reportPreparedFailure(
   });
 }
 
+// Write global help or version through the same error handling.
 async function writeBootstrapOutput(
   render: () => string,
   args: readonly string[]
@@ -337,6 +345,7 @@ async function writeBootstrapOutput(
   }
 }
 
+// Handle global flags before preparing the selected command.
 async function runCli(args: readonly string[]): Promise<number> {
   let globalInput: ReturnType<typeof parseGlobalInput>;
 
@@ -375,6 +384,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     });
   }
 
+  // Keep selected resources open until output is written or work is transferred.
   let scope: InvocationScope | undefined;
   let failure: InvocationFailure | undefined;
   let phase: FailurePhase = 'external';
@@ -390,7 +400,8 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'execute';
     const result = await app.commands.run(prepared, scope.context);
 
-    if (isLongRunningCommandResult(result)) {
+    // Long-running work takes over its own cleanup before this function returns.
+    if (!isTerminalCommandOutput(result)) {
       phase = 'external';
       transferLongRunningLifecycle({
         handle: result.handle,
@@ -402,12 +413,9 @@ async function runCli(args: readonly string[]): Promise<number> {
       return 0;
     }
 
+    // Finish the interactive line before writing ordinary command output.
     phase = 'external';
     await scope.finishInteractiveOutput();
-
-    if (!isTerminalCommandOutput(result)) {
-      throw new TypeError('Expected terminal command output');
-    }
 
     phase = 'write';
     await app.writePreparedOutput(prepared, result);
@@ -419,6 +427,7 @@ async function runCli(args: readonly string[]): Promise<number> {
     };
   }
   finally {
+    // Close resources even when preparation, execution, or writing fails.
     try {
       await scope?.close();
     }
@@ -444,31 +453,32 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` performs both rendering and writing. An external caller cannot distinguish those failures, so this recipe reports its rejection as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths can distinguish `render` from `write` internally.
+`writePreparedOutput(...)` formats output and writes it. Code outside `TerminalApp` cannot tell which of those steps failed, so this example reports its rejection as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths distinguish `render` from `write` internally.
 
-The bound `CliCommandResult` is an upper bound. The regular command still retains its concrete presentation result, while `watchUsersCommand` retains its concrete `LongRunningCommandResult`.
+`CliCommandResult` only sets the broadest result type allowed for the application. A regular command still keeps its specific output result, while `watchUsersCommand` keeps its specific `LongRunningCommandResult`.
 
-`transferLongRunningLifecycle(...)` is application policy. It must return only after registering signal handling and cleanup for both the handle and scope. On success the runner clears `scope`, so the invocation `finally` no longer owns it. If transfer throws, it must close the handle without taking scope ownership; the invocation `finally` then closes the scope. The transferred lifecycle also owns finishing interactive output before writing later diagnostics.
+`transferLongRunningLifecycle(...)` belongs to the application. It must register signal handling and cleanup for the handle and `scope` before returning. On success, `runCli(...)` clears `scope`, so the invocation's `finally` block does not close it. If transfer throws, it must close the handle without taking responsibility for `scope`; the invocation's `finally` block then closes `scope`. The transferred work must also finish interactive output before later diagnostics are written.
 
-Only results accepted by `isTerminalCommandOutput(...)` reach `writePreparedOutput(...)`. This keeps custom handles, process signals, and long-running resource ownership outside the terminal app boundary.
+Only values accepted by `isTerminalCommandOutput(...)` reach `writePreparedOutput(...)`. The application keeps responsibility for custom handles, process signals, and resources used by long-running work.
 
-## Choose Presentation Ownership
+## Choose How To Format Output
 
-Use one of two presentation routes:
+Choose one of two output paths:
 
-- When one flat projection is correct for JSON, table, and CSV, return a view from `createPresentation()`.
-- When JSON needs a complete nested report while table or CSV needs selected columns and domain formatting, select `renderJson(...)`, `renderTextTable(...)`, or `renderCsv(...)` directly in the Consumer.
+- When JSON, table, and CSV use the same top-level fields, return an output value created with `createPresentation()`.
+- When JSON needs a complete nested report while table or CSV needs selected columns and application-specific formatting, call `renderJson(...)`, `renderTextTable(...)`, or `renderCsv(...)` directly in the application.
 
-See [Presentation And Output](presentation-output.md) for the format decision and [Presentation Primitives](presentation-primitives.md) for the lower-level contracts.
+See [Format And Write Output](presentation-output.md) for choosing a format and [Create Output Values](presentation-primitives.md) for the direct APIs.
 
-## Keep The Compact Path For Simple Applications
+## Use `app.run(...)` When The Command Can Run Immediately
 
-When context already exists and handlers return terminal-supported output, prefer the compact path:
+Use `app.run(...)` when everything the command needs is already available and it returns output that `TerminalApp` can write:
 
 ```ts
+// Use the one-call API when application data is already available.
 process.exitCode = await app.run(args, context, {
   strict: true
 });
 ```
 
-The explicit recipe is for application-owned lifecycle work. It is not required ceremony for every CLI.
+Use the steps above only when the application creates or closes resources around command execution.

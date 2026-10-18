@@ -176,7 +176,7 @@ export class IcoreError<
   readonly code: TCode;
   /** Stable high-level error category. */
   readonly category: typeof icoreErrorCategoryByCode[TCode];
-  /** Structured error context. */
+  /** Structured error details. */
   readonly details: IcoreErrorDetails<TCode>;
 
   constructor(
@@ -271,5 +271,5 @@ function isDetailsRecord(value: unknown): value is DetailsRecord {
 }
 
 function ownsProperty(value: object, key: PropertyKey): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key);
+  return Object.hasOwn(value, key);
 }

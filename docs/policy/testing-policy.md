@@ -21,7 +21,11 @@ Not:
 Tests are written in TypeScript in `src/**/*.test.ts` or `src/**/*.spec.ts` and use standard Node.js modules:
 
 - `node:test`;
-- `node:assert`.
+- `node:assert` in strict mode:
+
+  ```ts
+  import { strict as assert } from 'node:assert';
+  ```
 
 Before running tests after changes in `src`, rebuild the project:
 
@@ -69,7 +73,7 @@ src/bootstrap/help.spec.ts          # covers the help/ directory
 src/bootstrap/help/index.test.ts    # covers a barrel-only index.ts
 ```
 
-An exception is allowed only if the file is actually a runtime entrypoint or a package entrypoint with its own behavior. In that case, the test must verify the entrypoint behavior itself, not the internal files of the directory.
+An exception is allowed only if the file is an executable entrypoint or a package entrypoint with its own behavior. In that case, the test must verify the entrypoint behavior itself, not the internal files of the directory.
 
 If `index.ts` contains only re-exports, a separate test for it is not needed. Files that contain logic must be tested.
 
@@ -157,7 +161,7 @@ Test names must describe the public API path and expected behavior.
 
 Top-level `describe()` names the unit under test:
 
-- `ClassName` for classes and runtime components;
+- `ClassName` for classes;
 - `functionName` for standalone exported functions;
 - `objectName` for exported objects or namespaces;
 - `module-name` only when several closely related exports are tested and there is no single primary subject.

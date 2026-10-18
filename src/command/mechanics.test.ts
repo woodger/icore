@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
 import { IcoreError } from '../errors/icore-error';
 import {
@@ -146,10 +146,10 @@ function assertBoundCommandInferenceContract(): void {
   };
   type CliCommandResult =
     | {
-      kind: 'empty';
+      type: 'empty';
     }
     | {
-      kind: 'text';
+      type: 'text';
       output: string;
     };
   type CliCommandMetadata = {
@@ -190,7 +190,7 @@ function assertBoundCommandInferenceContract(): void {
       const state: 'prepared' = payload.state;
 
       return {
-        kind: 'text',
+        type: 'text',
         output: [
           context.accountId,
           format,
@@ -210,7 +210,7 @@ function assertBoundCommandInferenceContract(): void {
     state: 'prepared'
   };
   const result: CommandResult<typeof getAccounts> = {
-    kind: 'text',
+    type: 'text',
     output: 'accounts'
   };
   const context: CommandContext<typeof getAccounts> = {
@@ -223,7 +223,7 @@ function assertBoundCommandInferenceContract(): void {
 
   acceptConcreteResult({
     // @ts-expect-error The concrete handler result excludes other bound variants.
-    kind: 'empty'
+    type: 'empty'
   });
 
   void canonicalPath;
@@ -1283,7 +1283,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(handled, false);
   });
 
-  test('returns command metadata before runtime context is created', async () => {
+  test('returns command metadata before command context is created', async () => {
     const command = defineCommand({
       path: ['users'],
       metadata: {
@@ -1306,7 +1306,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(prepared.command.metadata?.resource, 'database');
   });
 
-  test('returns typed prepare payload before runtime context is created', async () => {
+  test('returns typed prepare payload before command context is created', async () => {
     const options = {
       name: {
         type: 'string',
@@ -1405,7 +1405,7 @@ describe('two-phase command execution', () => {
     assert.strictEqual(result, 'account:account-id');
   });
 
-  test('runs prepared commands with parsed input and runtime context', async () => {
+  test('runs prepared commands with parsed input and command context', async () => {
     const options = {
       name: {
         type: 'string',

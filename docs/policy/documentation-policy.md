@@ -6,7 +6,7 @@
 
 Documentation must help find the current contract, not create a second source of truth next to the code.
 
-If a contract is already expressed by a runtime mechanism, source file, config file, or tests, a Markdown document must link to that source and explain the working route instead of copying the full reference.
+If a contract is already expressed by executable code, a source file, a config file, or tests, a Markdown document must link to that source and explain the working route instead of copying the full reference.
 
 ## README And Docs
 
@@ -33,4 +33,4 @@ Contributor policies and `CHANGELOG.md` are not duplicated across languages unle
 
 ## Minimum Rule
 
-Markdown must answer the question "where is the current contract and how should it be used". The contract itself must live where it is verified by runtime or tests.
+Markdown must answer the question "where is the current contract and how should it be used". The contract itself must live where executable code implements it or tests verify it.

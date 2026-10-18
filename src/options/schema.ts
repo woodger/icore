@@ -12,7 +12,7 @@
  */
 
 type OptionBase<TType extends string, TValue> = {
-  /** Primitive option kind. */
+  /** Primitive option type. */
   type: TType;
   /** One-letter short alias. */
   alias?: string;
