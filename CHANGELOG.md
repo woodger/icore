@@ -19,6 +19,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 ### Changed
 
 - Reorganized published Consumer examples under `docs/examples` and added table, JSON, and CSV output examples.
+- Updated the development toolchain to `@types/node` 26.6.5, FWA 2.1.5, Oxlint 1.88.0, and `oxlint-tsgolint` 7.0.2004.
 
 ## [2.2.4] - 2026-10-02
 

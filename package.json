@@ -36,10 +36,10 @@
     "lint": "oxlint src"
   },
   "devDependencies": {
-    "@types/node": "^26.6.4",
-    "fwa": "^2.1.4",
-    "oxlint": "^1.86.0",
-    "oxlint-tsgolint": "^7.0.2003",
+    "@types/node": "^26.6.5",
+    "fwa": "^2.1.5",
+    "oxlint": "^1.88.0",
+    "oxlint-tsgolint": "^7.0.2004",
     "typescript": "^7.0.2"
   }
 }
