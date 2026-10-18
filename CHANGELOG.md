@@ -10,9 +10,15 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-18
+
 ### Removed
 
 - Removed the deprecated terminal output and progress compatibility APIs. Applications now own interactive terminal output and progress lifecycle directly.
+
+### Changed
+
+- Reorganized published Consumer examples under `docs/examples` and added table, JSON, and CSV output examples.
 
 ## [2.2.4] - 2026-10-02
 
@@ -413,6 +419,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[3.0.0]: https://www.npmjs.com/package/icore/v/3.0.0
 [2.2.4]: https://www.npmjs.com/package/icore/v/2.2.4
 [2.2.3]: https://www.npmjs.com/package/icore/v/2.2.3
 [2.2.2]: https://www.npmjs.com/package/icore/v/2.2.2
