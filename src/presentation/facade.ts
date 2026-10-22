@@ -24,6 +24,7 @@ import {
   type TextTableRow
 } from './view';
 
+/** Direct JSON, text-table, and CSV renderers for caller-prepared data. */
 export type PresentationRenderers = {
   json: {
     render(value: unknown): string;
@@ -37,6 +38,7 @@ export type PresentationRenderers = {
   };
 };
 
+/** Presentation facade combining view creation, format selection, and direct renderers. */
 export type Presentation = PresentationViewFactory & {
   formats: typeof presentationFormats;
   render(result: PresentationResult, format?: PresentationFormat): string;

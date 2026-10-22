@@ -12,6 +12,7 @@
 
 import type { OptionsSchema } from '../options/schema';
 
+/** Supported output format inferred from the shared presentation format list. */
 export type PresentationFormat = typeof presentationFormats[number];
 
 /**

@@ -11,6 +11,7 @@
 
 type SerialOperation = () => unknown | Promise<unknown>;
 
+/** Serial operations with barrier flushing and a retained first failure. */
 export type SerialOperationQueue = {
   /** Enqueues an operation and reports failures to the caller. */
   run(operation: SerialOperation): Promise<void>;

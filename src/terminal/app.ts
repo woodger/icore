@@ -119,6 +119,11 @@ type TerminalErrorPreparedCommand<
   ? unknown
   : PreparedCommand<TCommands[number]>;
 
+/**
+ * Terminal app dependencies and optional output, format, and error policies.
+ * The registry determines command types; empty registries support bootstrap
+ * output and error reporting with caller-provided prepared data typed as unknown.
+ */
 export type TerminalAppOptions<
   TCommands extends readonly TerminalCommandDefinition[]
 > = {
@@ -135,6 +140,11 @@ export type TerminalAppOptions<
   ): PresentationFormat | undefined;
 };
 
+/**
+ * Typed command lifecycle with presentation, output, and shared error reporting.
+ * Execution stays bound to registered commands; empty registries can report
+ * errors with caller-provided prepared data.
+ */
 export type TerminalApp<
   TCommands extends readonly TerminalCommandDefinition[]
 > = {

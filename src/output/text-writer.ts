@@ -10,6 +10,7 @@
  * This file must not contain stdout/stderr selection or command semantics.
  */
 
+/** Minimal text destination with synchronous or asynchronous writes. */
 export type TextWriter = {
   write(chunk: string): unknown | Promise<unknown>;
 };

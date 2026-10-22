@@ -12,6 +12,7 @@
 import { createStderrWriter, createStdoutWriter } from './node-writer';
 import type { BackpressureTextSink, TextWriter } from './text-writer';
 
+/** Semantic stdout and stderr writes with direct access to both text writers. */
 export type Output = {
   /** Writes regular output. */
   write(chunk: string): unknown | Promise<unknown>;
@@ -21,6 +22,7 @@ export type Output = {
   stderr: TextWriter;
 };
 
+/** Optional output sinks; omitted channels use the corresponding process streams. */
 export type OutputOptions = {
   stdout?: BackpressureTextSink;
   stderr?: BackpressureTextSink;

@@ -27,7 +27,7 @@ English user-facing documentation is the canonical source. Localized documentati
 
 Language navigation must be present in every version. A translation must link to its English source and state that the English contract takes precedence when the two versions differ.
 
-Code blocks, commands, identifiers, error messages, and byte-exact output must remain unchanged in translations. A change to canonical documentation must update an existing translation in the same change or explicitly record that the translation is pending.
+Code blocks must preserve executable code, commands, identifiers, error messages, and byte-exact output across translations. Comments in documentation examples must use the language of the surrounding documentation. A change to canonical documentation must update an existing translation in the same change or explicitly record that the translation is pending.
 
 Contributor policies and `CHANGELOG.md` are not duplicated across languages unless a separate ownership decision defines how both copies will stay aligned.
 
