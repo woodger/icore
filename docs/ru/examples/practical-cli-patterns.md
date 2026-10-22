@@ -16,11 +16,7 @@
 
 ```ts
 // Разберите только опции, которые работают до выбора команды.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed,
-  type OptionsSchema
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed, type OptionsSchema } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
@@ -232,10 +228,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 
 ```ts
 // Объедините общие опции с опциями, характерными для `jobs list`.
-import {
-  mergeOptionsSchema,
-  type OptionsSchema
-} from 'icore';
+import { mergeOptionsSchema, type OptionsSchema } from 'icore';
 
 const sharedCliOptions = {
   config: {

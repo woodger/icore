@@ -115,10 +115,7 @@ This keeps the output dependency explicit and avoids mocking `process.stdout` gl
 
 ```ts
 // Create separate writers when assembling output manually.
-import {
-  createStderrWriter,
-  createStdoutWriter
-} from 'icore';
+import { createStderrWriter, createStdoutWriter } from 'icore';
 
 const stdout = createStdoutWriter();
 const stderr = createStderrWriter();

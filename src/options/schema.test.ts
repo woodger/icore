@@ -1,10 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
 import { parseOptions } from './parser';
-import {
-  mergeOptionsSchema,
-  type InferOptions
-} from './schema';
+import { mergeOptionsSchema, type InferOptions } from './schema';
 
 describe('mergeOptionsSchema', () => {
   test('merges schemas and preserves literal option types', () => {

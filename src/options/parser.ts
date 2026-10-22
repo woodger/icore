@@ -10,10 +10,7 @@
  * application-specific validation rules.
  */
 
-import {
-  IcoreError,
-  type IcoreErrorDetails
-} from '../errors/icore-error';
+import { IcoreError, type IcoreErrorDetails } from '../errors/icore-error';
 import type {
   BooleanOption,
   InferOptions,

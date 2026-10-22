@@ -26,10 +26,7 @@ npm install icore
 Создайте команды, соберите их в [реестр команд](../examples/command-resolution.md#create-a-commands-object-from-existing-definitions) и передайте его в `createTerminalApp()`:
 
 ```ts
-import {
-  createCommand,
-  createTerminalApp
-} from 'icore';
+import { createCommand, createTerminalApp } from 'icore';
 
 const command = createCommand();
 

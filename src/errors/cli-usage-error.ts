@@ -11,10 +11,7 @@
  * process exit-code policy.
  */
 
-import {
-  isIcoreError,
-  type AnyIcoreError
-} from './icore-error';
+import { isIcoreError, type AnyIcoreError } from './icore-error';
 
 type IcoreUsageError = Extract<
   AnyIcoreError,

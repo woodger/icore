@@ -1,10 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  IcoreError,
-  isIcoreError,
-  type IcoreErrorDetails
-} from './icore-error';
+import { IcoreError, isIcoreError, type IcoreErrorDetails } from './icore-error';
 
 class ForeignBrandedIcoreError extends Error {
   constructor(

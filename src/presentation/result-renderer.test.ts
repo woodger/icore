@@ -1,9 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  isPresentationResult,
-  renderPresentationResult
-} from './result-renderer';
+import { isPresentationResult, renderPresentationResult } from './result-renderer';
 
 describe('renderPresentationResult', () => {
   test('renders records as table by default', () => {

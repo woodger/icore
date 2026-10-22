@@ -105,10 +105,7 @@ Use `presentation.formats`, `presentationFormats`, and `isPresentationFormat(...
 
 ```ts
 // Validate a requested format against the formats supported by the renderer.
-import {
-  isPresentationFormat,
-  presentationFormats
-} from 'icore';
+import { isPresentationFormat, presentationFormats } from 'icore';
 
 function normalizeFormat(value: unknown) {
   return isPresentationFormat(value) ? value : 'table';
@@ -190,12 +187,7 @@ The standalone functions do the same work:
 
 ```ts
 // Standalone renderers accept data for each format directly.
-import {
-  renderCsv,
-  renderCsvRow,
-  renderJson,
-  renderTextTable
-} from 'icore';
+import { renderCsv, renderCsvRow, renderJson, renderTextTable } from 'icore';
 
 renderJson({ ok: true });
 renderTextTable([

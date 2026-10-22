@@ -9,14 +9,8 @@
  * application-specific diagnostics.
  */
 
-import {
-  createStderrWriter,
-  createStdoutWriter
-} from './node-writer';
-import type {
-  BackpressureTextSink,
-  TextWriter
-} from './text-writer';
+import { createStderrWriter, createStdoutWriter } from './node-writer';
+import type { BackpressureTextSink, TextWriter } from './text-writer';
 
 export type Output = {
   /** Writes regular output. */

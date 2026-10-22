@@ -10,10 +10,7 @@ Put the command registry close to the code that owns the command contract:
 
 ```ts
 // Define the command before the application creates data for it.
-import {
-  createCommand,
-  type PreparedCommand
-} from 'icore';
+import { createCommand, type PreparedCommand } from 'icore';
 
 type GreetingContext = {
   greeting: string;

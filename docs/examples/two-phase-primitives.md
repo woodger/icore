@@ -8,11 +8,7 @@ The snippets below use this setup:
 
 ```ts
 // Define a command and the data the application supplies when it runs.
-import {
-  createCommand,
-  createTerminalApp,
-  isTerminalCommandOutput
-} from 'icore';
+import { createCommand, createTerminalApp, isTerminalCommandOutput } from 'icore';
 
 type WorkspaceContext = {
   workspace: string;
@@ -147,10 +143,7 @@ The guard checks the stream's iterable shape; each chunk is validated as a strin
 
 ```ts
 // Prepare a command from a registry without a commands object.
-import {
-  prepareCommandFromArgs,
-  type CommandPayload
-} from 'icore';
+import { prepareCommandFromArgs, type CommandPayload } from 'icore';
 
 const prepared = await prepareCommandFromArgs(commands.registry, [
   'jobs',
@@ -172,11 +165,7 @@ Use this when code has a registry but not a `commands` object.
 
 ```ts
 // Infer the command's input and result types before running it.
-import {
-  runPreparedCommand,
-  type CommandContext,
-  type CommandResult
-} from 'icore';
+import { runPreparedCommand, type CommandContext, type CommandResult } from 'icore';
 
 type Context = CommandContext<typeof runJobCommand>;
 type Result = CommandResult<typeof runJobCommand>;
@@ -273,10 +262,7 @@ This is useful for tests and small tools. It does not select a command from a re
 
 ```ts
 // Read parsed options and learn which options the user supplied.
-import {
-  parseOptionsDetailed,
-  type InferProvidedOptions
-} from 'icore';
+import { parseOptionsDetailed, type InferProvidedOptions } from 'icore';
 
 const schema = {
   format: {

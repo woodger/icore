@@ -177,10 +177,7 @@ Describe `-h` and `-v` among the options handled before a command is selected. `
 
 ```ts
 // Parse global flags without consuming options for the selected command.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed } from 'icore';
 
 const globalOptionsSchema = {
   help: {

@@ -24,10 +24,7 @@ node dist/cli.js reports list --project alpha --format json --archived --limit 5
 
 ```ts
 // 说明 `reports list` 接受的选项。
-import {
-  createCommand,
-  type InferOptions
-} from 'icore';
+import { createCommand, type InferOptions } from 'icore';
 
 const command = createCommand();
 

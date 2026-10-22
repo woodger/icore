@@ -1,9 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  renderCsv,
-  renderCsvRow
-} from './csv';
+import { renderCsv, renderCsvRow } from './csv';
 
 describe('renderCsvRow', () => {
   test('escapes comma, quote, carriage return and newline cells', () => {

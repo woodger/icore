@@ -11,14 +11,8 @@
  * stdout/stderr delivery.
  */
 
-import {
-  presentationFormats,
-  type PresentationFormat
-} from './format-options';
-import {
-  renderCsv,
-  renderCsvRow
-} from './renderers/csv';
+import { presentationFormats, type PresentationFormat } from './format-options';
+import { renderCsv, renderCsvRow } from './renderers/csv';
 import { renderJson } from './renderers/json';
 import { renderTextTable } from './renderers/table';
 import { renderPresentationResult } from './result-renderer';

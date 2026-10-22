@@ -7,11 +7,7 @@
  * This file must not contain rendering rules or command semantics.
  */
 
-import {
-  createBackpressureTextWriter,
-  type BackpressureTextSink,
-  type TextWriter
-} from './text-writer';
+import { createBackpressureTextWriter, type BackpressureTextSink, type TextWriter } from './text-writer';
 
 /**
  * Creates a stdout writer from an already selected Node-compatible sink.

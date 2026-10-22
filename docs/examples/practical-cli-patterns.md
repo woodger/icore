@@ -14,11 +14,7 @@ Parse these flags before using the command registry to run an application comman
 
 ```ts
 // Parse only the options that work before a command is selected.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed,
-  type OptionsSchema
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed, type OptionsSchema } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
@@ -230,10 +226,7 @@ Share an option definition when the same options appear in several commands. If 
 
 ```ts
 // Combine common options with options specific to `jobs list`.
-import {
-  mergeOptionsSchema,
-  type OptionsSchema
-} from 'icore';
+import { mergeOptionsSchema, type OptionsSchema } from 'icore';
 
 const sharedCliOptions = {
   config: {

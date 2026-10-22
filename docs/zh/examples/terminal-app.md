@@ -179,10 +179,7 @@ CLI 启动时只创建一次 `command`、`commands`、`presentation`、`output` 
 
 ```ts
 // 解析全局标志，不消耗所选命令的选项。
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed } from 'icore';
 
 const globalOptionsSchema = {
   help: {

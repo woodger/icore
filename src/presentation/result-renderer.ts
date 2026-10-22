@@ -15,13 +15,7 @@ import type { PresentationFormat } from './format-options';
 import { renderCsv } from './renderers/csv';
 import { renderJson } from './renderers/json';
 import { renderTextTable } from './renderers/table';
-import type {
-  CsvCell,
-  CsvRow,
-  PresentationRecord,
-  PresentationResult,
-  TextTableRow
-} from './view';
+import type { CsvCell, CsvRow, PresentationRecord, PresentationResult, TextTableRow } from './view';
 
 /**
  * Renders a presentation result after the caller selects the terminal format.

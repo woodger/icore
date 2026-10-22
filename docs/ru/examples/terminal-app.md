@@ -179,10 +179,7 @@ const app = createTerminalApp({
 
 ```ts
 // Разберите глобальные флаги, не поглощая опции выбранной команды.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed } from 'icore';
 
 const globalOptionsSchema = {
   help: {

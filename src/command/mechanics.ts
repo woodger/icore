@@ -11,22 +11,10 @@
  * domain behavior, SDK calls, or output formatting.
  */
 
-import {
-  parseArgv,
-  type ParsedArgv
-} from '../argv/parser';
-import {
-  IcoreError,
-  isIcoreError,
-  type AnyIcoreError
-} from '../errors/icore-error';
+import { parseArgv, type ParsedArgv } from '../argv/parser';
+import { IcoreError, isIcoreError, type AnyIcoreError } from '../errors/icore-error';
 import { parseOptionsDetailed } from '../options/parser';
-import type {
-  InferOptions,
-  InferProvidedOptions,
-  OptionsSchema,
-  RawOptionValue
-} from '../options/schema';
+import type { InferOptions, InferProvidedOptions, OptionsSchema, RawOptionValue } from '../options/schema';
 
 /** Non-empty command path accepted by command resolution. */
 export type CommandPath = readonly [string, ...string[]];

@@ -8,10 +8,7 @@
  * This file must not contain application report mapping.
  */
 
-import type {
-  CsvCell,
-  CsvRow
-} from '../view';
+import type { CsvCell, CsvRow } from '../view';
 
 /**
  * Renders one CSV row while escaping cells that require quoting.

@@ -7,10 +7,7 @@ import {
   parseOptionsSubsetDetailed,
   type ParseOptionsSubsetResult
 } from './parser';
-import type {
-  InferOptions,
-  InferProvidedOptions
-} from './schema';
+import type { InferOptions, InferProvidedOptions } from './schema';
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {

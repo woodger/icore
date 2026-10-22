@@ -1,9 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  CliUsageError,
-  isUsageError
-} from './cli-usage-error';
+import { CliUsageError, isUsageError } from './cli-usage-error';
 import { IcoreError } from './icore-error';
 
 class ForeignBrandedCliUsageError extends Error {

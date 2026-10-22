@@ -22,10 +22,7 @@ The following shows how `reports list` and its options are parsed:
 
 ```ts
 // Describe the options accepted by `reports list`.
-import {
-  createCommand,
-  type InferOptions
-} from 'icore';
+import { createCommand, type InferOptions } from 'icore';
 
 const command = createCommand();
 
