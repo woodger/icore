@@ -42,6 +42,19 @@ class ForeignBrandedIcoreError extends Error {
 }
 
 describe('CliUsageError', () => {
+  describe('.isUsageError', () => {
+    test('recognizes application and icore usage errors', () => {
+      const applicationError: unknown = new ForeignBrandedCliUsageError('Invalid date range');
+      const icoreError: unknown = new ForeignBrandedIcoreError();
+
+      assert.ok(CliUsageError.isUsageError(applicationError));
+      assert.equal(applicationError.message, 'Invalid date range');
+      assert.ok(CliUsageError.isUsageError(icoreError));
+      assert.equal(icoreError.message, 'Unknown command: missing');
+      assert.equal(CliUsageError.isUsageError(new Error('failed')), false);
+    });
+  });
+
   test('preserves the standard Error contract', () => {
     const error = new CliUsageError('Invalid date range');
 

@@ -200,6 +200,74 @@ export class IcoreError<
     });
     Object.setPrototypeOf(this, new.target.prototype);
   }
+
+  /** Recognizes compatible errors and optionally checks one exact error code. */
+  static is(error: unknown): error is AnyIcoreError;
+  static is<TCode extends IcoreErrorCode>(
+    error: unknown,
+    code: TCode
+  ): error is IcoreError<TCode>;
+  static is(
+    error: unknown,
+    code?: IcoreErrorCode
+  ): error is AnyIcoreError {
+    try {
+      if (!IcoreError.hasIcoreErrorIdentity(error)) {
+        return false;
+      }
+
+      const errorCode = error['code'];
+
+      if (
+        !IcoreError.isIcoreErrorCode(errorCode)
+        || (code !== undefined && errorCode !== code)
+        || error['category'] !== icoreErrorCategoryByCode[errorCode]
+      ) {
+        return false;
+      }
+
+      return IcoreError.isDetailsRecord(error['details']);
+    }
+    catch {
+      return false;
+    }
+  }
+
+  private static hasIcoreErrorIdentity(
+    error: unknown
+  ): error is Error & DetailsRecord {
+    if (!(error instanceof Error) || !IcoreError.isDetailsRecord(error)) {
+      return false;
+    }
+
+    if (error instanceof IcoreError) {
+      return true;
+    }
+
+    if (
+      IcoreError.ownsProperty(error, icoreErrorBrand)
+      && Reflect.get(error, icoreErrorBrand) === true
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private static isIcoreErrorCode(value: unknown): value is IcoreErrorCode {
+    return typeof value === 'string'
+      && IcoreError.ownsProperty(icoreErrorCategoryByCode, value);
+  }
+
+  private static isDetailsRecord(value: unknown): value is DetailsRecord {
+    return typeof value === 'object'
+      && value !== null
+      && !Array.isArray(value);
+  }
+
+  private static ownsProperty(value: object, key: PropertyKey): boolean {
+    return Object.hasOwn(value, key);
+  }
 }
 
 /**
@@ -216,60 +284,7 @@ export function isIcoreError(
   error: unknown,
   code?: IcoreErrorCode
 ): error is AnyIcoreError {
-  try {
-    if (!hasIcoreErrorIdentity(error)) {
-      return false;
-    }
-
-    const errorCode = error['code'];
-
-    if (
-      !isIcoreErrorCode(errorCode)
-      || (code !== undefined && errorCode !== code)
-      || error['category'] !== icoreErrorCategoryByCode[errorCode]
-    ) {
-      return false;
-    }
-
-    return isDetailsRecord(error['details']);
-  }
-  catch {
-    return false;
-  }
-}
-
-function hasIcoreErrorIdentity(
-  error: unknown
-): error is Error & DetailsRecord {
-  if (!(error instanceof Error) || !isDetailsRecord(error)) {
-    return false;
-  }
-
-  if (error instanceof IcoreError) {
-    return true;
-  }
-
-  if (
-    ownsProperty(error, icoreErrorBrand)
-    && Reflect.get(error, icoreErrorBrand) === true
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function isIcoreErrorCode(value: unknown): value is IcoreErrorCode {
-  return typeof value === 'string'
-    && ownsProperty(icoreErrorCategoryByCode, value);
-}
-
-function isDetailsRecord(value: unknown): value is DetailsRecord {
-  return typeof value === 'object'
-    && value !== null
-    && !Array.isArray(value);
-}
-
-function ownsProperty(value: object, key: PropertyKey): boolean {
-  return Object.hasOwn(value, key);
+  return code === undefined
+    ? IcoreError.is(error)
+    : IcoreError.is(error, code);
 }
