@@ -11,10 +11,7 @@
  * This file must not contain parser, validator, or command execution logic.
  */
 
-export {
-  parseArgv,
-  type ParsedArgv
-} from './argv/parser';
+export { parseArgv, type ParsedArgv } from './argv/parser';
 export {
   createCommand,
   createCommands,
@@ -46,10 +43,7 @@ export {
   type PreparedCommandInput,
   type ResolvedCommand
 } from './command/mechanics';
-export {
-  CliUsageError,
-  isUsageError
-} from './errors/cli-usage-error';
+export { CliUsageError, isUsageError } from './errors/cli-usage-error';
 export {
   IcoreError,
   isIcoreError,
@@ -78,31 +72,17 @@ export {
   type RawOptionValue,
   type StringOption
 } from './options/schema';
-export {
-  createPresentation,
-  type Presentation,
-  type PresentationRenderers
-} from './presentation/facade';
+export { createPresentation, type Presentation, type PresentationRenderers } from './presentation/facade';
 export {
   isPresentationFormat,
   presentationFormatOptions,
   presentationFormats,
   type PresentationFormat
 } from './presentation/format-options';
-export {
-  renderCsv,
-  renderCsvRow
-} from './presentation/renderers/csv';
-export {
-  renderJson
-} from './presentation/renderers/json';
-export {
-  renderTextTable
-} from './presentation/renderers/table';
-export {
-  isPresentationResult,
-  renderPresentationResult
-} from './presentation/result-renderer';
+export { renderCsv, renderCsvRow } from './presentation/renderers/csv';
+export { renderJson } from './presentation/renderers/json';
+export { renderTextTable } from './presentation/renderers/table';
+export { isPresentationResult, renderPresentationResult } from './presentation/result-renderer';
 export {
   type CsvCell,
   type CsvRow,
@@ -118,20 +98,9 @@ export {
   type TextPresentationView,
   type TextTableRow
 } from './presentation/view';
-export {
-  createOutput,
-  type Output,
-  type OutputOptions
-} from './output/facade';
-export {
-  createStderrWriter,
-  createStdoutWriter
-} from './output/node-writer';
-export {
-  createBackpressureTextWriter,
-  type BackpressureTextSink,
-  type TextWriter
-} from './output/text-writer';
+export { createOutput, type Output, type OutputOptions } from './output/facade';
+export { createStderrWriter, createStdoutWriter } from './output/node-writer';
+export { createBackpressureTextWriter, type BackpressureTextSink, type TextWriter } from './output/text-writer';
 export {
   createTerminalApp,
   isTerminalCommandOutput,
