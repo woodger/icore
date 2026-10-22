@@ -411,33 +411,36 @@ describe('createTerminalApp', () => {
       });
     });
 
-    test('captures format resolution failures and preserves legacy rejection identity', async () => {
-      const memory = createMemoryOutput();
-      const failure = new Error('format failed');
+    test(
+      'captures format resolution failures and preserves legacy rejection identity',
+      async () => {
+        const memory = createMemoryOutput();
+        const failure = new Error('format failed');
 
-      Object.freeze(failure);
+        Object.freeze(failure);
 
-      const app = createTerminalApp({
-        commands: createCommands([
-          defineCommand({ path: ['status'], options: {}, handle() {} })
-        ]),
-        output: memory.output,
-        resolveFormat() {
-          throw failure;
-        }
-      });
-      const prepared = await app.prepare(['status']);
-      const attempt = await app.tryWritePreparedOutput(prepared, 'output');
+        const app = createTerminalApp({
+          commands: createCommands([
+            defineCommand({ path: ['status'], options: {}, handle() {} })
+          ]),
+          output: memory.output,
+          resolveFormat() {
+            throw failure;
+          }
+        });
+        const prepared = await app.prepare(['status']);
+        const attempt = await app.tryWritePreparedOutput(prepared, 'output');
 
-      assert.ok(!attempt.ok);
-      assert.equal(attempt.phase, 'render');
-      assert.equal(attempt.error, failure);
-      await assert.rejects(
-        app.writePreparedOutput(prepared, 'output'),
-        error => error === failure
-      );
-      assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
-    });
+        assert.ok(!attempt.ok);
+        assert.equal(attempt.phase, 'render');
+        assert.equal(attempt.error, failure);
+        await assert.rejects(
+          app.writePreparedOutput(prepared, 'output'),
+          error => error === failure
+        );
+        assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
+      }
+    );
 
     test('captures original rendering failures without invoking error policy', async () => {
       const failures: readonly unknown[] = [new Error('render failed'), 'render failed', undefined];

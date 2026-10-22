@@ -85,7 +85,8 @@ const insecureOptions = {
   }
 } as const;
 
-// Each command receives the current user, returns CLI output, and declares its description and resources.
+// Each command receives the current user, returns CLI output,
+// and declares its description and resources.
 const command = createCommand.withTypes<{
   context: CurrentUserContext;
   result: CliCommandResult;

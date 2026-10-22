@@ -59,7 +59,8 @@ type CurrentUserContext = {
   currentUser: string;
 };
 
-// Команда с длительным выполнением возвращает объект, через который приложение управляет этой работой.
+// Команда с длительным выполнением возвращает объект,
+// через который приложение управляет этой работой.
 type LongRunningCommandHandle = {
   completed: Promise<void>;
   close(): Promise<void>;
@@ -222,7 +223,8 @@ function parseGlobalInput(args: readonly string[]) {
 type InvocationScope = {
   context: CurrentUserContext;
   /**
-   * Завершает индикатор прогресса или другую интерактивную строку stdout; повторный вызов безопасен.
+   * Завершает индикатор прогресса или другую интерактивную строку stdout;
+   * повторный вызов безопасен.
    * `close()` также вызывает этот метод, если выполнение завершается ошибкой до итогового вывода.
    */
   finishInteractiveOutput(): Promise<void>;

@@ -19,7 +19,11 @@ import type {
   PreparedCommand
 } from '../command/mechanics';
 import type { OptionsSchema } from '../options/schema';
-import { createPresentation, type Presentation, type PresentationResult } from '../presentation/facade';
+import {
+  createPresentation,
+  type Presentation,
+  type PresentationResult
+} from '../presentation/facade';
 import { isPresentationFormat, type PresentationFormat } from '../presentation/format-options';
 import { isPresentationResult } from '../presentation/result-renderer';
 import { createOutput, type Output } from '../output/facade';

@@ -112,13 +112,15 @@ type MergeOptionsSchemasWithResult<
 export type MergeOptionsSchemas<TSchemas extends readonly OptionsSchema[]> =
   MergeOptionsSchemasWithResult<TSchemas, Record<never, never>>;
 
-type StringOptionValue<TOption> = TOption extends { choices: readonly (infer TChoice extends string)[] }
-  ? TChoice
-  : string;
+type StringOptionValue<TOption> =
+  TOption extends { choices: readonly (infer TChoice extends string)[] }
+    ? TChoice
+    : string;
 
-type NumberOptionValue<TOption> = TOption extends { choices: readonly (infer TChoice extends number)[] }
-  ? TChoice
-  : number;
+type NumberOptionValue<TOption> =
+  TOption extends { choices: readonly (infer TChoice extends number)[] }
+    ? TChoice
+    : number;
 
 type OptionValue<TOption> =
   TOption extends { type: 'string' }

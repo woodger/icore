@@ -1,6 +1,17 @@
 # Code Organization Policy
 
-> Type: Policy. This document defines declaration placement and helper ownership.
+> Type: Policy. This document defines line width, declaration placement, and helper ownership.
+
+## Line Width
+
+Limit TypeScript lines to 100 characters, including indentation. This applies to production source,
+tests, and TypeScript examples in documentation.
+
+Keep import and re-export declarations on one line when the complete line fits within this limit.
+Otherwise, split them across multiple lines.
+
+Unbreakable URLs and literals may exceed the limit when splitting them would reduce readability or
+change their value. The limit does not apply to ordinary Markdown prose or generated files.
 
 ## Types And Interfaces
 

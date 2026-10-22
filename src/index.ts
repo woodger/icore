@@ -72,7 +72,11 @@ export {
   type RawOptionValue,
   type StringOption
 } from './options/schema';
-export { createPresentation, type Presentation, type PresentationRenderers } from './presentation/facade';
+export {
+  createPresentation,
+  type Presentation,
+  type PresentationRenderers
+} from './presentation/facade';
 export {
   isPresentationFormat,
   presentationFormatOptions,
@@ -100,7 +104,11 @@ export {
 } from './presentation/view';
 export { createOutput, type Output, type OutputOptions } from './output/facade';
 export { createStderrWriter, createStdoutWriter } from './output/node-writer';
-export { createBackpressureTextWriter, type BackpressureTextSink, type TextWriter } from './output/text-writer';
+export {
+  createBackpressureTextWriter,
+  type BackpressureTextSink,
+  type TextWriter
+} from './output/text-writer';
 export {
   createTerminalApp,
   isTerminalCommandOutput,
