@@ -36,6 +36,21 @@ export type TerminalCommandOutput =
   | PresentationResult
   | undefined;
 
+/**
+ * Outcome of rendering and writing output without invoking terminal error policy.
+ * Failures retain the original thrown value and its phase; stdout may already
+ * contain partial output when writing fails.
+ */
+export type TerminalOutputAttempt =
+  | {
+    ok: true;
+  }
+  | {
+    ok: false;
+    phase: 'render' | 'write';
+    error: unknown;
+  };
+
 /** Terminal operation in which an error was observed. */
 export type TerminalErrorPhase =
   | 'prepare'
@@ -170,12 +185,21 @@ export type TerminalApp<
    * Renders and writes already obtained terminal output.
    *
    * String output is written exactly as provided; add a trailing newline in the
-   * command result when line output is desired.
+   * command result when line output is desired. Rejects with the original error
+   * without invoking terminal error policy.
    */
   writePreparedOutput(
     prepared: PreparedCommand<TCommands[number]>,
     output: TerminalCommandOutput
   ): Promise<void>;
+  /**
+   * Renders and writes output, returning failures without invoking error policy.
+   * Keep resources open until completion; stream failures have the write phase.
+   */
+  tryWritePreparedOutput(
+    prepared: PreparedCommand<TCommands[number]>,
+    output: TerminalCommandOutput
+  ): Promise<TerminalOutputAttempt>;
   /** Returns a process-style exit code. */
   run(
     args: readonly string[],
@@ -253,13 +277,38 @@ export function createTerminalApp<
     prepared: TPrepared,
     terminalOutput: TerminalCommandOutput
   ): Promise<void> {
-    const renderedOutput = renderTerminalOutput(
-      terminalOutput,
-      resolveFormat(prepared),
-      presentation
-    );
+    const attempt = await tryWritePreparedOutput(prepared, terminalOutput);
 
-    await writeTerminalOutput(renderedOutput, output);
+    if (!attempt.ok) {
+      throw attempt.error;
+    }
+  }
+
+  async function tryWritePreparedOutput(
+    prepared: TPrepared,
+    terminalOutput: unknown
+  ): Promise<TerminalOutputAttempt> {
+    let renderedOutput: RenderedTerminalOutput;
+
+    try {
+      renderedOutput = renderTerminalOutput(
+        terminalOutput,
+        resolveFormat(prepared),
+        presentation
+      );
+    }
+    catch (error) {
+      return { ok: false, phase: 'render', error };
+    }
+
+    try {
+      await writeTerminalOutput(renderedOutput, output);
+
+      return { ok: true };
+    }
+    catch (error) {
+      return { ok: false, phase: 'write', error };
+    }
   }
 
   async function runPrepared<TSelected extends TPrepared>(
@@ -287,35 +336,17 @@ export function createTerminalApp<
       ));
     }
 
-    let renderedOutput: RenderedTerminalOutput;
+    const attempt = await tryWritePreparedOutput(prepared, result);
 
-    try {
-      renderedOutput = renderTerminalOutput(
-        result,
-        resolveFormat(prepared),
-        presentation
-      );
-    }
-    catch (error) {
-      return reportError(error, createPreparedErrorContext(
-        'render',
-        prepared,
-        sourceArgs
-      ));
-    }
-
-    try {
-      await writeTerminalOutput(renderedOutput, output);
-
+    if (attempt.ok) {
       return successExitCode;
     }
-    catch (error) {
-      return reportError(error, createPreparedErrorContext(
-        'write',
-        prepared,
-        sourceArgs
-      ));
-    }
+
+    return reportError(attempt.error, createPreparedErrorContext(
+      attempt.phase,
+      prepared,
+      sourceArgs
+    ));
   }
 
   return {
@@ -328,6 +359,7 @@ export function createTerminalApp<
     },
     runPrepared,
     writePreparedOutput,
+    tryWritePreparedOutput,
     async run(args, context, commandOptions) {
       let prepared: TPrepared;
 

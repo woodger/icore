@@ -107,6 +107,7 @@ export {
   type TerminalApp,
   type TerminalAppOptions,
   type TerminalCommandOutput,
+  type TerminalOutputAttempt,
   type TerminalErrorContext,
   type TerminalErrorPhase,
   type TerminalErrorPolicy

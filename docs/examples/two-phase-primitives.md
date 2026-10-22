@@ -137,6 +137,8 @@ Only terminal output belongs here: ready text, streaming text, output values, or
 
 The guard checks the stream's iterable shape; each chunk is validated as a string during writing. A non-string chunk rejects `writePreparedOutput(...)`. Built-in terminal execution reports that failure in the `write` phase.
 
+Use `app.tryWritePreparedOutput(...)` when diagnostics must wait for cleanup and retain the original output error and its phase. The [caller-owned lifecycle example](terminal-app.md#create-resources-clean-up-then-report-errors) shows how to combine an output failure with a cleanup failure before reporting.
+
 ## Prepare From A Command Registry
 
 `prepareCommandFromArgs(...)` is the direct form of `commands.prepare(...)`.

@@ -13,6 +13,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 ### Added
 
 - Added `IcoreError.is(...)` and `CliUsageError.isUsageError(...)` as static error guards while preserving the existing standalone guards.
+- Added `TerminalApp.tryWritePreparedOutput(...)` and `TerminalOutputAttempt` to retain original output errors with their `render` or `write` phase for reporting after application-owned cleanup.
 
 ### Fixed
 

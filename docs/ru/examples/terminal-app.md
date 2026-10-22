@@ -21,13 +21,13 @@ parse global shortcuts
 → inspect metadata and payload
 → create selected resources
 → app.commands.run()
-→ terminal result: finish interactive output → app.writePreparedOutput()
+→ terminal result: finish interactive output → app.tryWritePreparedOutput()
   or long-running result: transfer handle, scope, and interactive output
 → cleanup
 → app.reportError() when a failure was captured
 ```
 
-Закрывайте индикатор прогресса и ресурсы до сообщения об ошибке, чтобы диагностика появлялась только после очистки. Не закрывайте выбранные ресурсы до окончания `writePreparedOutput(...)`: вывод может быть асинхронным потоком, который всё ещё их использует.
+Закрывайте индикатор прогресса и ресурсы до сообщения об ошибке, чтобы диагностика появлялась только после очистки. Не закрывайте выбранные ресурсы до окончания `tryWritePreparedOutput(...)`: вывод может быть асинхронным потоком, который всё ещё их использует.
 
 ## Один типизированный конструктор команд
 
@@ -260,7 +260,7 @@ declare function renderVersion(): string;
 ```ts
 // Запоминайте ошибку, пока не будут закрыты все ресурсы.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
-type FailurePhase = 'execute' | 'write' | 'external';
+type FailurePhase = 'execute' | 'render' | 'write' | 'external';
 
 type InvocationFailure = {
   error: unknown;
@@ -311,9 +311,9 @@ async function reportPreparedFailure(
     });
   }
 
-  if (failure.phase === 'write') {
+  if (failure.phase === 'write' || failure.phase === 'render') {
     return app.reportError(failure.error, {
-      phase: 'write',
+      phase: failure.phase,
       args,
       prepared
     });
@@ -416,8 +416,14 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'external';
     await scope.finishInteractiveOutput();
 
-    phase = 'write';
-    await app.writePreparedOutput(prepared, result);
+    const attempt = await app.tryWritePreparedOutput(prepared, result);
+
+    if (!attempt.ok) {
+      failure = {
+        error: attempt.error,
+        phase: attempt.phase
+      };
+    }
   }
   catch (error) {
     failure = {
@@ -452,13 +458,13 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` форматирует вывод и записывает его. Код вне `TerminalApp` не может определить, на каком из этих шагов произошла ошибка, поэтому этот пример сообщает о ней как о `write`. Встроенные пути `app.run(...)` и `app.runPrepared(...)` различают `render` и `write` внутри.
+`tryWritePreparedOutput(...)` возвращает ошибки вывода с фазой `render` или `write`, не вызывая политику ошибок. Приложение сохраняет исходную ошибку, объединяет её с ошибками очистки и вызывает `reportError(...)` после cleanup. Ошибки потока относятся к `write`; часть stdout уже может быть записана. Используйте `writePreparedOutput(...)`, когда достаточно обычной обработки rejection; `app.run(...)` и `app.runPrepared(...)` сообщают об ошибках сразу.
 
 `CliCommandResult` задаёт только самый широкий допустимый тип результата для приложения. Обычная команда сохраняет свой конкретный результат вывода, а `watchUsersCommand` — конкретный `LongRunningCommandResult`.
 
 `transferLongRunningLifecycle(...)` относится к коду приложения. Функция должна зарегистрировать обработку сигналов и очистку для задачи и `scope` до возврата управления. При успехе `runCli(...)` очищает `scope`, поэтому блок `finally` вызова его не закрывает. Если передача завершается ошибкой, функция должна закрыть задачу, но не брать на себя `scope`; его затем закроет блок `finally` вызова. Переданная работа также должна завершить интерактивный вывод до записи последующей диагностики.
 
-До `writePreparedOutput(...)` доходят только значения, принятые `isTerminalCommandOutput(...)`. Приложение само отвечает за особые задачи, сигналы процесса и ресурсы долгоживущей работы.
+До `tryWritePreparedOutput(...)` доходят только значения, принятые `isTerminalCommandOutput(...)`. Приложение само отвечает за особые задачи, сигналы процесса и ресурсы долгоживущей работы.
 
 ## Выбор способа форматирования вывода
 
