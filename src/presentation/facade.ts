@@ -11,14 +11,8 @@
  * stdout/stderr delivery.
  */
 
-import {
-  presentationFormats,
-  type PresentationFormat
-} from './format-options';
-import {
-  renderCsv,
-  renderCsvRow
-} from './renderers/csv';
+import { presentationFormats, type PresentationFormat } from './format-options';
+import { renderCsv, renderCsvRow } from './renderers/csv';
 import { renderJson } from './renderers/json';
 import { renderTextTable } from './renderers/table';
 import { renderPresentationResult } from './result-renderer';
@@ -30,6 +24,7 @@ import {
   type TextTableRow
 } from './view';
 
+/** Direct JSON, text-table, and CSV renderers for caller-prepared data. */
 export type PresentationRenderers = {
   json: {
     render(value: unknown): string;
@@ -43,6 +38,7 @@ export type PresentationRenderers = {
   };
 };
 
+/** Presentation facade combining view creation, format selection, and direct renderers. */
 export type Presentation = PresentationViewFactory & {
   formats: typeof presentationFormats;
   render(result: PresentationResult, format?: PresentationFormat): string;

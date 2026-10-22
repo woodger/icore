@@ -1,9 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  CliUsageError,
-  isUsageError
-} from './cli-usage-error';
+import { CliUsageError, isUsageError } from './cli-usage-error';
 import { IcoreError } from './icore-error';
 
 class ForeignBrandedCliUsageError extends Error {
@@ -45,6 +42,19 @@ class ForeignBrandedIcoreError extends Error {
 }
 
 describe('CliUsageError', () => {
+  describe('.isUsageError', () => {
+    test('recognizes application and icore usage errors', () => {
+      const applicationError: unknown = new ForeignBrandedCliUsageError('Invalid date range');
+      const icoreError: unknown = new ForeignBrandedIcoreError();
+
+      assert.ok(CliUsageError.isUsageError(applicationError));
+      assert.equal(applicationError.message, 'Invalid date range');
+      assert.ok(CliUsageError.isUsageError(icoreError));
+      assert.equal(icoreError.message, 'Unknown command: missing');
+      assert.equal(CliUsageError.isUsageError(new Error('failed')), false);
+    });
+  });
+
   test('preserves the standard Error contract', () => {
     const error = new CliUsageError('Invalid date range');
 

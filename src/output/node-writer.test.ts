@@ -1,9 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  createStderrWriter,
-  createStdoutWriter
-} from './node-writer';
+import { createStderrWriter, createStdoutWriter } from './node-writer';
 
 describe('createStdoutWriter', () => {
   test('adapts stdout-compatible sinks', async () => {

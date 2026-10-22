@@ -87,7 +87,7 @@ If a production module defines a layer contract or contains non-trivial responsi
 
 ## Public Contract JSDoc
 
-JSDoc for public functions, classes, and interfaces must describe only contract-level details:
+JSDoc for public functions, classes, types, and interfaces must describe only contract-level details:
 
 - input constraints;
 - side effects;
@@ -96,7 +96,7 @@ JSDoc for public functions, classes, and interfaces must describe only contract-
 - important guarantees;
 - external API constraints.
 
-JSDoc is not needed if the meaning is fully clear from the name, types, and code.
+For declarations other than exported types and interfaces, JSDoc is not needed if the meaning is fully clear from the name, types, and code.
 
 Bad:
 
@@ -119,6 +119,14 @@ createApiClient(endpointOptions);
 ```
 
 But if this is already obvious from the interface and tests, it is better not to add the comment.
+
+## Exported Types And Interfaces
+
+In production runtime source code, every exported `type` and `interface` declaration must have its own English JSDoc immediately before the declaration, even when its purpose is obvious.
+
+Briefly explain the contract's role and essential characteristics. A module-level comment or comments on fields do not replace this JSDoc. For re-exports, JSDoc on the original declaration is sufficient.
+
+Comments in documentation examples must use the language of the surrounding documentation, as described in the [Documentation Policy](./documentation-policy.md#localization).
 
 ## When A Comment Is Needed
 
@@ -157,7 +165,7 @@ if (lastRequestTime === undefined) {
 
 ## When A Comment Is Not Needed
 
-A comment is not needed if:
+Except for the required JSDoc on exported types and interfaces, a comment is not needed if:
 
 - the meaning is already clear from the function name, type, and code;
 - the comment repeats the line literally;
@@ -250,4 +258,4 @@ A good comment helps understand:
 - which external constraint affected the code;
 - why an obviously strange decision is actually intentional.
 
-If a comment can be deleted without losing meaning, it should be deleted.
+Optional comments that can be deleted without losing meaning should be deleted.

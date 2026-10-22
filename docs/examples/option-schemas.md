@@ -22,10 +22,10 @@ The following shows how `reports list` and its options are parsed:
 
 ```ts
 // Describe the options accepted by `reports list`.
-import {
-  createCommand,
-  type InferOptions
-} from 'icore';
+import { createCommand, type InferOptions } from 'icore';
+
+// Get the command function type.
+type ReportOptions = InferOptions<typeof reportOptions>;
 
 const command = createCommand();
 
@@ -53,9 +53,6 @@ const reportOptions = {
     alias: 'l'
   }
 } as const;
-
-// Get the command function type.
-type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
   path: ['reports', 'list'],

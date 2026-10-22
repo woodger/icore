@@ -11,10 +11,7 @@
  * process exit-code policy.
  */
 
-import {
-  isIcoreError,
-  type AnyIcoreError
-} from './icore-error';
+import { isIcoreError, type AnyIcoreError } from './icore-error';
 
 type IcoreUsageError = Extract<
   AnyIcoreError,
@@ -36,6 +33,42 @@ export class CliUsageError extends Error {
     });
     Object.setPrototypeOf(this, new.target.prototype);
   }
+
+  /** Recognizes application validation failures and usage-category icore errors. */
+  static isUsageError(
+    error: unknown
+  ): error is CliUsageError | IcoreUsageError {
+    return CliUsageError.isCliUsageError(error)
+      || (isIcoreError(error) && error.category === 'usage');
+  }
+
+  private static isCliUsageError(error: unknown): error is CliUsageError {
+    try {
+      if (!(error instanceof Error)) {
+        return false;
+      }
+
+      if (error instanceof CliUsageError) {
+        return true;
+      }
+
+      if (
+        CliUsageError.ownsProperty(error, cliUsageErrorBrand)
+        && Reflect.get(error, cliUsageErrorBrand) === true
+      ) {
+        return true;
+      }
+
+      return false;
+    }
+    catch {
+      return false;
+    }
+  }
+
+  private static ownsProperty(value: object, key: PropertyKey): boolean {
+    return Object.hasOwn(value, key);
+  }
 }
 
 /**
@@ -45,34 +78,5 @@ export class CliUsageError extends Error {
 export function isUsageError(
   error: unknown
 ): error is CliUsageError | IcoreUsageError {
-  return isCliUsageError(error)
-    || (isIcoreError(error) && error.category === 'usage');
-}
-
-function isCliUsageError(error: unknown): error is CliUsageError {
-  try {
-    if (!(error instanceof Error)) {
-      return false;
-    }
-
-    if (error instanceof CliUsageError) {
-      return true;
-    }
-
-    if (
-      ownsProperty(error, cliUsageErrorBrand)
-      && Reflect.get(error, cliUsageErrorBrand) === true
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-  catch {
-    return false;
-  }
-}
-
-function ownsProperty(value: object, key: PropertyKey): boolean {
-  return Object.hasOwn(value, key);
+  return CliUsageError.isUsageError(error);
 }

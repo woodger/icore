@@ -24,18 +24,9 @@ import {
   type Presentation,
   type PresentationResult
 } from '../presentation/facade';
-import {
-  isPresentationFormat,
-  type PresentationFormat
-} from '../presentation/format-options';
+import { isPresentationFormat, type PresentationFormat } from '../presentation/format-options';
 import { isPresentationResult } from '../presentation/result-renderer';
-import {
-  createOutput,
-  type Output
-} from '../output/facade';
-
-const successExitCode = 0;
-const errorExitCode = 1;
+import { createOutput, type Output } from '../output/facade';
 
 /**
  * Supported terminal output shapes for the terminal app boundary.
@@ -50,16 +41,19 @@ export type TerminalCommandOutput =
   | undefined;
 
 /**
- * Checks the terminal output shape; stream chunks are validated during writing.
+ * Outcome of rendering and writing output without invoking terminal error policy.
+ * Failures retain the original thrown value and its phase; stdout may already
+ * contain partial output when writing fails.
  */
-export function isTerminalCommandOutput(
-  value: unknown
-): value is TerminalCommandOutput {
-  return value === undefined
-    || typeof value === 'string'
-    || isAsyncIterable(value)
-    || isPresentationResult(value);
-}
+export type TerminalOutputAttempt =
+  | {
+    ok: true;
+  }
+  | {
+    ok: false;
+    phase: 'render' | 'write';
+    error: unknown;
+  };
 
 /** Terminal operation in which an error was observed. */
 export type TerminalErrorPhase =
@@ -137,6 +131,18 @@ type TerminalCommandInput = PreparedCommandInput & {
   payload?: unknown;
 };
 
+// Empty registries can report errors for commands loaded elsewhere.
+type TerminalErrorPreparedCommand<
+  TCommands extends readonly TerminalCommandDefinition[]
+> = [TCommands[number]] extends [never]
+  ? unknown
+  : PreparedCommand<TCommands[number]>;
+
+/**
+ * Terminal app dependencies and optional output, format, and error policies.
+ * The registry determines command types; empty registries support bootstrap
+ * output and error reporting with caller-provided prepared data typed as unknown.
+ */
 export type TerminalAppOptions<
   TCommands extends readonly TerminalCommandDefinition[]
 > = {
@@ -146,13 +152,18 @@ export type TerminalAppOptions<
   /** Custom output facade. */
   output?: Output;
   /** Custom terminal error rendering and exit-code policy. */
-  errorPolicy?: TerminalErrorPolicy<PreparedCommand<TCommands[number]>>;
+  errorPolicy?: TerminalErrorPolicy<TerminalErrorPreparedCommand<TCommands>>;
   /** Resolves output format. */
   resolveFormat?(
     prepared: PreparedCommand<TCommands[number]>
   ): PresentationFormat | undefined;
 };
 
+/**
+ * Typed command lifecycle with presentation, output, and shared error reporting.
+ * Execution stays bound to registered commands; empty registries can report
+ * errors with caller-provided prepared data.
+ */
 export type TerminalApp<
   TCommands extends readonly TerminalCommandDefinition[]
 > = {
@@ -162,7 +173,7 @@ export type TerminalApp<
   /** Renders an error to stderr and returns its process-style exit code. */
   reportError(
     error: unknown,
-    context?: TerminalErrorContext<PreparedCommand<TCommands[number]>>
+    context?: TerminalErrorContext<TerminalErrorPreparedCommand<TCommands>>
   ): Promise<number>;
   /** No application context required. */
   prepare(
@@ -178,12 +189,21 @@ export type TerminalApp<
    * Renders and writes already obtained terminal output.
    *
    * String output is written exactly as provided; add a trailing newline in the
-   * command result when line output is desired.
+   * command result when line output is desired. Rejects with the original error
+   * without invoking terminal error policy.
    */
   writePreparedOutput(
     prepared: PreparedCommand<TCommands[number]>,
     output: TerminalCommandOutput
   ): Promise<void>;
+  /**
+   * Renders and writes output, returning failures without invoking error policy.
+   * Keep resources open until completion; stream failures have the write phase.
+   */
+  tryWritePreparedOutput(
+    prepared: PreparedCommand<TCommands[number]>,
+    output: TerminalCommandOutput
+  ): Promise<TerminalOutputAttempt>;
   /** Returns a process-style exit code. */
   run(
     args: readonly string[],
@@ -193,6 +213,32 @@ export type TerminalApp<
 };
 
 /**
+ * Converts terminal-supported command output to text or a text stream.
+ *
+ * This keeps the terminal boundary explicit: application objects must be
+ * mapped to text or presentation views before they reach stdout.
+ */
+type RenderedTerminalOutput =
+  | string
+  | AsyncIterable<string>
+  | undefined;
+
+const successExitCode = 0;
+const errorExitCode = 1;
+
+/**
+ * Checks the terminal output shape; stream chunks are validated during writing.
+ */
+export function isTerminalCommandOutput(
+  value: unknown
+): value is TerminalCommandOutput {
+  return value === undefined
+    || typeof value === 'string'
+    || isAsyncIterable(value)
+    || isPresentationResult(value);
+}
+
+/**
  * Composes command mechanics, presentation rendering, and output delivery into
  * a terminal application boundary.
  *
@@ -200,7 +246,8 @@ export type TerminalApp<
  * prepares commands, renders supported terminal results, and writes output.
  *
  * An empty command registry is supported for bootstrap-only presentation,
- * output, and error reporting. It does not provide resolvable commands.
+ * output, and error reporting. Its error policy receives caller-provided
+ * prepared command data as unknown. It does not provide resolvable commands.
  */
 export function createTerminalApp<
   const TCommands extends readonly TerminalCommandDefinition[]
@@ -215,7 +262,7 @@ export function createTerminalApp<
 
   async function reportError(
     error: unknown,
-    context: TerminalErrorContext<TPrepared> = {
+    context: TerminalErrorContext<TerminalErrorPreparedCommand<TCommands>> = {
       phase: 'external'
     }
   ): Promise<number> {
@@ -234,13 +281,38 @@ export function createTerminalApp<
     prepared: TPrepared,
     terminalOutput: TerminalCommandOutput
   ): Promise<void> {
-    const renderedOutput = renderTerminalOutput(
-      terminalOutput,
-      resolveFormat(prepared),
-      presentation
-    );
+    const attempt = await tryWritePreparedOutput(prepared, terminalOutput);
 
-    await writeTerminalOutput(renderedOutput, output);
+    if (!attempt.ok) {
+      throw attempt.error;
+    }
+  }
+
+  async function tryWritePreparedOutput(
+    prepared: TPrepared,
+    terminalOutput: unknown
+  ): Promise<TerminalOutputAttempt> {
+    let renderedOutput: RenderedTerminalOutput;
+
+    try {
+      renderedOutput = renderTerminalOutput(
+        terminalOutput,
+        resolveFormat(prepared),
+        presentation
+      );
+    }
+    catch (error) {
+      return { ok: false, phase: 'render', error };
+    }
+
+    try {
+      await writeTerminalOutput(renderedOutput, output);
+
+      return { ok: true };
+    }
+    catch (error) {
+      return { ok: false, phase: 'write', error };
+    }
   }
 
   async function runPrepared<TSelected extends TPrepared>(
@@ -268,35 +340,17 @@ export function createTerminalApp<
       ));
     }
 
-    let renderedOutput: RenderedTerminalOutput;
+    const attempt = await tryWritePreparedOutput(prepared, result);
 
-    try {
-      renderedOutput = renderTerminalOutput(
-        result,
-        resolveFormat(prepared),
-        presentation
-      );
-    }
-    catch (error) {
-      return reportError(error, createPreparedErrorContext(
-        'render',
-        prepared,
-        sourceArgs
-      ));
-    }
-
-    try {
-      await writeTerminalOutput(renderedOutput, output);
-
+    if (attempt.ok) {
       return successExitCode;
     }
-    catch (error) {
-      return reportError(error, createPreparedErrorContext(
-        'write',
-        prepared,
-        sourceArgs
-      ));
-    }
+
+    return reportError(attempt.error, createPreparedErrorContext(
+      attempt.phase,
+      prepared,
+      sourceArgs
+    ));
   }
 
   return {
@@ -309,6 +363,7 @@ export function createTerminalApp<
     },
     runPrepared,
     writePreparedOutput,
+    tryWritePreparedOutput,
     async run(args, context, commandOptions) {
       let prepared: TPrepared;
 
@@ -326,17 +381,6 @@ export function createTerminalApp<
     }
   };
 }
-
-/**
- * Converts terminal-supported command output to text or a text stream.
- *
- * This keeps the terminal boundary explicit: application objects must be
- * mapped to text or presentation views before they reach stdout.
- */
-type RenderedTerminalOutput =
-  | string
-  | AsyncIterable<string>
-  | undefined;
 
 function renderTerminalOutput(
   result: unknown,

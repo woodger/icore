@@ -26,10 +26,7 @@ npm install icore
 创建命令，将它们放入[命令注册表](../examples/command-resolution.md#create-a-commands-object-from-existing-definitions)，然后把注册表传给 `createTerminalApp()`：
 
 ```ts
-import {
-  createCommand,
-  createTerminalApp
-} from 'icore';
+import { createCommand, createTerminalApp } from 'icore';
 
 const command = createCommand();
 

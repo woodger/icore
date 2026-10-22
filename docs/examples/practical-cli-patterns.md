@@ -14,11 +14,7 @@ Parse these flags before using the command registry to run an application comman
 
 ```ts
 // Parse only the options that work before a command is selected.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed,
-  type OptionsSchema
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed, type OptionsSchema } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
@@ -230,10 +226,7 @@ Share an option definition when the same options appear in several commands. If 
 
 ```ts
 // Combine common options with options specific to `jobs list`.
-import {
-  mergeOptionsSchema,
-  type OptionsSchema
-} from 'icore';
+import { mergeOptionsSchema, type OptionsSchema } from 'icore';
 
 const sharedCliOptions = {
   config: {
@@ -299,6 +292,11 @@ Existing users may depend on the old name. Keep it visible in code, print a warn
 // Accept either name, but reject a call that provides both.
 import { CliUsageError } from 'icore';
 
+type ItemIdOptions = {
+  'item-id'?: string;
+  'legacy-id'?: string;
+};
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -307,11 +305,6 @@ const itemIdOptions = {
     type: 'string'
   }
 } as const;
-
-type ItemIdOptions = {
-  'item-id'?: string;
-  'legacy-id'?: string;
-};
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {

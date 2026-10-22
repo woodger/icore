@@ -11,15 +11,8 @@
  * domain behavior, SDK calls, or output formatting.
  */
 
-import {
-  parseArgv,
-  type ParsedArgv
-} from '../argv/parser';
-import {
-  IcoreError,
-  isIcoreError,
-  type AnyIcoreError
-} from '../errors/icore-error';
+import { parseArgv, type ParsedArgv } from '../argv/parser';
+import { IcoreError, isIcoreError, type AnyIcoreError } from '../errors/icore-error';
 import { parseOptionsDetailed } from '../options/parser';
 import type {
   InferOptions,
@@ -341,13 +334,6 @@ type AnyCommandRoute = {
   matchedPath: CommandPath;
 };
 
-const minimumCommandPathLength = 1;
-
-const commandRoutesByRegistry = new WeakMap<
-  object,
-  readonly AnyCommandRoute[]
->();
-
 /**
  * Result of resolving a command from user positionals.
  */
@@ -388,6 +374,13 @@ export type PreparedCommand<TCommand extends AnyCommandDefinition> =
       payload: CommandPayload<TCommand>;
     }
     : never;
+
+const minimumCommandPathLength = 1;
+
+const commandRoutesByRegistry = new WeakMap<
+  object,
+  readonly AnyCommandRoute[]
+>();
 
 /**
  * Defines a command while preserving literal option schema types.

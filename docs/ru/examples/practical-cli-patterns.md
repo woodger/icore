@@ -16,11 +16,7 @@
 
 ```ts
 // Разберите только опции, которые работают до выбора команды.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed,
-  type OptionsSchema
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed, type OptionsSchema } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
@@ -232,10 +228,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 
 ```ts
 // Объедините общие опции с опциями, характерными для `jobs list`.
-import {
-  mergeOptionsSchema,
-  type OptionsSchema
-} from 'icore';
+import { mergeOptionsSchema, type OptionsSchema } from 'icore';
 
 const sharedCliOptions = {
   config: {
@@ -301,6 +294,11 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 // Принимайте любое имя, но отклоняйте вызов, в котором указаны оба.
 import { CliUsageError } from 'icore';
 
+type ItemIdOptions = {
+  'item-id'?: string;
+  'legacy-id'?: string;
+};
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -309,11 +307,6 @@ const itemIdOptions = {
     type: 'string'
   }
 } as const;
-
-type ItemIdOptions = {
-  'item-id'?: string;
-  'legacy-id'?: string;
-};
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {

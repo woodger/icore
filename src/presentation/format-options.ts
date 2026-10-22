@@ -12,6 +12,9 @@
 
 import type { OptionsSchema } from '../options/schema';
 
+/** Supported output format inferred from the shared presentation format list. */
+export type PresentationFormat = typeof presentationFormats[number];
+
 /**
  * Supported output formats for the shared terminal presentation renderer.
  */
@@ -28,8 +31,6 @@ export const presentationFormatOptions = {
     default: 'table'
   }
 } as const satisfies OptionsSchema;
-
-export type PresentationFormat = typeof presentationFormats[number];
 
 /**
  * Narrows unknown option values to supported presentation formats.

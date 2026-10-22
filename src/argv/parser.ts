@@ -10,11 +10,7 @@
  * This file must not contain typed option validation or command resolution.
  */
 
-import type {
-  OptionDefinition,
-  OptionsSchema,
-  RawOptionValue
-} from '../options/schema';
+import type { OptionDefinition, OptionsSchema, RawOptionValue } from '../options/schema';
 import { IcoreError } from '../errors/icore-error';
 
 /**

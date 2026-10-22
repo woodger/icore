@@ -8,10 +8,7 @@ Create the formatting and output objects where the application writes to the ter
 
 ```ts
 // Create objects that format and write terminal output.
-import {
-  createOutput,
-  createPresentation
-} from 'icore';
+import { createOutput, createPresentation } from 'icore';
 
 const presentation = createPresentation();
 const output = createOutput();
@@ -106,11 +103,7 @@ When formats need different data, prepare the data for each format and call the 
 
 ```ts
 // Prepare table and CSV rows, then select the requested renderer.
-import {
-  renderCsv,
-  renderJson,
-  renderTextTable
-} from 'icore';
+import { renderCsv, renderJson, renderTextTable } from 'icore';
 
 const rows = [
   ['id', 'status'],

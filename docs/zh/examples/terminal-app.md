@@ -21,13 +21,13 @@ parse global shortcuts
 → inspect metadata and payload
 → create selected resources
 → app.commands.run()
-→ terminal result: finish interactive output → app.writePreparedOutput()
+→ terminal result: finish interactive output → app.tryWritePreparedOutput()
   or long-running result: transfer handle, scope, and interactive output
 → cleanup
 → app.reportError() when a failure was captured
 ```
 
-请在报告错误前关闭进度输出和资源，这样诊断信息只会在清理完成后出现。在 `writePreparedOutput(...)` 完成前不要关闭所选资源：终端输出可能仍是会使用这些资源的异步流。
+请在报告错误前关闭进度输出和资源，这样诊断信息只会在清理完成后出现。在 `tryWritePreparedOutput(...)` 完成前不要关闭所选资源：终端输出可能仍是会使用这些资源的异步流。
 
 ## 创建一个带类型的命令构建器
 
@@ -179,10 +179,7 @@ CLI 启动时只创建一次 `command`、`commands`、`presentation`、`output` 
 
 ```ts
 // 解析全局标志，不消耗所选命令的选项。
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed } from 'icore';
 
 const globalOptionsSchema = {
   help: {
@@ -263,7 +260,7 @@ declare function renderVersion(): string;
 ```ts
 // 在所有资源关闭前记录失败。
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
-type FailurePhase = 'execute' | 'write' | 'external';
+type FailurePhase = 'execute' | 'render' | 'write' | 'external';
 
 type InvocationFailure = {
   error: unknown;
@@ -314,9 +311,9 @@ async function reportPreparedFailure(
     });
   }
 
-  if (failure.phase === 'write') {
+  if (failure.phase === 'write' || failure.phase === 'render') {
     return app.reportError(failure.error, {
-      phase: 'write',
+      phase: failure.phase,
       args,
       prepared
     });
@@ -419,8 +416,14 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'external';
     await scope.finishInteractiveOutput();
 
-    phase = 'write';
-    await app.writePreparedOutput(prepared, result);
+    const attempt = await app.tryWritePreparedOutput(prepared, result);
+
+    if (!attempt.ok) {
+      failure = {
+        error: attempt.error,
+        phase: attempt.phase
+      };
+    }
   }
   catch (error) {
     failure = {
@@ -455,13 +458,13 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` 会格式化输出并写入它。`TerminalApp` 外的代码无法知道哪一步失败，因此本示例将其拒绝报告为 `write`。内置的 `app.run(...)` 和 `app.runPrepared(...)` 会在内部区分 `render` 与 `write`。
+`tryWritePreparedOutput(...)` 返回输出错误及其 `render` 或 `write` 阶段，不调用错误策略。应用保留原始错误，将其与清理错误合并，并在清理完成后调用 `reportError(...)`。流错误属于 `write` 阶段，此时 stdout 可能已经写入了部分内容。只需常规拒绝处理时，可使用 `writePreparedOutput(...)`；`app.run(...)` 和 `app.runPrepared(...)` 会立即报告错误。
 
 `CliCommandResult` 只定义应用允许的最宽结果类型。普通命令仍保留具体的输出结果，而 `watchUsersCommand` 保留具体的 `LongRunningCommandResult`。
 
 `transferLongRunningLifecycle(...)` 属于应用代码。它必须在返回前为任务和 `scope` 注册信号处理和清理。成功时，`runCli(...)` 会清空 `scope`，因此调用的 `finally` 块不会关闭它。若转移抛出异常，该函数必须关闭任务，但不能接管 `scope`；调用的 `finally` 块随后会关闭 `scope`。转移后的工作还必须在写入后续诊断信息前结束交互式输出。
 
-只有被 `isTerminalCommandOutput(...)` 接受的值才会到达 `writePreparedOutput(...)`。应用自己负责特殊任务、进程信号和长期运行工作使用的资源。
+只有被 `isTerminalCommandOutput(...)` 接受的值才会到达 `tryWritePreparedOutput(...)`。应用自己负责特殊任务、进程信号和长期运行工作使用的资源。
 
 ## 选择输出格式化方式
 

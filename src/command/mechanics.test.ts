@@ -1459,26 +1459,29 @@ describe('two-phase command execution', () => {
     assert.strictEqual(handled, true);
   });
 
-  test('keeps unknown short options as positionals when extra positionals are allowed', async () => {
-    const commandRegistry = defineCommandRegistry([
-      defineCommand({
-        path: ['users'],
-        options: {},
-        allowExtraPositionals: true,
-        handle({ positionals }) {
-          return positionals.join(',');
-        }
-      })
-    ] as const);
+  test(
+    'keeps unknown short options as positionals when extra positionals are allowed',
+    async () => {
+      const commandRegistry = defineCommandRegistry([
+        defineCommand({
+          path: ['users'],
+          options: {},
+          allowExtraPositionals: true,
+          handle({ positionals }) {
+            return positionals.join(',');
+          }
+        })
+      ] as const);
 
-    const prepared = await prepareCommandFromArgs(commandRegistry, [
-      'users',
-      '-x'
-    ]);
+      const prepared = await prepareCommandFromArgs(commandRegistry, [
+        'users',
+        '-x'
+      ]);
 
-    assert.deepStrictEqual(prepared.positionals, ['-x']);
-    assert.strictEqual(await runPreparedCommand(prepared, undefined), '-x');
-  });
+      assert.deepStrictEqual(prepared.positionals, ['-x']);
+      assert.strictEqual(await runPreparedCommand(prepared, undefined), '-x');
+    }
+  );
 
   test('runs prepared commands from registries with mixed context types', async () => {
     const accountCommand = defineCommand({
@@ -1520,39 +1523,42 @@ describe('two-phase command execution', () => {
     }
   });
 
-  test('runs narrowed prepared commands through the facade with their own context and result', async () => {
-    const account = defineCommand({
-      path: ['accounts'],
-      options: {},
-      handle({ context }: { context: { accountId: string } }) {
-        return context.accountId;
+  test(
+    'runs narrowed prepared commands through the facade with their own context and result',
+    async () => {
+      const account = defineCommand({
+        path: ['accounts'],
+        options: {},
+        handle({ context }: { context: { accountId: string } }) {
+          return context.accountId;
+        }
+      });
+      const project = defineCommand({
+        path: ['projects'],
+        options: {},
+        handle({ context }: { context: { projectId: number } }) {
+          return context.projectId;
+        }
+      });
+      const commands = createCommands([account, project] as const);
+      const prepared = await commands.prepare(['accounts']);
+
+      if (!isPreparedCommandName(prepared, 'accounts')) {
+        assert.fail('Expected accounts command');
       }
-    });
-    const project = defineCommand({
-      path: ['projects'],
-      options: {},
-      handle({ context }: { context: { projectId: number } }) {
-        return context.projectId;
+
+      const result: string = await commands.run(prepared, { accountId: 'account-id' });
+
+      assert.strictEqual(result, 'account-id');
+
+      function assertContextContract(selected: PreparedCommand<typeof account>): void {
+        // @ts-expect-error A narrowed account command cannot receive project context.
+        void commands.run(selected, { projectId: 42 });
       }
-    });
-    const commands = createCommands([account, project] as const);
-    const prepared = await commands.prepare(['accounts']);
 
-    if (!isPreparedCommandName(prepared, 'accounts')) {
-      assert.fail('Expected accounts command');
+      void assertContextContract;
     }
-
-    const result: string = await commands.run(prepared, { accountId: 'account-id' });
-
-    assert.strictEqual(result, 'account-id');
-
-    function assertContextContract(selected: PreparedCommand<typeof account>): void {
-      // @ts-expect-error A narrowed account command cannot receive project context.
-      void commands.run(selected, { projectId: 42 });
-    }
-
-    void assertContextContract;
-  });
+  );
 
   test('runCommand calls prepare hooks before handlers', async () => {
     const calls: string[] = [];

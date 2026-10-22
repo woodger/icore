@@ -16,11 +16,7 @@
 
 ```ts
 // 只解析在选择命令前生效的选项。
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed,
-  type OptionsSchema
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed, type OptionsSchema } from 'icore';
 
 const bootstrapOptionsSchema = {
   help: {
@@ -232,10 +228,7 @@ const commandHelpEntries = documentedCommands.definitions.map((definition) => ({
 
 ```ts
 // 将通用选项与 `jobs list` 专用选项合并。
-import {
-  mergeOptionsSchema,
-  type OptionsSchema
-} from 'icore';
+import { mergeOptionsSchema, type OptionsSchema } from 'icore';
 
 const sharedCliOptions = {
   config: {
@@ -301,6 +294,11 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 // 接受任一名称，但拒绝同时提供两个名称的调用。
 import { CliUsageError } from 'icore';
 
+type ItemIdOptions = {
+  'item-id'?: string;
+  'legacy-id'?: string;
+};
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -309,11 +307,6 @@ const itemIdOptions = {
     type: 'string'
   }
 } as const;
-
-type ItemIdOptions = {
-  'item-id'?: string;
-  'legacy-id'?: string;
-};
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {

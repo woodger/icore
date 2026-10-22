@@ -24,10 +24,7 @@ npm install icore
 Create commands, collect them in a [command registry](docs/examples/command-resolution.md#create-a-commands-object-from-existing-definitions), and pass the registry to `createTerminalApp()`:
 
 ```ts
-import {
-  createCommand,
-  createTerminalApp
-} from 'icore';
+import { createCommand, createTerminalApp } from 'icore';
 
 const command = createCommand();
 

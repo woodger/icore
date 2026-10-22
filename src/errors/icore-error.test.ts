@@ -1,10 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, test } from 'node:test';
-import {
-  IcoreError,
-  isIcoreError,
-  type IcoreErrorDetails
-} from './icore-error';
+import { IcoreError, isIcoreError, type IcoreErrorDetails } from './icore-error';
 
 class ForeignBrandedIcoreError extends Error {
   constructor(
@@ -26,6 +22,54 @@ class ForeignBrandedIcoreError extends Error {
 }
 
 describe('IcoreError', () => {
+  function assertStaticDetailsContract(): void {
+    // @ts-expect-error Strong details contracts require the third argument.
+    new IcoreError('DUPLICATE_COMMAND', 'duplicate command');
+
+    new IcoreError('DUPLICATE_COMMAND', 'duplicate command', {
+      // @ts-expect-error Details must match the selected error code.
+      argument: '--format',
+      option: 'format'
+    });
+
+    // @ts-expect-error Path mismatches always identify the expected path.
+    const details: IcoreErrorDetails<'UNKNOWN_COMMAND'> = {
+      reason: 'path-mismatch',
+      command: 'users',
+      positionals: ['unknown']
+    };
+
+    // @ts-expect-error Required arguments must identify their semantic variant.
+    const requiredDetails: IcoreErrorDetails<'EXPECTED_REQUIRED_ARGUMENT'> = {
+      argument: '--token',
+      option: 'token'
+    };
+
+    void details;
+    void requiredDetails;
+  }
+
+  void assertStaticDetailsContract;
+
+  describe('.is', () => {
+    test('narrows compatible errors to an exact code', () => {
+      const error: unknown = new ForeignBrandedIcoreError(
+        'UNKNOWN_COMMAND',
+        'usage',
+        {
+          reason: 'unresolved',
+          command: 'missing',
+          positionals: ['missing']
+        }
+      );
+
+      assert.ok(IcoreError.is(error));
+      assert.equal(IcoreError.is(error, 'DUPLICATE_COMMAND'), false);
+      assert.ok(IcoreError.is(error, 'UNKNOWN_COMMAND'));
+      assert.equal(error.details.command, 'missing');
+    });
+  });
+
   test('categorizes usage errors', () => {
     const errors = [
       new IcoreError('UNKNOWN_COMMAND', 'unknown command', {
@@ -215,32 +259,3 @@ describe('isIcoreError', () => {
     assert.equal(isIcoreError(unknownCode), false);
   });
 });
-
-function assertStaticDetailsContract(): void {
-  // @ts-expect-error Strong details contracts require the third argument.
-  new IcoreError('DUPLICATE_COMMAND', 'duplicate command');
-
-  new IcoreError('DUPLICATE_COMMAND', 'duplicate command', {
-    // @ts-expect-error Details must match the selected error code.
-    argument: '--format',
-    option: 'format'
-  });
-
-  // @ts-expect-error Path mismatches always identify the expected path.
-  const details: IcoreErrorDetails<'UNKNOWN_COMMAND'> = {
-    reason: 'path-mismatch',
-    command: 'users',
-    positionals: ['unknown']
-  };
-
-  // @ts-expect-error Required arguments must identify their semantic variant.
-  const requiredDetails: IcoreErrorDetails<'EXPECTED_REQUIRED_ARGUMENT'> = {
-    argument: '--token',
-    option: 'token'
-  };
-
-  void details;
-  void requiredDetails;
-}
-
-void assertStaticDetailsContract;

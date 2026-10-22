@@ -8,11 +8,7 @@ The snippets below use this setup:
 
 ```ts
 // Define a command and the data the application supplies when it runs.
-import {
-  createCommand,
-  createTerminalApp,
-  isTerminalCommandOutput
-} from 'icore';
+import { createCommand, createTerminalApp, isTerminalCommandOutput } from 'icore';
 
 type WorkspaceContext = {
   workspace: string;
@@ -141,16 +137,17 @@ Only terminal output belongs here: ready text, streaming text, output values, or
 
 The guard checks the stream's iterable shape; each chunk is validated as a string during writing. A non-string chunk rejects `writePreparedOutput(...)`. Built-in terminal execution reports that failure in the `write` phase.
 
+Use `app.tryWritePreparedOutput(...)` when diagnostics must wait for cleanup and retain the original output error and its phase. The [caller-owned lifecycle example](terminal-app.md#create-resources-clean-up-then-report-errors) shows how to combine an output failure with a cleanup failure before reporting.
+
 ## Prepare From A Command Registry
 
 `prepareCommandFromArgs(...)` is the direct form of `commands.prepare(...)`.
 
 ```ts
 // Prepare a command from a registry without a commands object.
-import {
-  prepareCommandFromArgs,
-  type CommandPayload
-} from 'icore';
+import { prepareCommandFromArgs, type CommandPayload } from 'icore';
+
+type Payload = CommandPayload<typeof runJobCommand>;
 
 const prepared = await prepareCommandFromArgs(commands.registry, [
   'jobs',
@@ -160,8 +157,6 @@ const prepared = await prepareCommandFromArgs(commands.registry, [
 ], {
   strict: true
 });
-
-type Payload = CommandPayload<typeof runJobCommand>;
 ```
 
 Use this when code has a registry but not a `commands` object.
@@ -172,11 +167,7 @@ Use this when code has a registry but not a `commands` object.
 
 ```ts
 // Infer the command's input and result types before running it.
-import {
-  runPreparedCommand,
-  type CommandContext,
-  type CommandResult
-} from 'icore';
+import { runPreparedCommand, type CommandContext, type CommandResult } from 'icore';
 
 type Context = CommandContext<typeof runJobCommand>;
 type Result = CommandResult<typeof runJobCommand>;
@@ -273,10 +264,9 @@ This is useful for tests and small tools. It does not select a command from a re
 
 ```ts
 // Read parsed options and learn which options the user supplied.
-import {
-  parseOptionsDetailed,
-  type InferProvidedOptions
-} from 'icore';
+import { parseOptionsDetailed, type InferProvidedOptions } from 'icore';
+
+type Provided = InferProvidedOptions<typeof schema>;
 
 const schema = {
   format: {
@@ -292,8 +282,6 @@ const schema = {
 const parsed = parseOptionsDetailed(schema, {
   verbose: true
 });
-
-type Provided = InferProvidedOptions<typeof schema>;
 ```
 
 The parsed options are:

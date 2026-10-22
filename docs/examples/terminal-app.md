@@ -19,13 +19,13 @@ check global --help and --version
 → read the selected command's data
 → create its resources
 → app.commands.run()
-→ command output: finish interactive output → app.writePreparedOutput()
+→ command output: finish interactive output → app.tryWritePreparedOutput()
   or long-running work: transfer its resources and interactive output
 → close resources
 → app.reportError() when a failure was captured
 ```
 
-Close progress output and resources before reporting an error, so diagnostics appear only after cleanup. Keep selected resources open through `writePreparedOutput(...)`: terminal output may be an asynchronous stream that still uses them.
+Close progress output and resources before reporting an error, so diagnostics appear only after cleanup. Keep selected resources open through `tryWritePreparedOutput(...)`: terminal output may be an asynchronous stream that still uses them.
 
 ## Create One Typed Command Builder
 
@@ -85,7 +85,8 @@ const insecureOptions = {
   }
 } as const;
 
-// Each command receives the current user, returns CLI output, and declares its description and resources.
+// Each command receives the current user, returns CLI output,
+// and declares its description and resources.
 const command = createCommand.withTypes<{
   context: CurrentUserContext;
   result: CliCommandResult;
@@ -177,10 +178,7 @@ Describe `-h` and `-v` among the options handled before a command is selected. `
 
 ```ts
 // Parse global flags without consuming options for the selected command.
-import {
-  parseArgv,
-  parseOptionsSubsetDetailed
-} from 'icore';
+import { parseArgv, parseOptionsSubsetDetailed } from 'icore';
 
 const globalOptionsSchema = {
   help: {
@@ -261,7 +259,7 @@ The code below records the stage where the first error occurred, combines it wit
 ```ts
 // Track a failure until all resources are closed.
 type Prepared = Awaited<ReturnType<typeof app.prepare>>;
-type FailurePhase = 'execute' | 'write' | 'external';
+type FailurePhase = 'execute' | 'render' | 'write' | 'external';
 
 type InvocationFailure = {
   error: unknown;
@@ -312,9 +310,9 @@ async function reportPreparedFailure(
     });
   }
 
-  if (failure.phase === 'write') {
+  if (failure.phase === 'write' || failure.phase === 'render') {
     return app.reportError(failure.error, {
-      phase: 'write',
+      phase: failure.phase,
       args,
       prepared
     });
@@ -417,8 +415,14 @@ async function runCli(args: readonly string[]): Promise<number> {
     phase = 'external';
     await scope.finishInteractiveOutput();
 
-    phase = 'write';
-    await app.writePreparedOutput(prepared, result);
+    const attempt = await app.tryWritePreparedOutput(prepared, result);
+
+    if (!attempt.ok) {
+      failure = {
+        error: attempt.error,
+        phase: attempt.phase
+      };
+    }
   }
   catch (error) {
     failure = {
@@ -453,13 +457,13 @@ void runCli(process.argv.slice(2))
   });
 ```
 
-`writePreparedOutput(...)` formats output and writes it. Code outside `TerminalApp` cannot tell which of those steps failed, so this example reports its rejection as `write`. The built-in `app.run(...)` and `app.runPrepared(...)` paths distinguish `render` from `write` internally.
+`tryWritePreparedOutput(...)` returns output failures with their `render` or `write` phase without invoking the error policy. The application retains the original error, combines it with cleanup failures, and calls `reportError(...)` after cleanup. Streaming failures belong to `write`, and stdout may already contain partial output. Use `writePreparedOutput(...)` when ordinary rejection handling is sufficient; `app.run(...)` and `app.runPrepared(...)` report failures immediately.
 
 `CliCommandResult` only sets the broadest result type allowed for the application. A regular command still keeps its specific output result, while `watchUsersCommand` keeps its specific `LongRunningCommandResult`.
 
 `transferLongRunningLifecycle(...)` belongs to the application. It must register signal handling and cleanup for the handle and `scope` before returning. On success, `runCli(...)` clears `scope`, so the invocation's `finally` block does not close it. If transfer throws, it must close the handle without taking responsibility for `scope`; the invocation's `finally` block then closes `scope`. The transferred work must also finish interactive output before later diagnostics are written.
 
-Only values accepted by `isTerminalCommandOutput(...)` reach `writePreparedOutput(...)`. The application keeps responsibility for custom handles, process signals, and resources used by long-running work.
+Only values accepted by `isTerminalCommandOutput(...)` reach `tryWritePreparedOutput(...)`. The application keeps responsibility for custom handles, process signals, and resources used by long-running work.
 
 ## Choose How To Format Output
 

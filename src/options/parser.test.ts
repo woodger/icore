@@ -7,13 +7,12 @@ import {
   parseOptionsSubsetDetailed,
   type ParseOptionsSubsetResult
 } from './parser';
-import type {
-  InferOptions,
-  InferProvidedOptions
-} from './schema';
+import type { InferOptions, InferProvidedOptions } from './schema';
 
 describe('parseOptions', () => {
   test('parses string choices, boolean flags and number ranges', () => {
+    type Options = InferOptions<typeof schema>;
+
     const minimumLimit = 1;
     const maximumLimit = 1_000;
     const requestedLimit = 100;
@@ -34,8 +33,6 @@ describe('parseOptions', () => {
         required: true
       }
     } as const;
-
-    type Options = InferOptions<typeof schema>;
 
     const options: Options = parseOptions(schema, {
       insecure: true,
@@ -336,6 +333,9 @@ describe('parseOptions', () => {
 
 describe('parseOptionsDetailed', () => {
   test('returns parsed options and user-provided metadata', () => {
+    type Options = InferOptions<typeof schema>;
+    type Provided = InferProvidedOptions<typeof schema>;
+
     const schema = {
       token: {
         type: 'string',
@@ -350,9 +350,6 @@ describe('parseOptionsDetailed', () => {
         type: 'boolean'
       }
     } as const;
-
-    type Options = InferOptions<typeof schema>;
-    type Provided = InferProvidedOptions<typeof schema>;
 
     const result = parseOptionsDetailed(schema, {
       token: 'secret',

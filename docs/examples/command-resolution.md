@@ -18,6 +18,9 @@ import {
   type CommandName
 } from 'icore';
 
+// Infer the public name from one command definition.
+type PublicCommandName = CommandName<typeof runJobCommand>;
+
 const listJobsCommand = defineCommand({
   path: ['jobs', 'list'],
   options: {
@@ -49,9 +52,6 @@ const registry = defineCommandRegistry([
   listJobsCommand,
   runJobCommand
 ] as const);
-
-// Infer the public name from one command definition.
-type PublicCommandName = CommandName<typeof runJobCommand>;
 ```
 
 Use this form when application code needs the command registry itself. Call `createCommands(...)` when it also needs `commands.prepare(...)` and `commands.run(...)`.
@@ -68,6 +68,9 @@ type PublicCommandName = 'jobs run';
 Put older or alternate paths on the main command definition. They use the same options, `prepare` function, description, and command function; they do not create additional commands.
 
 ```ts
+type AcceptedAccountPath =
+  CommandAcceptedPath<typeof listAccountsCommand>;
+
 // Keep alternate names on the command that implements the behavior.
 const listAccountsCommand = defineCommand({
   path: ['account', 'list'],
@@ -100,9 +103,6 @@ const aliased = accountCommands.resolve([
   'users',
   'get-accounts'
 ]);
-
-type AcceptedAccountPath =
-  CommandAcceptedPath<typeof listAccountsCommand>;
 ```
 
 `name` and `path` always describe the main command. `matchedPath` records the name used for this call:

@@ -13,7 +13,9 @@ import { presentationFormatOptions } from '../presentation/format-options';
 import {
   createTerminalApp,
   isTerminalCommandOutput,
-  type TerminalCommandOutput
+  type TerminalCommandOutput,
+  type TerminalErrorContext,
+  type TerminalOutputAttempt
 } from './app';
 
 const successfulExitCode = 0;
@@ -368,6 +370,280 @@ describe('createTerminalApp', () => {
     assert.equal(memory.read().stderr, '');
   });
 
+  describe('#tryWritePreparedOutput', () => {
+    test('writes supported output and returns success without running the handler', async () => {
+      const memory = createMemoryOutput();
+      const presentation = createPresentation();
+      let handled = false;
+      const app = createTerminalApp({
+        commands: createCommands([
+          defineCommand({
+            path: ['status'],
+            options: presentationFormatOptions,
+            handle() {
+              handled = true;
+            }
+          })
+        ]),
+        presentation,
+        output: memory.output
+      });
+      const prepared = await app.prepare(['status', '--format', 'json']);
+      const outputs: TerminalCommandOutput[] = [
+        undefined,
+        'plain\n',
+        presentation.record({ value: 1 }),
+        (async function* streamOutput() {
+          yield 'stream\n';
+        })()
+      ];
+
+      for (const output of outputs) {
+        const attempt: TerminalOutputAttempt = await app.tryWritePreparedOutput(prepared, output);
+
+        assert.deepEqual(attempt, { ok: true });
+      }
+
+      assert.equal(handled, false);
+      assert.deepEqual(memory.read(), {
+        stdout: 'plain\n{\n  "value": 1\n}\nstream\n',
+        stderr: ''
+      });
+    });
+
+    test(
+      'captures format resolution failures and preserves legacy rejection identity',
+      async () => {
+        const memory = createMemoryOutput();
+        const failure = new Error('format failed');
+
+        Object.freeze(failure);
+
+        const app = createTerminalApp({
+          commands: createCommands([
+            defineCommand({ path: ['status'], options: {}, handle() {} })
+          ]),
+          output: memory.output,
+          resolveFormat() {
+            throw failure;
+          }
+        });
+        const prepared = await app.prepare(['status']);
+        const attempt = await app.tryWritePreparedOutput(prepared, 'output');
+
+        assert.ok(!attempt.ok);
+        assert.equal(attempt.phase, 'render');
+        assert.equal(attempt.error, failure);
+        await assert.rejects(
+          app.writePreparedOutput(prepared, 'output'),
+          error => error === failure
+        );
+        assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
+      }
+    );
+
+    test('captures original rendering failures without invoking error policy', async () => {
+      const failures: readonly unknown[] = [new Error('render failed'), 'render failed', undefined];
+
+      for (const failure of failures) {
+        const memory = createMemoryOutput();
+        const presentation = createPresentation();
+        const app = createTerminalApp({
+          commands: createCommands([
+            defineCommand({ path: ['status'], options: {}, handle() {} })
+          ]),
+          presentation: {
+            ...presentation,
+            render() {
+              throw failure;
+            }
+          },
+          output: memory.output,
+          errorPolicy: {
+            renderError() {
+              assert.fail('Unexpected error reporting');
+            },
+            resolveExitCode() {
+              assert.fail('Unexpected exit-code selection');
+            }
+          }
+        });
+        const prepared = await app.prepare(['status']);
+        const output = presentation.record({ value: 1 });
+        const attempt = await app.tryWritePreparedOutput(prepared, output);
+
+        assert.ok(!attempt.ok);
+        assert.equal(attempt.phase, 'render');
+        assert.equal(attempt.error, failure);
+        await assert.rejects(
+          app.writePreparedOutput(prepared, output),
+          error => error === failure
+        );
+        assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
+      }
+    });
+
+    test('captures rejected writes and preserves legacy rejection identity', async () => {
+      const memory = createMemoryOutput();
+      const failure = new Error('write failed');
+      const app = createTerminalApp({
+        commands: createCommands([
+          defineCommand({ path: ['status'], options: {}, handle() {} })
+        ]),
+        output: {
+          ...memory.output,
+          async write() {
+            throw failure;
+          }
+        },
+        errorPolicy: {
+          renderError() {
+            assert.fail('Unexpected error reporting');
+          },
+          resolveExitCode() {
+            assert.fail('Unexpected exit-code selection');
+          }
+        }
+      });
+      const prepared = await app.prepare(['status']);
+      const attempt = await app.tryWritePreparedOutput(prepared, 'output');
+
+      assert.ok(!attempt.ok);
+      assert.equal(attempt.phase, 'write');
+      assert.equal(attempt.error, failure);
+      await assert.rejects(
+        app.writePreparedOutput(prepared, 'output'),
+        error => error === failure
+      );
+      assert.deepEqual(memory.read(), { stdout: '', stderr: '' });
+    });
+
+    test('captures stream failures after partial output and closes the producer', async () => {
+      const memory = createMemoryOutput();
+      const failure = new Error('stream failed');
+      let closed = false;
+      const app = createTerminalApp({
+        commands: createCommands([
+          defineCommand({ path: ['stream'], options: {}, handle() {} })
+        ]),
+        output: memory.output
+      });
+      const prepared = await app.prepare(['stream']);
+      const stream = (async function* streamOutput() {
+        try {
+          yield 'before\n';
+          throw failure;
+        }
+        finally {
+          closed = true;
+        }
+      })();
+      const attempt = await app.tryWritePreparedOutput(prepared, stream);
+
+      assert.ok(!attempt.ok);
+      assert.equal(attempt.phase, 'write');
+      assert.equal(attempt.error, failure);
+      assert.equal(closed, true);
+      assert.deepEqual(memory.read(), { stdout: 'before\n', stderr: '' });
+    });
+
+    test('captures invalid stream chunks as write failures and closes the producer', async () => {
+      const memory = createMemoryOutput();
+      let closed = false;
+      const app = createTerminalApp({
+        commands: createCommands([
+          defineCommand({ path: ['stream'], options: {}, handle() {} })
+        ]),
+        output: memory.output
+      });
+      const prepared = await app.prepare(['stream']);
+      const stream: unknown = (async function* streamOutput() {
+        try {
+          yield 'before\n';
+          yield undefined;
+          yield 'after\n';
+        }
+        finally {
+          closed = true;
+        }
+      })();
+
+      assert.ok(isTerminalCommandOutput(stream));
+
+      const attempt = await app.tryWritePreparedOutput(prepared, stream);
+
+      assert.ok(!attempt.ok);
+      assert.equal(attempt.phase, 'write');
+      assert.ok(attempt.error instanceof TypeError);
+      assert.equal(attempt.error.message, 'Expected terminal output chunk to be a string');
+      assert.equal(closed, true);
+      assert.deepEqual(memory.read(), { stdout: 'before\n', stderr: '' });
+    });
+
+    test('retains the render phase when reporting after failed caller-owned cleanup', async () => {
+      const memory = createMemoryOutput();
+      const presentation = createPresentation();
+      const renderFailure = new Error('render failed');
+      const cleanupFailure = new Error('cleanup failed');
+      let closed = false;
+      const app = createTerminalApp({
+        commands: createCommands([
+          defineCommand({ path: ['status'], options: {}, handle() {} })
+        ]),
+        presentation: {
+          ...presentation,
+          render() {
+            throw renderFailure;
+          }
+        },
+        output: memory.output,
+        errorPolicy: {
+          renderError(error, context) {
+            assert.equal(closed, true);
+            assert.equal(context.phase, 'render');
+            assert.ok(error instanceof AggregateError);
+            assert.deepEqual(error.errors, [renderFailure, cleanupFailure]);
+
+            return 'render failed\ncleanup failed\n';
+          },
+          resolveExitCode(_error, context) {
+            assert.equal(context.phase, 'render');
+
+            return customErrorExitCode;
+          }
+        }
+      });
+      const prepared = await app.prepare(['status']);
+      const scope = {
+        async close() {
+          closed = true;
+
+          throw cleanupFailure;
+        }
+      };
+      const attempt = await app.tryWritePreparedOutput(prepared, presentation.record({ value: 1 }));
+
+      assert.ok(!attempt.ok);
+      assert.equal(attempt.error, renderFailure);
+      assert.equal(closed, false);
+      assert.equal(memory.read().stderr, '');
+
+      let failure = attempt.error;
+
+      try {
+        await scope.close();
+      }
+      catch (error) {
+        failure = new AggregateError([failure, error]);
+      }
+
+      const exitCode = await app.reportError(failure, { phase: attempt.phase, prepared });
+
+      assert.equal(exitCode, customErrorExitCode);
+      assert.deepEqual(memory.read(), { stdout: '', stderr: 'render failed\ncleanup failed\n' });
+    });
+  });
+
   test('allows custom lifecycle results before writing terminal output', async () => {
     type ShutdownHandle = {
       close(): void;
@@ -596,6 +872,95 @@ describe('createTerminalApp', () => {
     assert.equal(await app.reportError('unknown failure'), defaultErrorExitCode);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'failed\nunknown failure\n');
+  });
+
+  test('reports typed command errors without registered commands', async () => {
+    const memory = createMemoryOutput();
+    const status = defineCommand({
+      path: ['status'],
+      options: {},
+      handle() {}
+    });
+    const commands = createCommands([status]);
+    const prepared = await commands.prepare(['status']);
+    const args = ['status'];
+    const failure = new Error('failed');
+    const contexts: TerminalErrorContext<PreparedCommand<typeof status>>[] = [
+      { phase: 'prepare', args },
+      { phase: 'execute', prepared, args },
+      { phase: 'render', prepared },
+      { phase: 'write', prepared },
+      { phase: 'external', prepared, args },
+      { phase: 'external', args }
+    ];
+    const renderedContexts: TerminalErrorContext<unknown>[] = [];
+    const resolvedContexts: TerminalErrorContext<unknown>[] = [];
+    const app = createTerminalApp({
+      commands: createCommands([]),
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.equal(error, failure);
+
+          if ('prepared' in context) {
+            const callerPrepared: typeof context.prepared = prepared;
+
+            assert.equal(context.prepared, callerPrepared);
+          }
+
+          renderedContexts.push(context);
+
+          return 'failed\n';
+        },
+        resolveExitCode(error, context) {
+          assert.equal(error, failure);
+
+          if ('prepared' in context) {
+            const callerPrepared: typeof context.prepared = prepared;
+
+            assert.equal(context.prepared, callerPrepared);
+          }
+
+          resolvedContexts.push(context);
+
+          return customErrorExitCode;
+        }
+      }
+    });
+
+    for (const context of contexts) {
+      assert.equal(await app.reportError(failure, context), customErrorExitCode);
+    }
+
+    assert.deepEqual(renderedContexts, contexts);
+    assert.deepEqual(resolvedContexts, contexts);
+    assert.equal(memory.read().stdout, '');
+    assert.equal(memory.read().stderr, 'failed\n'.repeat(contexts.length));
+
+    function assertContextContract(context: TerminalErrorContext<unknown>): void {
+      void app.reportError(failure, context);
+
+      const registeredApp = createTerminalApp({ commands });
+
+      // @ts-expect-error A registered app requires its own prepared command type.
+      void registeredApp.reportError(failure, context);
+      // @ts-expect-error An empty registry cannot execute a prepared command.
+      void app.runPrepared(prepared, undefined);
+      // @ts-expect-error An empty registry cannot write prepared command output.
+      void app.writePreparedOutput(prepared, undefined);
+      // @ts-expect-error Capturing output failures still requires a registered command.
+      void app.tryWritePreparedOutput(prepared, undefined);
+      // @ts-expect-error Capturing failures still requires supported terminal output.
+      void registeredApp.tryWritePreparedOutput(prepared, { unsupported: true });
+      // @ts-expect-error Command error phases still require prepared data.
+      void app.reportError(failure, { phase: 'write' });
+
+      const preparation: Promise<never> = app.prepare(args);
+
+      void preparation;
+    }
+
+    void assertContextContract;
   });
 
   test('uses the external phase when report context is omitted', async () => {

@@ -24,10 +24,10 @@ node dist/cli.js reports list --project alpha --format json --archived --limit 5
 
 ```ts
 // Опишите опции, которые принимает `reports list`.
-import {
-  createCommand,
-  type InferOptions
-} from 'icore';
+import { createCommand, type InferOptions } from 'icore';
+
+// Получить type функции команды.
+type ReportOptions = InferOptions<typeof reportOptions>;
 
 const command = createCommand();
 
@@ -55,9 +55,6 @@ const reportOptions = {
     alias: 'l'
   }
 } as const;
-
-// Получить type функции команды.
-type ReportOptions = InferOptions<typeof reportOptions>;
 
 const reportCommand = command.define({
   path: ['reports', 'list'],
