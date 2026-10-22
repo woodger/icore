@@ -10,6 +10,10 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+### Fixed
+
+- Allowed terminal apps with an empty command registry to report errors with caller-provided prepared command contexts without type assertions.
+
 ## [3.0.0] - 2026-10-18
 
 ### Removed

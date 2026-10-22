@@ -137,6 +137,13 @@ type TerminalCommandInput = PreparedCommandInput & {
   payload?: unknown;
 };
 
+// Empty registries can report errors for commands loaded elsewhere.
+type TerminalErrorPreparedCommand<
+  TCommands extends readonly TerminalCommandDefinition[]
+> = [TCommands[number]] extends [never]
+  ? unknown
+  : PreparedCommand<TCommands[number]>;
+
 export type TerminalAppOptions<
   TCommands extends readonly TerminalCommandDefinition[]
 > = {
@@ -146,7 +153,7 @@ export type TerminalAppOptions<
   /** Custom output facade. */
   output?: Output;
   /** Custom terminal error rendering and exit-code policy. */
-  errorPolicy?: TerminalErrorPolicy<PreparedCommand<TCommands[number]>>;
+  errorPolicy?: TerminalErrorPolicy<TerminalErrorPreparedCommand<TCommands>>;
   /** Resolves output format. */
   resolveFormat?(
     prepared: PreparedCommand<TCommands[number]>
@@ -162,7 +169,7 @@ export type TerminalApp<
   /** Renders an error to stderr and returns its process-style exit code. */
   reportError(
     error: unknown,
-    context?: TerminalErrorContext<PreparedCommand<TCommands[number]>>
+    context?: TerminalErrorContext<TerminalErrorPreparedCommand<TCommands>>
   ): Promise<number>;
   /** No application context required. */
   prepare(
@@ -200,7 +207,8 @@ export type TerminalApp<
  * prepares commands, renders supported terminal results, and writes output.
  *
  * An empty command registry is supported for bootstrap-only presentation,
- * output, and error reporting. It does not provide resolvable commands.
+ * output, and error reporting. Its error policy receives caller-provided
+ * prepared command data as unknown. It does not provide resolvable commands.
  */
 export function createTerminalApp<
   const TCommands extends readonly TerminalCommandDefinition[]
@@ -215,7 +223,7 @@ export function createTerminalApp<
 
   async function reportError(
     error: unknown,
-    context: TerminalErrorContext<TPrepared> = {
+    context: TerminalErrorContext<TerminalErrorPreparedCommand<TCommands>> = {
       phase: 'external'
     }
   ): Promise<number> {

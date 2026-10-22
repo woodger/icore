@@ -13,7 +13,8 @@ import { presentationFormatOptions } from '../presentation/format-options';
 import {
   createTerminalApp,
   isTerminalCommandOutput,
-  type TerminalCommandOutput
+  type TerminalCommandOutput,
+  type TerminalErrorContext
 } from './app';
 
 const successfulExitCode = 0;
@@ -596,6 +597,91 @@ describe('createTerminalApp', () => {
     assert.equal(await app.reportError('unknown failure'), defaultErrorExitCode);
     assert.equal(memory.read().stdout, '');
     assert.equal(memory.read().stderr, 'failed\nunknown failure\n');
+  });
+
+  test('reports typed command errors without registered commands', async () => {
+    const memory = createMemoryOutput();
+    const status = defineCommand({
+      path: ['status'],
+      options: {},
+      handle() {}
+    });
+    const commands = createCommands([status]);
+    const prepared = await commands.prepare(['status']);
+    const args = ['status'];
+    const failure = new Error('failed');
+    const contexts: TerminalErrorContext<PreparedCommand<typeof status>>[] = [
+      { phase: 'prepare', args },
+      { phase: 'execute', prepared, args },
+      { phase: 'render', prepared },
+      { phase: 'write', prepared },
+      { phase: 'external', prepared, args },
+      { phase: 'external', args }
+    ];
+    const renderedContexts: TerminalErrorContext<unknown>[] = [];
+    const resolvedContexts: TerminalErrorContext<unknown>[] = [];
+    const app = createTerminalApp({
+      commands: createCommands([]),
+      output: memory.output,
+      errorPolicy: {
+        renderError(error, context) {
+          assert.equal(error, failure);
+
+          if ('prepared' in context) {
+            const callerPrepared: typeof context.prepared = prepared;
+
+            assert.equal(context.prepared, callerPrepared);
+          }
+
+          renderedContexts.push(context);
+
+          return 'failed\n';
+        },
+        resolveExitCode(error, context) {
+          assert.equal(error, failure);
+
+          if ('prepared' in context) {
+            const callerPrepared: typeof context.prepared = prepared;
+
+            assert.equal(context.prepared, callerPrepared);
+          }
+
+          resolvedContexts.push(context);
+
+          return customErrorExitCode;
+        }
+      }
+    });
+
+    for (const context of contexts) {
+      assert.equal(await app.reportError(failure, context), customErrorExitCode);
+    }
+
+    assert.deepEqual(renderedContexts, contexts);
+    assert.deepEqual(resolvedContexts, contexts);
+    assert.equal(memory.read().stdout, '');
+    assert.equal(memory.read().stderr, 'failed\n'.repeat(contexts.length));
+
+    function assertContextContract(context: TerminalErrorContext<unknown>): void {
+      void app.reportError(failure, context);
+
+      const registeredApp = createTerminalApp({ commands });
+
+      // @ts-expect-error A registered app requires its own prepared command type.
+      void registeredApp.reportError(failure, context);
+      // @ts-expect-error An empty registry cannot execute a prepared command.
+      void app.runPrepared(prepared, undefined);
+      // @ts-expect-error An empty registry cannot write prepared command output.
+      void app.writePreparedOutput(prepared, undefined);
+      // @ts-expect-error Command error phases still require prepared data.
+      void app.reportError(failure, { phase: 'write' });
+
+      const preparation: Promise<never> = app.prepare(args);
+
+      void preparation;
+    }
+
+    void assertContextContract;
   });
 
   test('uses the external phase when report context is omitted', async () => {
