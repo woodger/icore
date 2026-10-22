@@ -24,9 +24,6 @@ import { isPresentationFormat, type PresentationFormat } from '../presentation/f
 import { isPresentationResult } from '../presentation/result-renderer';
 import { createOutput, type Output } from '../output/facade';
 
-const successExitCode = 0;
-const errorExitCode = 1;
-
 /**
  * Supported terminal output shapes for the terminal app boundary.
  *
@@ -38,18 +35,6 @@ export type TerminalCommandOutput =
   | AsyncIterable<string>
   | PresentationResult
   | undefined;
-
-/**
- * Checks the terminal output shape; stream chunks are validated during writing.
- */
-export function isTerminalCommandOutput(
-  value: unknown
-): value is TerminalCommandOutput {
-  return value === undefined
-    || typeof value === 'string'
-    || isAsyncIterable(value)
-    || isPresentationResult(value);
-}
 
 /** Terminal operation in which an error was observed. */
 export type TerminalErrorPhase =
@@ -190,6 +175,32 @@ export type TerminalApp<
 };
 
 /**
+ * Converts terminal-supported command output to text or a text stream.
+ *
+ * This keeps the terminal boundary explicit: application objects must be
+ * mapped to text or presentation views before they reach stdout.
+ */
+type RenderedTerminalOutput =
+  | string
+  | AsyncIterable<string>
+  | undefined;
+
+const successExitCode = 0;
+const errorExitCode = 1;
+
+/**
+ * Checks the terminal output shape; stream chunks are validated during writing.
+ */
+export function isTerminalCommandOutput(
+  value: unknown
+): value is TerminalCommandOutput {
+  return value === undefined
+    || typeof value === 'string'
+    || isAsyncIterable(value)
+    || isPresentationResult(value);
+}
+
+/**
  * Composes command mechanics, presentation rendering, and output delivery into
  * a terminal application boundary.
  *
@@ -324,17 +335,6 @@ export function createTerminalApp<
     }
   };
 }
-
-/**
- * Converts terminal-supported command output to text or a text stream.
- *
- * This keeps the terminal boundary explicit: application objects must be
- * mapped to text or presentation views before they reach stdout.
- */
-type RenderedTerminalOutput =
-  | string
-  | AsyncIterable<string>
-  | undefined;
 
 function renderTerminalOutput(
   result: unknown,

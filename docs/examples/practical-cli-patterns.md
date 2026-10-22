@@ -292,6 +292,11 @@ Existing users may depend on the old name. Keep it visible in code, print a warn
 // Accept either name, but reject a call that provides both.
 import { CliUsageError } from 'icore';
 
+type ItemIdOptions = {
+  'item-id'?: string;
+  'legacy-id'?: string;
+};
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -300,11 +305,6 @@ const itemIdOptions = {
     type: 'string'
   }
 } as const;
-
-type ItemIdOptions = {
-  'item-id'?: string;
-  'legacy-id'?: string;
-};
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {

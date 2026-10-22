@@ -294,6 +294,11 @@ workspace-cli jobs list --profile staging --format json --status failed --limit 
 // Принимайте любое имя, но отклоняйте вызов, в котором указаны оба.
 import { CliUsageError } from 'icore';
 
+type ItemIdOptions = {
+  'item-id'?: string;
+  'legacy-id'?: string;
+};
+
 const itemIdOptions = {
   'item-id': {
     type: 'string'
@@ -302,11 +307,6 @@ const itemIdOptions = {
     type: 'string'
   }
 } as const;
-
-type ItemIdOptions = {
-  'item-id'?: string;
-  'legacy-id'?: string;
-};
 
 function resolveItemId(options: ItemIdOptions): string {
   if (options['item-id'] !== undefined && options['legacy-id'] !== undefined) {

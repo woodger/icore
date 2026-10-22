@@ -147,6 +147,13 @@ export type IcoreErrorDetails<TCode extends IcoreErrorCode> =
  */
 export type IcoreErrorCategory = 'usage' | 'definition';
 
+type DetailsRecord = Readonly<Record<string, unknown>>;
+
+/** Distributed union preserving the correlation between code and details. */
+export type AnyIcoreError = {
+  [TCode in IcoreErrorCode]: IcoreError<TCode>;
+}[IcoreErrorCode];
+
 const icoreErrorCategoryByCode = {
   UNKNOWN_COMMAND: 'usage',
   UNEXPECTED_ARGUMENT: 'usage',
@@ -162,8 +169,6 @@ const icoreErrorCategoryByCode = {
 } as const satisfies Record<IcoreErrorCode, IcoreErrorCategory>;
 
 const icoreErrorBrand = Symbol.for('icore.error.IcoreError.v1');
-
-type DetailsRecord = Readonly<Record<string, unknown>>;
 
 /**
  * Error thrown by `icore` for CLI parsing, option validation, command
@@ -196,11 +201,6 @@ export class IcoreError<
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
-
-/** Distributed union preserving the correlation between code and details. */
-export type AnyIcoreError = {
-  [TCode in IcoreErrorCode]: IcoreError<TCode>;
-}[IcoreErrorCode];
 
 /**
  * Checks whether an unknown value is any compatible `IcoreError`, including

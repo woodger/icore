@@ -145,6 +145,8 @@ The guard checks the stream's iterable shape; each chunk is validated as a strin
 // Prepare a command from a registry without a commands object.
 import { prepareCommandFromArgs, type CommandPayload } from 'icore';
 
+type Payload = CommandPayload<typeof runJobCommand>;
+
 const prepared = await prepareCommandFromArgs(commands.registry, [
   'jobs',
   'run',
@@ -153,8 +155,6 @@ const prepared = await prepareCommandFromArgs(commands.registry, [
 ], {
   strict: true
 });
-
-type Payload = CommandPayload<typeof runJobCommand>;
 ```
 
 Use this when code has a registry but not a `commands` object.
@@ -264,6 +264,8 @@ This is useful for tests and small tools. It does not select a command from a re
 // Read parsed options and learn which options the user supplied.
 import { parseOptionsDetailed, type InferProvidedOptions } from 'icore';
 
+type Provided = InferProvidedOptions<typeof schema>;
+
 const schema = {
   format: {
     type: 'string',
@@ -278,8 +280,6 @@ const schema = {
 const parsed = parseOptionsDetailed(schema, {
   verbose: true
 });
-
-type Provided = InferProvidedOptions<typeof schema>;
 ```
 
 The parsed options are:

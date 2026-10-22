@@ -329,13 +329,6 @@ type AnyCommandRoute = {
   matchedPath: CommandPath;
 };
 
-const minimumCommandPathLength = 1;
-
-const commandRoutesByRegistry = new WeakMap<
-  object,
-  readonly AnyCommandRoute[]
->();
-
 /**
  * Result of resolving a command from user positionals.
  */
@@ -376,6 +369,13 @@ export type PreparedCommand<TCommand extends AnyCommandDefinition> =
       payload: CommandPayload<TCommand>;
     }
     : never;
+
+const minimumCommandPathLength = 1;
+
+const commandRoutesByRegistry = new WeakMap<
+  object,
+  readonly AnyCommandRoute[]
+>();
 
 /**
  * Defines a command while preserving literal option schema types.

@@ -34,6 +34,7 @@ These policies are mandatory for developers, reviewers, and agents making change
 - [Non-Functional Requirements](./non-functional-requirements.md)
 - [Abstraction Policy](./abstraction-policy.md)
 - [Naming Policy](./naming-policy.md)
+- [Code Organization Policy](./code-organization-policy.md)
 - [Comment Policy](./comment-policy.md)
 - [Testing Policy](./testing-policy.md)
 - [Scripts and Build Policy](./scripts-and-build-policy.md)
