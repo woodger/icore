@@ -10,6 +10,8 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-22
+
 ### Added
 
 - Added `IcoreError.is(...)` and `CliUsageError.isUsageError(...)` as static error guards while preserving the existing standalone guards.
@@ -429,6 +431,7 @@ Version boundaries from `1.0.12` through `1.0.19` were checked against npm `gitH
 - Detailed changelog entries were not maintained for these releases.
 
 [Unreleased]: https://github.com/woodger/icore/commits/develop
+[3.0.1]: https://www.npmjs.com/package/icore/v/3.0.1
 [3.0.0]: https://www.npmjs.com/package/icore/v/3.0.0
 [2.2.4]: https://www.npmjs.com/package/icore/v/2.2.4
 [2.2.3]: https://www.npmjs.com/package/icore/v/2.2.3
